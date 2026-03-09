@@ -10,6 +10,29 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Fondos */
+  --color-sp-bg-dark: #001F35;
+  --color-sp-bg-medium: #003E64;
+  --color-sp-bg-light: #006197;
+  --color-sp-bg-lighter: #0086cf;
+  --color-sp-bg-accent: #3DACFF;
+
+  /* Texto / Estilos */
+  --color-sp-text-light: #C9FECB;
+  --color-sp-text-green: #37F132;
+  --color-sp-text-dark: #0a4a08;
+
+  /* Monedas */
+  --color-sp-coin-light: #FFD506;
+  --color-sp-coin: #d1ae00;
+  --color-sp-coin-dark: #7b6500;
+
+  /* Jugadores */
+  --color-sp-player-1: #FF7824;
+  --color-sp-player-2: #DD4CDF;
+  --color-sp-player-3: #2bc427;
+  --color-sp-player-4: #00797e;
 }
 
 @media (prefers-color-scheme: dark) {
