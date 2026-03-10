@@ -10,17 +10,22 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-pixel: var(--font-pixel);
 
   /* Fondos */
-  --color-sp-bg-dark: #001F35;
-  --color-sp-bg-medium: #003E64;
-  --color-sp-bg-light: #006197;
-  --color-sp-bg-lighter: #0086cf;
-  --color-sp-bg-accent: #3DACFF;
+  --color-sp-bg-dark: #2D1754;
+  /* Fondo principal morado oscuro */
+  --color-sp-bg-medium: #4B2B85;
+  /* Morado más claro */
+  --color-sp-bg-light: #6A3CB5;
+  /* Aún más claro */
+  --color-sp-bg-lighter: #8952E5;
+  --color-sp-bg-accent: #B282FF;
 
   /* Texto / Estilos */
-  --color-sp-text-light: #C9FECB;
-  --color-sp-text-green: #37F132;
+  --color-sp-text-light: #F8F4FF;
+  --color-sp-text-green: #2BC427;
+  /* Verde brillante */
   --color-sp-text-dark: #0a4a08;
 
   /* Monedas */
@@ -28,11 +33,18 @@
   --color-sp-coin: #d1ae00;
   --color-sp-coin-dark: #7b6500;
 
-  /* Jugadores */
-  --color-sp-player-1: #FF7824;
-  --color-sp-player-2: #DD4CDF;
-  --color-sp-player-3: #2bc427;
-  --color-sp-player-4: #00797e;
+  /* Jugadores (16-bit Button Colors) */
+  --color-btn-primary-bg: rgba(137, 82, 229, 0.4);
+  --color-btn-primary-border-light: #8952E5;
+  --color-btn-primary-border-dark: #371870;
+
+  --color-btn-success-bg: rgba(43, 196, 39, 0.4);
+  --color-btn-success-border-light: #2BC427;
+  --color-btn-success-border-dark: #1A7016;
+
+  --color-btn-warning-bg: rgba(255, 90, 136, 0.4);
+  --color-btn-warning-border-light: #FF5A88;
+  --color-btn-warning-border-dark: #80163C;
 }
 
 @media (prefers-color-scheme: dark) {

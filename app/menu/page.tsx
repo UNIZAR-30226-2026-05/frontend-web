@@ -1,110 +1,205 @@
+"use client";
+
 import React from 'react';
+import PixelButton from '@/shared/components/PixelButton';
 
 export default function MenuPage() {
     return (
-        <div className="bg-sp-bg-dark text-white min-h-screen grid grid-cols-3 gap-8 p-8 font-sans font-bold">
+        <div
+            className="text-white min-h-screen grid grid-cols-3 gap-8 p-8 font-pixel font-normal text-xl tracking-wide relative overflow-hidden"
+            style={{
+                backgroundImage: "url('/tableroVacio.jpg')",
+                backgroundSize: "cover",
+                backgroundPosition: "center"
+            }}
+        >
+            {/* Overlay oscuro para la imagen de fondo */}
+            <div
+                className="absolute inset-0 z-0 pointer-events-none"
+                style={{ background: 'radial-gradient(ellipse, rgba(17, 12, 22, 0.95) 40%, rgba(48,7,77,0.95) 120%)' }}
+            ></div>
 
             {/* Columna Izquierda: Usuario y Partidas */}
-            <div className="flex flex-col gap-8 h-full">
-                {/* Usuario Component Placeholder */}
-                <div className="flex items-center gap-4 bg-sp-bg-medium/30 p-4 rounded-xl border border-sp-bg-medium shadow-md">
-                    <div className="w-16 h-16 bg-sp-bg-accent rounded-xl flex items-center justify-center text-3xl">
-                        🎲
-                    </div>
-                    <div>
-                        <h2 className="text-3xl tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Usuario</h2>
-                        <div className="text-sp-bg-light font-black text-xl drop-shadow-[0_2px_1px_rgba(0,0,0,0.8)]">SP</div>
-                    </div>
+            <div className="flex flex-col gap-8 h-full z-10 relative">
+                {/* Usuario Component */}
+                <div className="flex items-center gap-4 p-4 mt-2">
+                    <img src="/logo_NOFondo.png" alt="Logo SP" className="w-[8rem] h-auto drop-shadow-[0_4px_0_rgba(0,0,0,1)] z-10" />
+                    <span
+                        className="text-[2.5rem] tracking-widest font-bold text-white whitespace-nowrap"
+                        style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                    >
+                        Usuario
+                    </span>
                 </div>
 
                 {/* Partidas de amigos */}
-                <div className="flex-1 flex flex-col bg-sp-bg-medium/20 rounded-xl border border-sp-bg-medium/40 p-6 relative">
-                    <h2 className="text-3xl text-center mb-8 uppercase tracking-widest leading-tight drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                <div className="flex-1 flex flex-col p-6 pl-4 relative mt-4">
+                    <h2
+                        className="text-[2.8rem] leading-snug mb-10 text-white font-bold whitespace-nowrap"
+                        style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                    >
                         Partidas<br />de amigos
                     </h2>
 
-                    <div className="mt-auto flex flex-col items-center gap-2 mb-10">
-                        <p className="text-sp-text-light drop-shadow-md">!Usuario 3 te ha invitado!</p>
-                        <div className="w-full h-1 bg-sp-bg-accent/50 rounded my-2"></div>
-                        <p className="text-sp-text-light text-center drop-shadow-md">
+                    <div className="mt-8 flex flex-col gap-3 w-fit">
+                        <p
+                            className="text-[#a8a8a8] text-[1.1rem] font-bold mb-1"
+                            style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                        >
+                            Usuario 3 te ha invitado!
+                        </p>
+                        <div className="w-full h-[2px] bg-white mb-2 shadow-[0_2px_0_#000]"></div>
+                        <p
+                            className="text-white text-[1.2rem] font-bold leading-tight"
+                            style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                        >
                             Únete con el código:<br />
-                            <span className="text-white text-xl">B372GFT</span>
+                            <span
+                                className="text-white text-[1.8rem] mt-4 block"
+                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                            >
+                                B372GFT
+                            </span>
                         </p>
                     </div>
                 </div>
             </div>
 
             {/* Columna Central: Crear y Unirse a Partida */}
-            <div className="flex flex-col items-center justify-center gap-12 p-8">
+            <div className="flex flex-col items-center justify-center gap-[4rem] p-8 z-10 relative">
 
                 {/* Botón Crear Partida */}
-                <button className="w-full max-w-sm text-3xl text-white font-bold py-6 px-8 rounded-xl bg-gradient-to-r from-sp-bg-medium to-sp-bg-light border-4 border-sp-bg-accent shadow-[0_0_20px_rgba(61,172,255,0.4)] hover:shadow-[0_0_30px_rgba(61,172,255,0.6)] hover:scale-105 transition-all outline-none">
+                <PixelButton variant="hero" className="w-full max-w-[28rem] py-6 text-[1.8rem]">
                     Crear partida
-                </button>
+                </PixelButton>
 
-                {/* Partida temporal */}
-                <div className="w-full flex flex-col items-center max-w-sm mt-4 gap-4">
-                    <div className="flex justify-between items-center w-full">
-                        <span className="text-lg">Código de partida:<br /><span className="text-xl">AH245J2</span></span>
-                        <button className="bg-sp-bg-light/40 border-2 border-sp-bg-accent px-6 py-2 rounded-xl text-sp-text-light hover:bg-sp-bg-medium transition-colors">
-                            Usuario
-                        </button>
+                {/* Partida temporal compacta */}
+                <div className="w-full max-w-[28rem] mt-2 mb-4">
+                    <div className="flex justify-between items-center w-full mb-4 px-2">
+                        <div className="flex flex-col">
+                            <span
+                                className="text-[1.1rem] leading-snug text-white font-bold"
+                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                            >
+                                Código de partida:
+                            </span>
+                            <span
+                                className="text-[1.6rem] text-white mt-1 inline-block font-bold"
+                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                            >
+                                AH245J2
+                            </span>
+                        </div>
+                        <div className="flex justify-end">
+                            <PixelButton variant="primary" className="!px-6 !py-3 !text-[1.1rem] !tracking-wider">
+                                Usuario
+                            </PixelButton>
+                        </div>
                     </div>
 
-                    <div className="flex justify-center w-full gap-3 mt-2">
-                        <div className="bg-sp-player-3/20 border-2 border-sp-player-3 text-sp-player-3 flex-1 text-center py-2 rounded-xl text-sm">Usuario 2</div>
-                        <div className="bg-sp-bg-medium/40 border-2 border-sp-bg-accent text-sp-bg-accent flex-1 text-center py-2 rounded-xl text-sm opacity-50">Vacío</div>
-                        <div className="bg-sp-bg-medium/40 border-2 border-sp-bg-accent text-sp-bg-accent flex-1 text-center py-2 rounded-xl text-sm opacity-50">Vacío</div>
+                    <div className="flex justify-between w-full gap-5">
+                        <PixelButton variant="success" className="flex-1 !px-2 !py-4 !text-[1rem] !tracking-wider">Usuario 2</PixelButton>
+                        <PixelButton variant="primary" className="flex-1 !px-2 !py-4 !text-[1rem] !tracking-wider opacity-70">Vacío</PixelButton>
+                        <PixelButton variant="primary" className="flex-1 !px-2 !py-4 !text-[1rem] !tracking-wider opacity-70">Vacío</PixelButton>
                     </div>
                 </div>
 
                 {/* Unirse a una partida */}
-                <div className="w-full flex flex-col items-center mt-8 p-6 gap-6">
-                    <h2 className="text-2xl text-center leading-tight drop-shadow-md">Unirse a una<br />partida con código</h2>
-                    <input
-                        type="text"
-                        className="w-full max-w-sm text-center text-3xl font-mono tracking-widest bg-sp-bg-dark border-[6px] border-white rounded-2xl py-4 outline-none focus:border-sp-bg-accent shadow-inner transition-colors"
-                    />
-                    <p className="text-center text-sm text-sp-text-light/80 max-w-xs mt-2">
-                        Crea una partida e invita a tus amigos o únete a una partida
-                    </p>
+                <div className="w-full flex flex-col items-center mt-2 gap-4">
+                    <h2
+                        className="text-[1.8rem] text-white font-bold text-center leading-snug mb-2"
+                        style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                    >
+                        Unirse a una<br />partida con código
+                    </h2>
+                    <div className="relative w-full max-w-[24rem]">
+                        <input
+                            type="text"
+                            className="w-full text-center text-[2rem] font-bold font-pixel tracking-widest bg-[#1f093d] text-white py-4 outline-none transition-colors"
+                            style={{
+                                border: "4px solid #fff",
+                                borderRadius: "2px",
+                                boxShadow: "inset 0 0 5px rgba(150, 100, 255, 0.5)",
+                                textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000"
+                            }}
+                        />
+                    </div>
+                    <div className="flex flex-col items-center mt-4">
+                        <p
+                            className="text-center text-[0.9rem] text-white font-bold"
+                            style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                        >
+                            Crea una partida e invita<br />a tus amigos o únete a<br />una partida
+                        </p>
+                    </div>
                 </div>
 
             </div>
 
             {/* Columna Derecha: Amigos y Reglas */}
-            <div className="flex flex-col justify-between h-full">
+            <div className="flex flex-col justify-between h-full z-10 relative">
 
                 {/* Lista de amigos */}
-                <div className="flex flex-col gap-6 w-full max-w-xs ml-auto">
-                    <div className="border-b-[3px] border-white pb-2 flex justify-center mt-4">
-                        <h2 className="text-3xl tracking-widest drop-shadow-sm">Amigos</h2>
+                <div className="flex flex-col gap-6 w-full max-w-[22rem] ml-auto mt-6">
+                    <div className="flex flex-col items-center mb-2">
+                        <h2
+                            className="text-[1.8rem] tracking-[0.1em] pb-2 text-white font-bold"
+                            style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                        >
+                            Amigos
+                        </h2>
+                        <div className="w-[85%] mx-auto h-[2px] bg-[#dcbaff] shadow-[0_2px_0px_rgba(0,0,0,1)]"></div>
                     </div>
 
-                    <div className="flex flex-col gap-5 mt-4">
-                        <div className="flex justify-between items-center w-full">
-                            <span className="text-2xl drop-shadow-md">Usuario 1</span>
-                            <span className="bg-sp-player-2/20 text-sp-player-2 border-2 border-sp-player-2 px-3 py-1 rounded outline-none text-sm font-bold min-w-[5rem] text-center">Invitado</span>
+                    <div className="flex flex-col gap-[1.8rem] px-2 mt-2">
+                        <div className="flex justify-between items-center w-full gap-4 flex-nowrap">
+                            <span
+                                className="text-[1.3rem] text-white font-bold whitespace-nowrap mt-1"
+                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                            >
+                                Usuario 1
+                            </span>
+                            <PixelButton variant="warning" className="!px-3 !py-2 !text-[0.9rem] min-w-[7rem] whitespace-nowrap">Invitado</PixelButton>
                         </div>
-                        <div className="flex justify-between items-center w-full">
-                            <span className="text-2xl drop-shadow-md">Usuario 2</span>
-                            <span className="bg-sp-player-3/10 text-sp-player-3 border-2 border-sp-player-3 px-3 py-1 rounded outline-none text-sm font-bold min-w-[5rem] text-center">Contigo</span>
+                        <div className="flex justify-between items-center w-full gap-4 flex-nowrap">
+                            <span
+                                className="text-[1.3rem] text-white font-bold whitespace-nowrap mt-1"
+                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                            >
+                                Usuario 2
+                            </span>
+                            <PixelButton variant="success" className="!px-3 !py-2 !text-[0.9rem] min-w-[7rem] whitespace-nowrap">Contigo</PixelButton>
                         </div>
-                        <div className="flex justify-between items-center w-full">
-                            <span className="text-2xl drop-shadow-md">Usuario 3</span>
-                            <button className="bg-sp-bg-medium/60 text-sp-text-light border-2 border-sp-bg-accent px-3 py-1 rounded outline-none text-sm font-bold min-w-[5rem] text-center hover:bg-sp-bg-light transition-colors">Invitar</button>
+                        <div className="flex justify-between items-center w-full gap-4 flex-nowrap">
+                            <span
+                                className="text-[1.3rem] text-white font-bold whitespace-nowrap mt-1"
+                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                            >
+                                Usuario 3
+                            </span>
+                            <PixelButton variant="primary" className="!px-3 !py-2 !text-[0.9rem] min-w-[7rem] whitespace-nowrap">Invitar</PixelButton>
                         </div>
                     </div>
                 </div>
 
                 {/* Mascota y Reglas */}
-                <div className="flex justify-end items-end pb-4 pr-10 hover:scale-105 transition-transform cursor-pointer">
-                    <div className="flex flex-col items-center">
-                        <div className="relative text-7xl text-sp-bg-light drop-shadow-xl z-0 -rotate-12 mb-2">
-                            🧙‍♂️
-                            <div className="absolute top-0 right-0 text-3xl -translate-y-4 translate-x-4 bg-sp-bg-dark rounded-full">❔</div>
+                <div className="flex justify-end items-end pb-2 pr-4 hover:scale-105 transition-transform cursor-pointer absolute bottom-[-1rem] right-[-1rem] group">
+                    <div className="flex flex-col items-center relative gap-2">
+                        <div className="relative">
+                            <img src="/personajes/mago.png" alt="Mago" className="w-[14rem] drop-shadow-[0_6px_0_rgba(0,0,0,1)] z-0 -scale-x-100" />
+                            <div
+                                className="absolute -top-[1.2rem] -left-[2.8rem] text-[5.5rem] text-white font-bold rotate-[-15deg] group-hover:scale-110 transition-transform"
+                                style={{ textShadow: "3px 0 0 #000, -3px 0 0 #000, 0 3px 0 #000, 0 -3px 0 #000" }}
+                            >
+                                ?
+                            </div>
                         </div>
-                        <span className="text-3xl tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-10">Reglas</span>
+                        <span
+                            className="text-[2.5rem] tracking-widest z-10 text-white font-bold whitespace-nowrap"
+                            style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                        >
+                            Reglas
+                        </span>
                     </div>
                 </div>
 
