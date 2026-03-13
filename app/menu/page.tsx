@@ -69,7 +69,7 @@ export default function MenuPage() {
             <div className="flex flex-col items-center justify-center gap-[4rem] p-8 z-10 relative">
 
                 {/* Botón Crear Partida */}
-                <PixelButton variant="hero" className="w-full max-w-[28rem] py-6 text-[1.8rem]">
+                <PixelButton variant="purple" className="w-full max-w-[28rem] py-6 text-[1.8rem]">
                     Crear partida
                 </PixelButton>
 
@@ -91,16 +91,16 @@ export default function MenuPage() {
                             </span>
                         </div>
                         <div className="flex justify-end">
-                            <PixelButton variant="primary" className="!px-6 !py-3 !text-[1.1rem] !tracking-wider">
+                            <PixelButton variant="purple_blue" className="!px-6 !py-3 !text-[1.1rem] !tracking-wider">
                                 Usuario
                             </PixelButton>
                         </div>
                     </div>
 
                     <div className="flex justify-between w-full gap-5">
-                        <PixelButton variant="success" className="flex-1 !px-2 !py-4 !text-[1rem] !tracking-wider">Usuario 2</PixelButton>
-                        <PixelButton variant="primary" className="flex-1 !px-2 !py-4 !text-[1rem] !tracking-wider opacity-70">Vacío</PixelButton>
-                        <PixelButton variant="primary" className="flex-1 !px-2 !py-4 !text-[1rem] !tracking-wider opacity-70">Vacío</PixelButton>
+                        <PixelButton variant="purple" className="flex-1 !px-2 !py-4 !text-[1rem] !tracking-wider">Usuario 2</PixelButton>
+                        <PixelButton variant="purple" className="flex-1 !px-2 !py-4 !text-[1rem] !tracking-wider opacity-70">Vacío</PixelButton>
+                        <PixelButton variant="purple" className="flex-1 !px-2 !py-4 !text-[1rem] !tracking-wider opacity-70">Vacío</PixelButton>
                     </div>
                 </div>
 
@@ -159,7 +159,7 @@ export default function MenuPage() {
                             >
                                 Usuario 1
                             </span>
-                            <PixelButton variant="warning" className="!px-3 !py-2 !text-[0.9rem] min-w-[7rem] whitespace-nowrap">Invitado</PixelButton>
+                            <PixelButton variant="red" className="!px-3 !py-2 !text-[0.9rem] min-w-[7rem] whitespace-nowrap">Invitado</PixelButton>
                         </div>
                         <div className="flex justify-between items-center w-full gap-4 flex-nowrap">
                             <span
@@ -168,7 +168,7 @@ export default function MenuPage() {
                             >
                                 Usuario 2
                             </span>
-                            <PixelButton variant="success" className="!px-3 !py-2 !text-[0.9rem] min-w-[7rem] whitespace-nowrap">Contigo</PixelButton>
+                            <PixelButton variant="green" className="!px-3 !py-2 !text-[0.9rem] min-w-[7rem] whitespace-nowrap">Contigo</PixelButton>
                         </div>
                         <div className="flex justify-between items-center w-full gap-4 flex-nowrap">
                             <span
@@ -177,7 +177,7 @@ export default function MenuPage() {
                             >
                                 Usuario 3
                             </span>
-                            <PixelButton variant="primary" className="!px-3 !py-2 !text-[0.9rem] min-w-[7rem] whitespace-nowrap">Invitar</PixelButton>
+                            <PixelButton variant="purple" className="!px-3 !py-2 !text-[0.9rem] min-w-[7rem] whitespace-nowrap">Invitar</PixelButton>
                         </div>
                     </div>
                 </div>
