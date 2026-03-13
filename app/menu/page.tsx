@@ -8,16 +8,13 @@ export default function MenuPage() {
         <div
             className="text-white min-h-screen grid grid-cols-3 gap-8 p-8 font-pixel font-normal text-xl tracking-wide relative overflow-hidden"
             style={{
-                backgroundImage: "url('/tableroVacio.jpg')",
+                backgroundImage: "url('/bg.jpg')",
                 backgroundSize: "cover",
-                backgroundPosition: "center"
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat"
             }}
         >
-            {/* Overlay oscuro para la imagen de fondo */}
-            <div
-                className="absolute inset-0 z-0 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse, rgba(17, 12, 22, 0.95) 40%, rgba(48,7,77,0.95) 120%)' }}
-            ></div>
+
 
             {/* Columna Izquierda: Usuario y Partidas */}
             <div className="flex flex-col gap-8 h-full z-10 relative">
