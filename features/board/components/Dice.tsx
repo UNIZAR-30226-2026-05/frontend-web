@@ -3,7 +3,11 @@
 import { useState } from "react";
 import PixelButton from "@/shared/components/PixelButton";
 
-export default function Dice() {
+interface DiceProps {
+  resultado?: number;
+}
+
+export default function Dice({ resultado }: DiceProps) {
   const [currentFace, setCurrentFace] = useState(1);
   const [isRolling, setIsRolling] = useState(false);
 
@@ -21,7 +25,11 @@ export default function Dice() {
     // Finalizar la tirada después de 1 segundo
     setTimeout(() => {
       clearInterval(rollInterval);
-      const finalFace = Math.floor(Math.random() * 6) + 1;
+      // Usar el resultado pasado por prop o generar uno aleatorio
+      const finalFace = (resultado && resultado >= 1 && resultado <= 6) 
+        ? resultado 
+        : Math.floor(Math.random() * 6) + 1;
+        
       setCurrentFace(finalFace);
       setIsRolling(false);
     }, 1000);
