@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react';
 
-export interface PixelInputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+export type PixelInputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
 const PixelInput = forwardRef<HTMLInputElement, PixelInputProps>(
     ({ className = '', style = {}, ...props }, ref) => {
