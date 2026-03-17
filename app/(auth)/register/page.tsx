@@ -18,17 +18,22 @@ export default function RegisterPage() {
             <div className="flex flex-col items-center gap-6 w-full max-w-sm">
                 <div className="flex flex-col gap-2 w-full text-center">
                     <label style={{ textShadow }} className="text-lg">Nombre de usuario</label>
-                    <PixelInput className="w-full text-center" />
+                    <PixelInput placeholder='Username'
+                    className="w-full text-center" />
                 </div>
 
                 <div className="flex flex-col gap-2 w-full text-center">
                     <label style={{ textShadow }} className="text-lg">Contraseña</label>
-                    <PixelInput type="password" className="w-full text-center" />
+                    <PixelInput type="password" 
+                                placeholder='Contraseña'
+                                className="w-full text-center" />
                 </div>
 
                 <div className="flex flex-col gap-2 w-full text-center">
                     <label style={{ textShadow }} className="text-lg">Repite la contraseña</label>
-                    <PixelInput type="password" className="w-full text-center" />
+                    <PixelInput type="password" 
+                                placeholder='Repite la contraseña'
+                                className="w-full text-center" />
                 </div>
             </div>
 

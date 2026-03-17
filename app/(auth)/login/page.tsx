@@ -18,12 +18,12 @@ export default function LoginPage() {
             <div className="flex flex-col items-center gap-6 w-full max-w-sm">
                 <div className="flex flex-col gap-2 w-full text-center">
                     <label style={{ textShadow }} className="text-lg">Nombre de usuario</label>
-                    <PixelInput className="w-full text-center" />
+                    <PixelInput className="w-full text-center" placeholder='Username'/>
                 </div>
 
                 <div className="flex flex-col gap-2 w-full text-center">
                     <label style={{ textShadow }} className="text-lg">Contraseña</label>
-                    <PixelInput type="password" className="w-full text-center" />
+                    <PixelInput type="password" className="w-full text-center" placeholder='Contraseña'/>
                 </div>
             </div>
 
