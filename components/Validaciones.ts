@@ -9,8 +9,8 @@ export const RegisterFormSchema = z.object({
     .max(20, 'El nombre de usuario no puede tener más de 20 caracteres'), // maximo 20 caracteres
 
     password: z.string()
-    .min(5, 'La contraseña debe tener al menos 5 caracteres') // minimo 5 caracteres
-    .max(100, 'La contraseña no puede tener más de 100 caracteres'), // maximo 100 caracteres
+    .min(8, 'La contraseña debe tener al menos 8 caracteres') // minimo 8 caracteres
+    .max(72, 'La contraseña no puede tener más de 100 caracteres'), // maximo 100 caracteres
 
     confirmPassword: z.string()
     
@@ -30,7 +30,7 @@ export const LogInFormSchema = z.object({
     .max(20, 'El nombre de usuario no puede tener más de 20 caracteres'), // maximo 20 caracteres
 
     password: z.string()
-    .min(5, 'La contraseña debe tener al menos 5 caracteres') // minimo 5 caracteres
+    .min(8, 'La contraseña debe tener al menos 8 caracteres') // minimo 8 caracteres
     .max(100, 'La contraseña no puede tener más de 100 caracteres'), // maximo 100 caracteres
 });
 
