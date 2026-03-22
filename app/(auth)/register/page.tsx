@@ -1,15 +1,15 @@
 import React from 'react';
 import Link from 'next/link';
-import PixelInput from '../../../shared/components/PixelInput';
-import PixelButton from '../../../shared/components/PixelButton';
+import PixelInput from '../../../components/UI/PixelInput';
+import PixelButton from '../../../components/UI/PixelButton';
 
 export default function RegisterPage() {
     const textShadow = "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000";
 
     return (
         <div className="flex flex-col items-center gap-6 font-pixel text-white">
-            <h1 
-                className="text-4xl text-center leading-relaxed mb-4" 
+            <h1
+                className="text-4xl text-center leading-relaxed mb-4"
                 style={{ textShadow }}
             >
                 Registrarse
@@ -37,9 +37,9 @@ export default function RegisterPage() {
                     Crear cuenta
                 </PixelButton>
 
-                <Link 
-                    href="/login" 
-                    className="text-sm text-center transition-colors hover:text-gray-300 leading-loose" 
+                <Link
+                    href="/login"
+                    className="text-sm text-center transition-colors hover:text-gray-300 leading-loose"
                     style={{ textShadow }}
                 >
                     Si ya tienes cuenta,<br />INICIA SESIÓN

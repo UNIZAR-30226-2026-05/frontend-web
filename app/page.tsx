@@ -1,5 +1,5 @@
 import Link from "next/link";
-import PixelButton from "@/shared/components/PixelButton";
+import PixelButton from "@/components/UI/PixelButton";
 
 export default function Home() {
   return (

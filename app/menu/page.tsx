@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import PixelButton from '@/shared/components/PixelButton';
+import PixelButton from '@/components/UI/PixelButton';
 
 export default function MenuPage() {
     return (
