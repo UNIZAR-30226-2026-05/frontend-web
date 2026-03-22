@@ -11,10 +11,10 @@ export interface PixelButtonProps extends React.ButtonHTMLAttributes<HTMLButtonE
 }
 
 const variantImages: Record<PixelButtonVariant, string> = {
-    red: '/red_button.jpg',
-    green: '/green_button.jpg',
-    purple_blue: '/purple_blue_button.jpg',
-    purple: '/purple_button.jpg',
+    red: '/btn_rojo.png',
+    green: '/btn_verde.png',
+    purple_blue: '/btn_azul.png',
+    purple: '/btn_morado.png',
 };
 
 export default function PixelButton({
