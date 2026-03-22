@@ -22,10 +22,10 @@ export interface Player {
  * En el futuro, estos datos se obtendrán del backend o del estado global.
  */
 const MOCK_PLAYERS: Player[] = [
-  { id: "1", name: "David", role: "Banquero", coins: 1500, avatarUrl: "/personajes_profile/banquero_profile.png" },
-  { id: "2", name: "Elena", role: "Escapista", coins: 850, avatarUrl: "/personajes_profile/escapista_profile.png" },
-  { id: "3", name: "Marcos", role: "Videojugador", coins: 1200, avatarUrl: "/personajes_profile/videojugador_profile.png" },
-  { id: "4", name: "Lucía", role: "Vidente", coins: 950, avatarUrl: "/personajes_profile/vidente_profile.png" },
+  { id: "1", name: "David", role: "Banquero", coins: 2, avatarUrl: "/personajes_profile/banquero_profile.png" },
+  { id: "2", name: "Elena", role: "Escapista", coins: 5, avatarUrl: "/personajes_profile/escapista_profile.png" },
+  { id: "3", name: "Marcos", role: "Videojugador", coins: 3, avatarUrl: "/personajes_profile/videojugador_profile.png" },
+  { id: "4", name: "Lucía", role: "Vidente", coins: 1, avatarUrl: "/personajes_profile/vidente_profile.png" },
 ];
 
 const RoleAvatar = ({ player }: { player: Player }) => {
@@ -59,7 +59,7 @@ const PlayerCard = ({ player }: { player: Player }) => {
             {player.coins}¢
           </span>
         </div>
-        
+
         <div className="text-[9px] text-[var(--color-sp-text-light)]/70 font-pixel uppercase tracking-wider leading-none">
           {player.role}
         </div>
@@ -74,7 +74,7 @@ const PlayerHUD = () => {
       {MOCK_PLAYERS.map((player) => (
         <PlayerCard key={player.id} player={player} />
       ))}
-      
+
       {/* 
           NOTA PARA EL FUTURO:
           Aquí se conectará el estado real de los jugadores.
