@@ -4,6 +4,7 @@ import Dice from "@/features/board/components/Dice";
 import PlayerHUD from "@/features/board/components/PlayerHUD";
 import PixelButton from "@/components/UI/PixelButton";
 import ShopModal from "@/features/shop/components/ShopModal";
+import BoardOverlay from "@/features/board/components/BoardOverlay";
 import { useState } from "react";
 
 export default function GamePage() {
@@ -11,6 +12,9 @@ export default function GamePage() {
 
   return (
     <main className="relative min-h-screen w-full overflow-hidden bg-[url('/tablero_def.png')] bg-contain bg-no-repeat bg-center">
+      
+      {/* Capa de Fichas de Jugadores y Lógica de Tablero */}
+      <BoardOverlay />
 
       {/* HUD de Jugadores (Lado izquierdo) */}
       <div className="absolute top-2 left-2 z-50">
