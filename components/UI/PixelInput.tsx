@@ -4,9 +4,12 @@ export interface PixelInputProps extends React.InputHTMLAttributes<HTMLInputElem
 
 const PixelInput = forwardRef<HTMLInputElement, PixelInputProps>(
     ({ className = '', style = {}, ...props }, ref) => {
-        const baseClasses = "bg-[#1f093d] text-white font-pixel border-[4px] border-white rounded-[2px] outline-none focus:outline-none px-4 py-3";
+        const baseClasses = "text-white font-pixel rounded-[2px] outline-none focus:outline-none px-4 py-3";
         
         const combinedStyle = {
+            backgroundImage: "url('/rellenable.png')",
+            backgroundSize: '100% 100%',
+            backgroundRepeat: 'no-repeat',
             boxShadow: 'inset 0 0 5px rgba(150, 100, 255, 0.5)',
             ...style
         };

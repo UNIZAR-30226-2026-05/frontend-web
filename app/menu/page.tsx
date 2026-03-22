@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 import PixelButton from '@/components/UI/PixelButton';
 
 export default function MenuPage() {
@@ -8,7 +9,7 @@ export default function MenuPage() {
         <div
             className="text-white min-h-screen grid grid-cols-3 gap-8 p-8 font-pixel font-normal text-xl tracking-wide relative overflow-hidden"
             style={{
-                backgroundImage: "url('/bg.jpg')",
+                backgroundImage: "url('/lobby.png')",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 backgroundRepeat: "no-repeat"
@@ -20,9 +21,14 @@ export default function MenuPage() {
             <div className="flex flex-col gap-8 h-full z-10 relative">
                 {/* Usuario Component */}
                 <div className="flex items-center gap-4 p-4 mt-2">
-                    <img src="/logo_NOFondo.png" alt="Logo SP" className="w-[8rem] h-auto drop-shadow-[0_4px_0_rgba(0,0,0,1)] z-10" />
+                    {/* Zona interactiva del Logo (dibujado en el fondo) */}
+                    <div 
+                        className="absolute top-[3rem] left-[3rem] w-[12rem] h-[10rem] cursor-pointer z-10"
+                        onClick={() => window.location.href = '/'}
+                        aria-label="Snow Party Logo"
+                    />
                     <span
-                        className="text-[2.5rem] tracking-widest font-bold text-white whitespace-nowrap"
+                        className="text-[2.5rem] tracking-widest font-bold text-white whitespace-nowrap ml-[14rem]"
                         style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
                     >
                         Usuario
@@ -112,10 +118,11 @@ export default function MenuPage() {
                     <div className="relative w-full max-w-[24rem]">
                         <input
                             type="text"
-                            className="w-full text-center text-[2rem] font-bold font-pixel tracking-widest bg-[#1f093d] text-white py-4 outline-none transition-colors"
+                            className="w-full text-center text-[2rem] font-bold font-pixel tracking-widest text-white py-4 outline-none transition-colors"
                             style={{
-                                border: "4px solid #fff",
-                                borderRadius: "2px",
+                                backgroundImage: "url('/rellenable.png')",
+                                backgroundSize: '100% 100%',
+                                backgroundRepeat: 'no-repeat',
                                 boxShadow: "inset 0 0 5px rgba(150, 100, 255, 0.5)",
                                 textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000"
                             }}
@@ -179,26 +186,12 @@ export default function MenuPage() {
                     </div>
                 </div>
 
-                {/* Mascota y Reglas */}
-                <div className="flex justify-end items-end pb-2 pr-4 hover:scale-105 transition-transform cursor-pointer absolute bottom-[-1rem] right-[-1rem] group">
-                    <div className="flex flex-col items-center relative gap-2">
-                        <div className="relative">
-                            <img src="/personajes/mago.png" alt="Mago" className="w-[14rem] drop-shadow-[0_6px_0_rgba(0,0,0,1)] z-0 -scale-x-100" />
-                            <div
-                                className="absolute -top-[1.2rem] -left-[2.8rem] text-[5.5rem] text-white font-bold rotate-[-15deg] group-hover:scale-110 transition-transform"
-                                style={{ textShadow: "3px 0 0 #000, -3px 0 0 #000, 0 3px 0 #000, 0 -3px 0 #000" }}
-                            >
-                                ?
-                            </div>
-                        </div>
-                        <span
-                            className="text-[2.5rem] tracking-widest z-10 text-white font-bold whitespace-nowrap"
-                            style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
-                        >
-                            Reglas
-                        </span>
-                    </div>
-                </div>
+                {/* Zona interactiva de Reglas (Mago dibujado en el fondo) */}
+                <Link 
+                    href="#rules"
+                    className="absolute bottom-0 right-0 w-[20rem] h-[25rem] cursor-pointer z-10"
+                    aria-label="Reglas del juego"
+                />
 
             </div>
 
