@@ -11,13 +11,13 @@ interface ShopItem {
 }
 
 const SHOP_ITEMS: ShopItem[] = [
-  { id: 1, name: "Avanzar/Retroceder", emoji: "👞", price: 10 },
-  { id: 2, name: "Mejorar/Empeorar dados", emoji: "🎲", price: 15 },
-  { id: 3, name: "Barreras de bloqueo", emoji: "🚧", price: 12 },
-  { id: 4, name: "Robar monedas", emoji: "💰", price: 20 },
-  { id: 5, name: "Ruleta", emoji: "🎡", price: 8 },
-  { id: 6, name: "Salvavidas", emoji: "🛟", price: 5 },
-  { id: 7, name: "Quitar turno", emoji: "🛑", price: 18 },
+  { id: 1, name: "Avanzar 3 casillas", emoji: "👞", price: 2 },
+  { id: 2, name: "Dado de Plata", emoji: "🎲", price: 3 },
+  { id: 3, name: "Barrera de bloqueo", emoji: "🚧", price: 6 },
+  { id: 4, name: "Robar 2 monedas", emoji: "💰", price: 3 },
+  { id: 5, name: "Ruleta", emoji: "🎡", price: 4 },
+  { id: 6, name: "Salvavidas", emoji: "🛟", price: 3 },
+  { id: 7, name: "Quitar turno", emoji: "🛑", price: 6 },
 ];
 
 interface ShopModalProps {

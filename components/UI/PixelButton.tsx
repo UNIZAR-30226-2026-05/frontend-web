@@ -50,7 +50,7 @@ export default function PixelButton({
                 src={variantImages[variant]} 
                 alt={`${variant} button background`}
                 fill
-                className="absolute inset-0 w-full h-full object-fill -z-10 pointer-events-none"
+                className="absolute inset-0 w-full h-full object-fill z-0 pointer-events-none"
                 unoptimized
             />
             <span className="relative z-10 w-full flex justify-center items-center">
