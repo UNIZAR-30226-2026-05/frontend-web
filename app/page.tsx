@@ -15,7 +15,7 @@ export default function Home() {
     >
 
       {/* Zona interactiva del Logo (dibujado en el fondo) */}
-      <div 
+      <div
         className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[24rem] h-[15rem] cursor-pointer z-10"
         onClick={() => window.location.href = '/'}
         aria-label="Snow Party Logo"
@@ -25,7 +25,7 @@ export default function Home() {
       <div className="flex gap-6 mt-12 z-10">
         <Link href="/login">
           <PixelButton
-            variant="purple_blue"
+            variant="purple"
             className="font-pixel text-xl md:text-2xl"
             style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
           >

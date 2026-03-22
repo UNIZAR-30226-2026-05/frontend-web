@@ -51,7 +51,7 @@ export default function Dice({ resultado, resultadoAdicional, type = "normal" }:
     // Finalizar la tirada después de 1 segundo
     setTimeout(() => {
       clearInterval(rollInterval);
-      
+
       // Dado Normal (siempre 1-6)
       let finalNormal: number;
       if (resultado && resultado >= 1 && resultado <= 6) {
@@ -94,8 +94,8 @@ export default function Dice({ resultado, resultadoAdicional, type = "normal" }:
               onClick={() => setActiveType(t)}
               disabled={isRolling}
               className={`px-3 py-1 text-[10px] rounded border transition-colors capitalize
-                ${activeType === t 
-                  ? "bg-white text-black border-white" 
+                ${activeType === t
+                  ? "bg-white text-black border-white"
                   : "bg-transparent text-white border-white/30 hover:border-white/60"}
                 disabled:opacity-50 disabled:cursor-not-allowed
               `}
@@ -136,7 +136,7 @@ export default function Dice({ resultado, resultadoAdicional, type = "normal" }:
       </div>
 
       {/* Botón de acción */}
-      <PixelButton onClick={rollDice} disabled={isRolling} variant="purple_blue" className="w-full">
+      <PixelButton onClick={rollDice} disabled={isRolling} variant="purple" className="w-full">
         {isRolling ? "Tirando..." : (activeType === "normal" ? "Tirar Dado" : "Tirar Dados")}
       </PixelButton>
     </div>

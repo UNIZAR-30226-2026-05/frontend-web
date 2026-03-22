@@ -22,7 +22,7 @@ export default function MenuPage() {
                 {/* Usuario Component */}
                 <div className="flex items-center gap-4 p-4 mt-2">
                     {/* Zona interactiva del Logo (dibujado en el fondo) */}
-                    <div 
+                    <div
                         className="absolute top-[3rem] left-[3rem] w-[12rem] h-[10rem] cursor-pointer z-10"
                         onClick={() => window.location.href = '/'}
                         aria-label="Snow Party Logo"
@@ -94,7 +94,7 @@ export default function MenuPage() {
                             </span>
                         </div>
                         <div className="flex justify-end">
-                            <PixelButton variant="purple_blue" className="!px-6 !py-3 !text-[1.3rem] !tracking-wider">
+                            <PixelButton variant="purple" className="!px-6 !py-3 !text-[1.3rem] !tracking-wider">
                                 Usuario
                             </PixelButton>
                         </div>
@@ -187,8 +187,8 @@ export default function MenuPage() {
                 </div>
 
                 {/* Zona interactiva de Reglas (Mago dibujado en el fondo) */}
-                <Link 
-                    href="#rules"
+                <Link
+                    href="/rules"
                     className="absolute bottom-0 right-0 w-[20rem] h-[25rem] cursor-pointer z-10"
                     aria-label="Reglas del juego"
                 />
