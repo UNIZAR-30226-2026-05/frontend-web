@@ -69,6 +69,11 @@ export default function LoginForm() {
                     <PixelButton variant="purple">
                         Entrar
                     </PixelButton>
+                    {formState.backendErrors && ( // si hay errores del backend, los mostramos debajo del botón
+                        <div className="text-red-500 text-sm text-center">
+                            {formState.backendErrors}
+                        </div>
+                    )}
 
                     <Link 
                         href="/register" 
