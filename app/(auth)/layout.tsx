@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 
 export default function AuthLayout({
     children,
@@ -7,13 +8,19 @@ export default function AuthLayout({
 }) {
     return (
         <div
-            className="min-h-screen flex flex-col items-center justify-center relative"
+            className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
             style={{
-                backgroundImage: "url('/bg.jpg')",
+                backgroundImage: "url('/lobby.png')",
                 backgroundSize: 'cover',
                 backgroundPosition: 'center'
             }}
         >
+            {/* Zona interactiva del Logo (dibujado en el fondo) */}
+            <Link 
+                href="/"
+                className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[24rem] h-[15rem] cursor-pointer z-20"
+                aria-label="Volver al inicio"
+            />
 
             <div className="z-10 relative">
                 {children}

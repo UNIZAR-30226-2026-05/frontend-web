@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import PixelButton from "@/components/UI/PixelButton";
 
@@ -6,24 +8,24 @@ export default function Home() {
     <main
       className="flex min-h-screen flex-col items-center justify-center relative overflow-hidden"
       style={{
-        backgroundImage: "url('/bg.jpg')",
+        backgroundImage: "url('/lobby.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
 
-      {/* Logo del juego */}
-      <img
-        src="/logo_NOFondo.png"
-        alt="Snow Party Logo"
-        className="w-[20rem] md:w-[24rem] z-10 hover:scale-105 transition-transform duration-300 ease-in-out drop-shadow-2xl"
+      {/* Zona interactiva del Logo (dibujado en el fondo) */}
+      <div
+        className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[24rem] h-[15rem] cursor-pointer z-10"
+        onClick={() => window.location.href = '/'}
+        aria-label="Snow Party Logo"
       />
 
       {/* Botones de acción */}
       <div className="flex gap-6 mt-12 z-10">
         <Link href="/login">
           <PixelButton
-            variant="purple_blue"
+            variant="purple"
             className="font-pixel text-xl md:text-2xl"
             style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
           >

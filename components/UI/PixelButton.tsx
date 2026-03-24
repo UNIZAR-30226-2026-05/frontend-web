@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 
-export type PixelButtonVariant = 'purple' | 'purple_blue' | 'red' | 'green';
+export type PixelButtonVariant = 'purple' | 'red' | 'green';
 
 export interface PixelButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: PixelButtonVariant;
@@ -11,10 +11,9 @@ export interface PixelButtonProps extends React.ButtonHTMLAttributes<HTMLButtonE
 }
 
 const variantImages: Record<PixelButtonVariant, string> = {
-    red: '/red_button.jpg',
-    green: '/green_button.jpg',
-    purple_blue: '/purple_blue_button.jpg',
-    purple: '/purple_button.jpg',
+    red: '/btn_rojo.png',
+    green: '/btn_verde.png',
+    purple: '/btn_morado.png',
 };
 
 export default function PixelButton({
@@ -46,11 +45,11 @@ export default function PixelButton({
             style={combinedStyle}
             {...props}
         >
-            <Image 
-                src={variantImages[variant]} 
+            <Image
+                src={variantImages[variant]}
                 alt={`${variant} button background`}
                 fill
-                className="absolute inset-0 w-full h-full object-fill -z-10 pointer-events-none"
+                className="absolute inset-0 w-full h-full object-fill z-0 pointer-events-none"
                 unoptimized
             />
             <span className="relative z-10 w-full flex justify-center items-center">
