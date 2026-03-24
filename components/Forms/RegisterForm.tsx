@@ -84,7 +84,7 @@ export default function RegisterForm() {
                         Crear cuenta
                     </PixelButton>
                     {formState.backendErrors && ( // si hay errores del backend, los mostramos debajo del botón
-                        <div className="text-red-500 text-sm text-center">
+                        <div className="text-red-500 text-sm mt-1">
                             {formState.backendErrors}
                         </div>
                     )}

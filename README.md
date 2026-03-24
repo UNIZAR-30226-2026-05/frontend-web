@@ -37,15 +37,6 @@ npm install react
 ```
 Para utilizar React components debemos importar dicha librería, la versión con la que se va a trabajar es React 19
 
-### jose
-```
-npm install jose
-```
-Esta librería nos proporciona soporte para realizar tareas relacionadas al JWT, en concreto, para decodificar, verificar y validar el token.  
-Al instalarla npm nos dará un warning de que hay una vulneravilidad con un paquete, para solucionar dicho problema, ejecutaremos el siguiente comando:  
-```
-npm audit fix
-```
 
 ### Zod
 ```
