@@ -18,7 +18,7 @@ export default function AuthLayout({
             {/* Zona interactiva del Logo (dibujado en el fondo) */}
             <Link 
                 href="/"
-                className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[24rem] h-[15rem] cursor-pointer z-20"
+                className="absolute top-4 left-4 w-[12rem] h-[10rem] cursor-pointer z-20"
                 aria-label="Volver al inicio"
             />
 
