@@ -5,14 +5,30 @@ import PlayerHUD from "@/features/board/components/PlayerHUD";
 import PixelButton from "@/components/UI/PixelButton";
 import ShopModal from "@/features/shop/components/ShopModal";
 import BoardOverlay from "@/features/board/components/BoardOverlay";
+import CharacterSelectionModal from "@/features/board/components/CharacterSelectionModal";
 import { useState } from "react";
 
 export default function GamePage() {
   const [isShopOpen, setIsShopOpen] = useState(false);
+  const [showCharacterSelect, setShowCharacterSelect] = useState(true);
+  const [mockUnavailableRoles] = useState(['banquero']);
+
+  const handleCharacterSelect = (roleId: string) => {
+    console.log(`Personaje seleccionado: ${roleId}`);
+    setShowCharacterSelect(false);
+  };
 
   return (
     <main className="relative min-h-screen w-full overflow-hidden bg-[url('/tablero_def.png')] bg-contain bg-no-repeat bg-center">
       
+      {/* Modal de Selección de Personaje (Mandatorio) */}
+      {showCharacterSelect && (
+        <CharacterSelectionModal 
+          unavailableRoles={mockUnavailableRoles} 
+          onSelect={handleCharacterSelect} 
+        />
+      )}
+
       {/* Capa de Fichas de Jugadores y Lógica de Tablero */}
       <BoardOverlay />
 
