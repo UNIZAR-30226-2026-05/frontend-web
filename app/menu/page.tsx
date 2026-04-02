@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import PixelButton from '@/components/UI/PixelButton';
 
 import { CrearPartidaService, UnirsePartidaService } from '@/lib/backend';
-import { replaceGameSocket } from '@/lib/gameSocket';
+import { replaceGameSocket, setLobbyPlayers } from '@/lib/gameSocket';
 
 export default function MenuPage() {
     const router = useRouter();
@@ -17,9 +17,39 @@ export default function MenuPage() {
     const [joinError, setJoinError] = useState<string | null>(null);
     const [joinSuccess, setJoinSuccess] = useState<string | null>(null);
     const [playersConnected, setPlayersConnected] = useState<number | null>(null);
+    const [jugadoresEnLobby, setJugadoresEnLobby] = useState<string[]>([]);
 
+    const usernameRef = useRef<string | null>(null);
     const socketRef = useRef<WebSocket | null>(null);
     const detachSocketListenersRef = useRef<(() => void) | null>(null);
+
+    const updateJugadoresEnLobby = useCallback(
+        (players: unknown[]) => {
+            const otrosJugadores = players
+                .map((player) => {
+                    if (typeof player === 'string') {
+                        return player;
+                    }
+
+                    if (
+                        typeof player === 'object' &&
+                        player !== null &&
+                        'username' in player &&
+                        typeof (player as { username: unknown }).username === 'string'
+                    ) {
+                        return (player as { username: string }).username;
+                    }
+
+                    return null;
+                })
+                .filter((usernameJugador): usernameJugador is string => (
+                    !!usernameJugador && usernameJugador !== usernameRef.current
+                ));
+
+            setJugadoresEnLobby(otrosJugadores);
+        },
+        []
+    );
 
     const bindSocketListeners = useCallback((ws: WebSocket, roomId: number) => {
         const onOpen = () => {
@@ -42,11 +72,17 @@ export default function MenuPage() {
 
                 if (message.type === 'lobby_update') {
                     if (Array.isArray(message.players_connected)) {
+                        setLobbyPlayers(message.players_connected);
                         setPlayersConnected(message.players_connected.length);
+                        updateJugadoresEnLobby(message.players_connected);
                     } 
                 }
 
                 if (message.type === 'game_start') {
+                    if (Array.isArray(message.players_connected)) {
+                        setLobbyPlayers(message.players_connected);
+                    }
+
                     console.log('La partida ha comenzado, redirigiendo a /game');
                     router.push('/game');
                 }
@@ -78,7 +114,7 @@ export default function MenuPage() {
             ws.removeEventListener('close', onClose);
             ws.removeEventListener('error', onError);
         };
-    }, [router]);
+    }, [router, updateJugadoresEnLobby]);
 
     const connectToRoom = useCallback((roomId: number, token: string | null) => {
         const backendHost = process.env.NEXT_PUBLIC_API_URL || window.location.host;
@@ -129,6 +165,7 @@ export default function MenuPage() {
             const dataUser = resUser.ok ? await resUser.json() : null;
             const currentUsername = dataUser?.username ?? null;
             const token = dataUser?.token ?? null;
+            usernameRef.current = currentUsername;
             setUsername(currentUsername);
             setAuthToken(token);
 
@@ -252,9 +289,9 @@ export default function MenuPage() {
                     </div>
 
                     <div className="flex justify-between w-full gap-5">
-                        <PixelButton variant="purple" className="flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider">Usuario 2</PixelButton>
-                        <PixelButton variant="purple" className="flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider opacity-70">Vacío</PixelButton>
-                        <PixelButton variant="purple" className="flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider opacity-70">Vacío</PixelButton>
+                        <PixelButton variant="purple" className="flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider">{jugadoresEnLobby[0] ?? 'Vacío'}</PixelButton>
+                        <PixelButton variant="purple" className="flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider opacity-70">{jugadoresEnLobby[1] ?? 'Vacío'}</PixelButton>
+                        <PixelButton variant="purple" className="flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider opacity-70">{jugadoresEnLobby[2] ?? 'Vacío'}</PixelButton>
                     </div>
                 </div>
 
