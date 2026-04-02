@@ -5,11 +5,28 @@ import PlayerHUD from "@/features/board/components/PlayerHUD";
 import PixelButton from "@/components/UI/PixelButton";
 import ShopModal from "@/features/shop/components/ShopModal";
 import BoardOverlay from "@/features/board/components/BoardOverlay";
+import CharacterSelectionModal from "@/features/board/components/CharacterSelectionModal";
 import { getGameSocket } from "@/lib/gameSocket";
 import { useEffect, useState } from "react";
+import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/components/OrderMinigameOverlay";
 
 export default function GamePage() {
   const [isShopOpen, setIsShopOpen] = useState(false);
+  const [showCharacterSelect, setShowCharacterSelect] = useState(true);
+  const [mockUnavailableRoles] = useState(['banquero']);
+  
+  // Debug State for Minigames
+  const [activeMinigame, setActiveMinigame] = useState<OrderMinigameType | null>(null);
+
+  const handleCharacterSelect = (roleId: string) => {
+    console.log(`Personaje seleccionado: ${roleId}`);
+    setShowCharacterSelect(false);
+  };
+
+  const handleMinigameAction = (result: any) => {
+    console.log("Minigame Action:", activeMinigame, result);
+    // Ya no salimos automáticamente después del timeout
+  };
 
   useEffect(() => {
     const ws = getGameSocket();
@@ -43,6 +60,14 @@ export default function GamePage() {
   return (
     <main className="relative min-h-screen w-full overflow-hidden bg-[url('/tablero_def.png')] bg-contain bg-no-repeat bg-center">
       
+      {/* Modal de Selección de Personaje (Mandatorio) */}
+      {showCharacterSelect && (
+        <CharacterSelectionModal 
+          unavailableRoles={mockUnavailableRoles} 
+          onSelect={handleCharacterSelect} 
+        />
+      )}
+
       {/* Capa de Fichas de Jugadores y Lógica de Tablero */}
       <BoardOverlay />
 
@@ -70,7 +95,29 @@ export default function GamePage() {
       {/* Contenedor superpuesto para controles (esquina inferior derecha) */}
       <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-10 z-50 flex flex-col items-end gap-4">
         <Dice />
+        
+        {/* Debug: Menú de Minijuegos */}
+        <div className="flex flex-wrap justify-end gap-2 max-w-[200px]">
+          {(['tren', 'reflejos', 'pan', 'crono', 'cartas'] as OrderMinigameType[]).map((type) => (
+            <button
+              key={type}
+              onClick={() => setActiveMinigame(type)}
+              className="bg-black/50 hover:bg-black/80 text-white text-[8px] font-pixel p-2 border border-white/20 rounded uppercase"
+            >
+              {type}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Overlay de Minijuegos de Orden */}
+      {activeMinigame && (
+        <OrderMinigameOverlay 
+          minigameType={activeMinigame} 
+          onAction={handleMinigameAction}
+          onClose={() => setActiveMinigame(null)}
+        />
+      )}
 
     </main>
   );
