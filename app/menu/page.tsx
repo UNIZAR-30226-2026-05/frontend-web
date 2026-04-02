@@ -117,6 +117,16 @@ export default function MenuPage() {
     }, [router, updateJugadoresEnLobby]);
 
     const connectToRoom = useCallback((roomId: number, token: string | null) => {
+        // Solo evitar reconexión si ya hay socket abierto A LA MISMA SALA
+        if (
+            socketRef.current &&
+            (socketRef.current.readyState === WebSocket.OPEN ||
+                socketRef.current.readyState === WebSocket.CONNECTING) &&
+            socketRef.current.url.includes(`/ws/partida/${roomId}`)
+        ) {
+            console.log('Socket ya activo para esta sala, omitiendo reconexión');
+            return;
+        }
         const backendHost = process.env.NEXT_PUBLIC_API_URL || window.location.host;
         const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const normalizedHost = backendHost.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '');
@@ -161,9 +171,9 @@ export default function MenuPage() {
 
     useEffect(() => {
         const init = async () => {
+            const currentUsername = window.sessionStorage.getItem('username');
             const resUser = await fetch('/api/me', { method: 'GET' });
             const dataUser = resUser.ok ? await resUser.json() : null;
-            const currentUsername = dataUser?.username ?? null;
             const token = dataUser?.token ?? null;
             usernameRef.current = currentUsername;
             setUsername(currentUsername);

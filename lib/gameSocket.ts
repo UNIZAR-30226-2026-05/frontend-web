@@ -11,9 +11,12 @@ export function setGameSocket(socket: WebSocket | null): void {
 
 export function replaceGameSocket(socket: WebSocket): WebSocket {
     if (gameSocket && gameSocket !== socket) {
-        gameSocket.close();
+        // Solo cerrar si el socket anterior no está ya cerrado/cerrando
+        if (gameSocket.readyState === WebSocket.OPEN || 
+            gameSocket.readyState === WebSocket.CONNECTING) {
+            gameSocket.close();
+        }
     }
-
     gameSocket = socket;
     return gameSocket;
 }

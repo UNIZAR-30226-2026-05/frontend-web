@@ -30,11 +30,20 @@ export default function LoginForm() {
 
     const [formState, formAction] = useActionState(actions.auth.loginUserAction, INITIAL_STATE);
 
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        const formData = new FormData(event.currentTarget);
+        const username = formData.get('username');
+
+        if (typeof username === 'string' && username.trim()) {
+            window.sessionStorage.setItem('username', username.trim());
+        }
+    };
+
     console.log('formState:', formState); // Para verificar el estado del form en cada renderizado
     
     return (
         <div className="flex flex-col items-center gap-6 font-pixel text-white">
-            <form action={formAction}>
+            <form action={formAction} onSubmit={handleSubmit}>
                 <h1 
                     className="text-4xl text-center leading-relaxed mb-4" 
                     style={{ textShadow }}
