@@ -150,6 +150,7 @@ export async function loginUserAction(prevState: FormState, formData: FormData):
 
     const cookiesStore = await cookies();
     cookiesStore.set('jwt', response.access_token, cookieConfig); // guardamos el token en una cookie para mantener la sesión del usuario
+    cookiesStore.set('username', fields.username, cookieConfig); // guardamos el username para recuperarlo en el menu mediante GET /api/me
 
     redirect('/menu'); // redirigimos al usuario a la página principal después de iniciar sesión
 

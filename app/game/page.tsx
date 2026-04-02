@@ -5,10 +5,40 @@ import PlayerHUD from "@/features/board/components/PlayerHUD";
 import PixelButton from "@/components/UI/PixelButton";
 import ShopModal from "@/features/shop/components/ShopModal";
 import BoardOverlay from "@/features/board/components/BoardOverlay";
-import { useState } from "react";
+import { getGameSocket } from "@/lib/gameSocket";
+import { useEffect, useState } from "react";
 
 export default function GamePage() {
   const [isShopOpen, setIsShopOpen] = useState(false);
+
+  useEffect(() => {
+    const ws = getGameSocket();
+
+    if (!ws) {
+      console.warn("No hay una conexion WebSocket activa en /game");
+      return;
+    }
+
+    const onMessage = (event: MessageEvent) => {
+      console.log("Mensaje en /game:", event.data);
+    };
+
+    const onClose = (event: CloseEvent) => {
+      console.log("WebSocket cerrado en /game", {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+      });
+    };
+
+    ws.addEventListener("message", onMessage);
+    ws.addEventListener("close", onClose);
+
+    return () => {
+      ws.removeEventListener("message", onMessage);
+      ws.removeEventListener("close", onClose);
+    };
+  }, []);
 
   return (
     <main className="relative min-h-screen w-full overflow-hidden bg-[url('/tablero_def.png')] bg-contain bg-no-repeat bg-center">
