@@ -43,11 +43,7 @@ export default function MenuPage() {
                 if (message.type === 'lobby_update') {
                     if (Array.isArray(message.players_connected)) {
                         setPlayersConnected(message.players_connected.length);
-                    } else if (typeof message.players_connected === 'number') {
-                        setPlayersConnected(message.players_connected);
-                    } else if (typeof message.numJugadores === 'number') {
-                        setPlayersConnected(message.numJugadores);
-                    }
+                    } 
                 }
 
                 if (message.type === 'game_start') {
