@@ -38,6 +38,8 @@ interface GameState {
   /** Últimos dados tirados (de cualquier jugador) */
   lastDice: { dado1: number; dado2: number; user: string; diceType: DiceType } | null;
   myUsername: string | null;
+  /** Mostrar el minijuego de reflejos para determinar el orden de la siguiente ronda */
+  showOrderMinigame: boolean;
 }
 
 // -------------------------------------------------------------------
@@ -51,7 +53,9 @@ type Action =
   | { type: 'BALANCES_CHANGED'; balances: Record<string, number> }
   | { type: 'MINIJUEGO_RESULTADOS'; nuevo_orden: Record<string, number> }
   | { type: 'RECONNECT_SUCCESS'; boardState: { positions?: Record<string, number>; balances?: Record<string, number>; characters?: Record<string, string>; order?: Record<string, number> } }
-  | { type: 'LOCAL_END_ROUND' };
+  | { type: 'LOCAL_END_ROUND' }
+  | { type: 'SHOW_ORDER_MINIGAME' }
+  | { type: 'HIDE_ORDER_MINIGAME' };
 
 // -------------------------------------------------------------------
 // Reducer
@@ -184,6 +188,12 @@ function gameReducer(state: GameState, action: Action): GameState {
     case 'LOCAL_END_ROUND':
       return { ...state, awaitingEndRound: false };
 
+    case 'SHOW_ORDER_MINIGAME':
+      return { ...state, showOrderMinigame: true };
+
+    case 'HIDE_ORDER_MINIGAME':
+      return { ...state, showOrderMinigame: false };
+
     default:
       return state;
   }
@@ -196,6 +206,7 @@ const initialState: GameState = {
   awaitingEndRound: false,
   lastDice: null,
   myUsername: null,
+  showOrderMinigame: false,
 };
 
 // -------------------------------------------------------------------
@@ -210,6 +221,8 @@ export interface GameContextType {
   playerOrder: GamePlayer[];
   sendMovePlayer: () => void;
   sendEndRound: () => void;
+  /** Enviar puntuación del minijuego de reflejos al backend y cerrar el overlay */
+  sendScoreReflejos: (reactionTimeMs: number) => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -311,6 +324,33 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             }
             break;
           }
+
+          case 'choose_minijuego': {
+            // No se muestra UI de elección: auto-responder siempre con Reflejos
+            const ws = getGameSocket();
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                action: 'ini_round',
+                payload: { minijuego: 'Reflejos', descripcion: 'Reacciona en cuanto cambie el color' },
+              }));
+            }
+            break;
+          }
+
+          case 'ini_minijuego':
+            dispatch({ type: 'SHOW_ORDER_MINIGAME' });
+            break;
+
+          // Mensajes de casillas especiales: ignorados intencionalmente
+          case 'tipo_casilla':
+          case 'intercambiar_objeto':
+          case 'obtener_objeto':
+          case 'minijuego_casilla':
+          case 'inventory_updated':
+          case 'objeto_usado':
+          // Habilidades de personaje del vidente: ignoradas intencionalmente
+          case 'dice_shown':
+            break;
         }
       } catch {
         // Mensaje no-JSON u otros errores → ignorar
@@ -341,6 +381,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'LOCAL_END_ROUND' });
   }, []);
 
+  const sendScoreReflejos = useCallback((reactionTimeMs: number) => {
+    const ws = getGameSocket();
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.warn('WebSocket no disponible para score_minijuego');
+      return;
+    }
+    // El backend espera ms * 1000 para reflejos
+    ws.send(JSON.stringify({
+      action: 'score_minijuego',
+      payload: { score: reactionTimeMs * 1000 },
+    }));
+    dispatch({ type: 'HIDE_ORDER_MINIGAME' });
+  }, []);
+
   // Datos derivados
   const myPlayer = state.myUsername ? (state.players[state.myUsername] ?? null) : null;
   const isMyTurn =
@@ -350,7 +404,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
-    <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound }}>
+    <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos }}>
       {children}
     </GameContext.Provider>
   );

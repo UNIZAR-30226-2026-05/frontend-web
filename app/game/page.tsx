@@ -7,24 +7,39 @@ import ShopModal from "@/features/shop/components/ShopModal";
 import BoardOverlay from "@/features/board/components/BoardOverlay";
 import CharacterSelectionModal from "@/features/board/components/CharacterSelectionModal";
 import { GameProvider } from "@/features/board/context/GameContext";
+import { useGameContext } from "@/features/board/context/GameContext";
 import { getGameSocket, getLobbyPlayers } from "@/lib/gameSocket";
 import { useEffect, useState } from "react";
 import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/components/OrderMinigameOverlay";
 
+// Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
+const WS_NAME_TO_ID: Record<string, string> = {
+  Banquero: 'banquero',
+  Videojugador: 'videojugador',
+  Escapista: 'escapista',
+  Vidente: 'vidente',
+};
+
+/** Muestra el overlay de reflejos cuando el backend lo indica y envía la puntuación. */
+function ReflejosMinigameController() {
+  const { state, sendScoreReflejos } = useGameContext();
+
+  if (!state.showOrderMinigame) return null;
+
+  return (
+    <OrderMinigameOverlay
+      minigameType="reflejos"
+      onAction={(result: { reactionTimeMs: number }) => sendScoreReflejos(result.reactionTimeMs)}
+      onClose={() => {/* no se puede cerrar manualmente */}}
+    />
+  );
+}
+
 export default function GamePage() {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [showCharacterSelect, setShowCharacterSelect] = useState(true);
-  const [mockUnavailableRoles] = useState(['banquero']);
   const [lobbyPlayers] = useState<unknown[]>(() => getLobbyPlayers());
   const [unavailableRoles, setUnavailableRoles] = useState<string[]>([]);
-  
-  // Mapeo nombre WS → id local
-  const WS_NAME_TO_ID: Record<string, string> = {
-    Banquero: 'banquero',
-    Videojugador: 'videojugador',
-    Escapista: 'escapista',
-    Vidente: 'vidente',
-  };
 
   // Debug State for Minigames
   const [activeMinigame, setActiveMinigame] = useState<OrderMinigameType | null>(null);
@@ -151,6 +166,9 @@ export default function GamePage() {
           ))}
         </div>
       </div>
+
+      {/* Overlay de Minijuego de Orden (Reflejos) - gestionado por el backend */}
+      <ReflejosMinigameController />
 
       {/* Overlay de Minijuegos de Orden */}
       {activeMinigame && (
