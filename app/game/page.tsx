@@ -110,11 +110,13 @@ export default function GamePage() {
         <PlayerHUD />
       </div>
 
+      {/*
       {lobbyPlayers.length > 0 && (
         <div className="absolute top-2 right-2 z-50 rounded bg-black/60 px-4 py-2 text-xs text-white">
           Lobby players: {lobbyPlayers.length}
         </div>
       )}
+      */}
 
       {/* Botón Tienda (Esquina inferior izquierda) */}
       <div className="absolute bottom-6 left-6 z-50">
