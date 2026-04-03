@@ -1,14 +1,15 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useGameContext } from '@/features/board/context/GameContext';
 
 /**
  * BoardOverlay Component
  * Renders player tokens on the board using calibrated coordinates.
- * - Dynamic sizing: tokens grow/shrink based on tile occupancy.
- * - No bubbles: characters are rendered directly on the board.
+ * - Animación casilla a casilla con retardo inicial tras ver el dado.
+ * - Si se cae en una casilla de movimiento, primero se llega a ella y luego
+ *   se aplica el desplazamiento adicional.
  */
 
 // Coordenadas calibradas manualmente (0-71)
@@ -54,13 +55,98 @@ const FALLBACK_ASSETS = [
   '/personajes_tablero/vidente_t_der.png',
 ];
 
+/** ms a esperar desde que llega player_moved hasta que empieza el movimiento (da tiempo a ver el dado) */
+const DICE_SHOW_DELAY_MS = 1200;
+/** ms entre cada avance de una casilla */
+const STEP_INTERVAL_MS = 280;
+/** pausa antes de empezar el movimiento forzado (casilla de movimiento) */
+const FORCED_MOVE_PAUSE_MS = 400;
+
 export default function BoardOverlay() {
   const { playerOrder } = useGameContext();
 
-  // Agrupamiento por casilla para determinar tamaño y offsets
+  // Posición que se renderiza actualmente (animada, puede ir por detrás de la real)
+  const [displayPositions, setDisplayPositions] = useState<Record<string, number>>({});
+
+  // Refs de control: no necesitan provocar re-renders adicionales
+  const displayPosRef = useRef<Record<string, number>>({});
+  const queues = useRef<Record<string, number[]>>({});
+  // busy = true mientras haya una animación en curso o haya un delay inicial pendiente
+  const busy = useRef<Record<string, boolean>>({});
+  const prevRealPos = useRef<Record<string, number>>({});
+
+  // Función de animación en ref para ser llamada recursivamente sin problemas de cierre
+  const startAnimRef = useRef<(username: string, from: number, to: number) => void>(null!);
+  useLayoutEffect(() => {
+  startAnimRef.current = (username: string, from: number, to: number) => {
+    const onComplete = (finalPos: number) => {
+      if ((queues.current[username]?.length ?? 0) > 0) {
+        // Hay un movimiento forzado encolado: pequeña pausa y luego continuar
+        const nextTarget = queues.current[username].shift()!;
+        setTimeout(() => {
+          startAnimRef.current!(username, finalPos, nextTarget);
+        }, FORCED_MOVE_PAUSE_MS);
+      } else {
+        busy.current[username] = false;
+      }
+    };
+
+    if (from === to) {
+      onComplete(from);
+      return;
+    }
+
+    const step = (current: number) => {
+      if (current === to) {
+        onComplete(current);
+        return;
+      }
+      const next = current < to ? current + 1 : current - 1;
+      displayPosRef.current[username] = next;
+      setDisplayPositions(prev => ({ ...prev, [username]: next }));
+      setTimeout(() => step(next), STEP_INTERVAL_MS);
+    };
+
+    step(from);
+  };
+  });
+
+  useEffect(() => {
+    playerOrder.forEach(player => {
+      const { username, position } = player;
+
+      // Inicializar jugador nuevo (posición inicial directa, sin animación)
+      if (!(username in prevRealPos.current)) {
+        prevRealPos.current[username] = position;
+        displayPosRef.current[username] = position;
+        queues.current[username] = [];
+        busy.current[username] = false;
+        setDisplayPositions(prev => ({ ...prev, [username]: position }));
+        return;
+      }
+
+      // Detectar cambio de posición real
+      if (position !== prevRealPos.current[username]) {
+        prevRealPos.current[username] = position;
+
+        if (!busy.current[username]) {
+          // Primera animación del movimiento: esperar a que se vea el dado
+          busy.current[username] = true;
+          setTimeout(() => {
+            startAnimRef.current!(username, displayPosRef.current[username] ?? 0, position);
+          }, DICE_SHOW_DELAY_MS);
+        } else {
+          // Ya hay animación en curso o delay pendiente: encolar el destino
+          queues.current[username].push(position);
+        }
+      }
+    });
+  }, [playerOrder]);
+
+  // Agrupamiento por casilla usando posiciones ANIMADAS
   const playersByTile: Record<number, string[]> = {};
   playerOrder.forEach(player => {
-    const pos = player.position;
+    const pos = displayPositions[player.username] ?? 0;
     if (!playersByTile[pos]) playersByTile[pos] = [];
     playersByTile[pos].push(player.username);
   });
@@ -68,29 +154,19 @@ export default function BoardOverlay() {
   return (
     <div className="absolute inset-0 z-10 pointer-events-none select-none overflow-hidden">
 
-      {/* Renderizado de Jugadores */}
       {playerOrder.map((player, playerIdx) => {
-        const tileIdx = Math.min(player.position, BOARD_COORDS.length - 1);
+        const displayPos = displayPositions[player.username] ?? 0;
+        const tileIdx = Math.min(displayPos, BOARD_COORDS.length - 1);
         const c = BOARD_COORDS[tileIdx];
-        const sharedTile = playersByTile[tileIdx];
+        const sharedTile = playersByTile[displayPos] ?? [player.username];
         const count = sharedTile.length;
         const indexInTile = sharedTile.indexOf(player.username);
 
-        /**
-         * Lógica de Tamaño Adaptativo
-         * - 1 jugador: Ocupa casi toda la casilla (95px)
-         * - 2 jugadores: Ligeramente más pequeños (78px)
-         * - 3 jugadores: Tamaño medio (70px)
-         * - 4 jugadores: Pequeños (60px)
-         */
         let size = 95;
         if (count === 2) size = 78;
         if (count === 3) size = 70;
         if (count === 4) size = 60;
 
-        /**
-         * Lógica de Offsets (Desplazamientos)
-         */
         let dx = 0;
         let dy = 0;
         const offsetVal = size * 0.35;
@@ -115,7 +191,7 @@ export default function BoardOverlay() {
         return (
           <div
             key={player.username}
-            className="absolute transition-all duration-500"
+            className="absolute transition-all duration-200"
             style={{
               left: `${c.x}%`,
               top: `${c.y}%`,
