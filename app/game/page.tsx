@@ -6,6 +6,7 @@ import PixelButton from "@/components/UI/PixelButton";
 import ShopModal from "@/features/shop/components/ShopModal";
 import BoardOverlay from "@/features/board/components/BoardOverlay";
 import CharacterSelectionModal from "@/features/board/components/CharacterSelectionModal";
+import { GameProvider } from "@/features/board/context/GameContext";
 import { getGameSocket, getLobbyPlayers } from "@/lib/gameSocket";
 import { useEffect, useState } from "react";
 import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/components/OrderMinigameOverlay";
@@ -90,7 +91,8 @@ export default function GamePage() {
 
 
   return (
-    <main className="relative min-h-screen w-full overflow-hidden bg-[url('/tablero_def.png')] bg-contain bg-no-repeat bg-center">
+    <GameProvider>
+      <main className="relative min-h-screen w-full overflow-hidden bg-[url('/tablero_def.png')] bg-contain bg-no-repeat bg-center">
       
       {/* Modal de Selección de Personaje (Mandatorio) */}
       {showCharacterSelect && (
@@ -158,5 +160,6 @@ export default function GamePage() {
       )}
 
     </main>
+    </GameProvider>
   );
 }

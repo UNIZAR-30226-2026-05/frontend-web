@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
+import { useGameContext } from '@/features/board/context/GameContext';
 
 /**
  * BoardOverlay Component
@@ -38,71 +39,49 @@ const BOARD_COORDS = [
   { "x": 53.92, "y": 55.28 }, { "x": 59.02, "y": 55.51 }, { "x": 68.29, "y": 51.34 }
 ];
 
-const ROLES = [
-  { id: 'banquero', name: 'Banquero', asset: '/personajes_tablero/banquero_t_der.png' },
-  { id: 'escapista', name: 'Escapista', asset: '/personajes_tablero/escapista_t_der.png' },
-  { id: 'videojugador', name: 'Videojugador', asset: '/personajes_tablero/videojugador_t_der.png' },
-  { id: 'vidente', name: 'Vidente', asset: '/personajes_tablero/vidente_t_der.png' }
+const ROLE_ASSETS: Record<string, string> = {
+  banquero: '/personajes_tablero/banquero_t_der.png',
+  escapista: '/personajes_tablero/escapista_t_der.png',
+  videojugador: '/personajes_tablero/videojugador_t_der.png',
+  vidente: '/personajes_tablero/vidente_t_der.png',
+};
+
+// Fallback para cuando aún no se ha elegido personaje
+const FALLBACK_ASSETS = [
+  '/personajes_tablero/banquero_t_der.png',
+  '/personajes_tablero/escapista_t_der.png',
+  '/personajes_tablero/videojugador_t_der.png',
+  '/personajes_tablero/vidente_t_der.png',
 ];
 
 export default function BoardOverlay() {
-  const [positions, setPositions] = useState([0, 0, 0, 0]);
-
-  const movePlayer = (index: number) => {
-    setPositions(prev => {
-      const next = [...prev];
-      next[index] = Math.min(BOARD_COORDS.length - 1, next[index] + 1);
-      return next;
-    });
-  };
-
-  const restart = () => setPositions([0, 0, 0, 0]);
+  const { playerOrder } = useGameContext();
 
   // Agrupamiento por casilla para determinar tamaño y offsets
-  const playersByTile: Record<number, number[]> = {};
-  positions.forEach((pos, idx) => {
+  const playersByTile: Record<number, string[]> = {};
+  playerOrder.forEach(player => {
+    const pos = player.position;
     if (!playersByTile[pos]) playersByTile[pos] = [];
-    playersByTile[pos].push(idx);
+    playersByTile[pos].push(player.username);
   });
 
   return (
     <div className="absolute inset-0 z-10 pointer-events-none select-none overflow-hidden">
-      
-      {/* HUD de Debug (Simplificado) */}
-      <div className="absolute top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-auto bg-black/60 p-3 rounded-xl border border-white/20 backdrop-blur-md shadow-xl">
-        <h3 className="text-white font-pixel text-[8px] mb-1 text-center uppercase">Controles Debug</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {ROLES.map((role, idx) => (
-            <button
-              key={role.id}
-              onClick={() => movePlayer(idx)}
-              className="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-2 py-1 rounded text-[10px] font-pixel transition-all active:scale-95"
-            >
-              {role.name.slice(0, 4)}+1
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={restart}
-          className="bg-red-500/50 hover:bg-red-500 text-white border border-white/30 p-1 rounded text-[10px] font-pixel mt-1 transition-all"
-        >
-          Reiniciar Todo
-        </button>
-      </div>
 
       {/* Renderizado de Jugadores */}
-      {positions.map((tileIdx, playerIdx) => {
+      {playerOrder.map((player, playerIdx) => {
+        const tileIdx = Math.min(player.position, BOARD_COORDS.length - 1);
         const c = BOARD_COORDS[tileIdx];
         const sharedTile = playersByTile[tileIdx];
         const count = sharedTile.length;
-        const indexInTile = sharedTile.indexOf(playerIdx);
+        const indexInTile = sharedTile.indexOf(player.username);
 
         /**
          * Lógica de Tamaño Adaptativo
-         * - 1 jugador: Ocupa casi toda la casilla (90px)
-         * - 2 jugadores: Ligeramente más pequeños (72px)
-         * - 3 jugadores: Tamaño medio (64px)
-         * - 4 jugadores: Pequeños (54px)
+         * - 1 jugador: Ocupa casi toda la casilla (95px)
+         * - 2 jugadores: Ligeramente más pequeños (78px)
+         * - 3 jugadores: Tamaño medio (70px)
+         * - 4 jugadores: Pequeños (60px)
          */
         let size = 95;
         if (count === 2) size = 78;
@@ -111,11 +90,10 @@ export default function BoardOverlay() {
 
         /**
          * Lógica de Offsets (Desplazamientos)
-         * - Distancia reducida para que se mantengan dentro del área visual sin bubble.
          */
         let dx = 0;
         let dy = 0;
-        const offsetVal = size * 0.35; // Aumentado para mayor separación visual
+        const offsetVal = size * 0.35;
 
         if (count > 1) {
           if (count === 2) {
@@ -130,10 +108,14 @@ export default function BoardOverlay() {
           }
         }
 
+        const assetSrc = player.character
+          ? (ROLE_ASSETS[player.character] ?? FALLBACK_ASSETS[playerIdx % 4])
+          : FALLBACK_ASSETS[playerIdx % 4];
+
         return (
           <div
-            key={playerIdx}
-            className="absolute transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)"
+            key={player.username}
+            className="absolute transition-all duration-500"
             style={{
               left: `${c.x}%`,
               top: `${c.y}%`,
@@ -145,8 +127,8 @@ export default function BoardOverlay() {
           >
             <div className="relative w-full h-full group">
               <Image
-                src={ROLES[playerIdx].asset}
-                alt={ROLES[playerIdx].name}
+                src={assetSrc}
+                alt={player.characterWsName ?? player.username}
                 fill
                 className="object-contain pixelated transition-transform group-hover:scale-110 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]"
               />

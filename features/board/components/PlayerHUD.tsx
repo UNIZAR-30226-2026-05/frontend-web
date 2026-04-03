@@ -1,14 +1,8 @@
 "use client";
 
 import React from "react";
+import { useGameContext, type GamePlayer } from "@/features/board/context/GameContext";
 
-/**
- * Interfaz que define la estructura de un jugador.
- * id: Identificador único del jugador.
- * name: Nombre para mostrar.
- * role: Rol asignado (Banquero, Videojugador, Escapista, Vidente).
- * coins: Cantidad de monedas.
- */
 export interface Player {
   id: string;
   name: string;
@@ -16,17 +10,6 @@ export interface Player {
   coins: number;
   avatarUrl: string;
 }
-
-/**
- * Datos mockeados para visualización del HUD.
- * En el futuro, estos datos se obtendrán del backend o del estado global.
- */
-const MOCK_PLAYERS: Player[] = [
-  { id: "1", name: "David", role: "Banquero", coins: 2, avatarUrl: "/personajes_profile/banquero_profile.png" },
-  { id: "2", name: "Elena", role: "Escapista", coins: 5, avatarUrl: "/personajes_profile/escapista_profile.png" },
-  { id: "3", name: "Marcos", role: "Videojugador", coins: 3, avatarUrl: "/personajes_profile/videojugador_profile.png" },
-  { id: "4", name: "Lucía", role: "Vidente", coins: 1, avatarUrl: "/personajes_profile/vidente_profile.png" },
-];
 
 const RoleAvatar = ({ player }: { player: Player }) => {
   const roleColors = {
@@ -68,18 +51,33 @@ const PlayerCard = ({ player }: { player: Player }) => {
   );
 };
 
+function mapGamePlayer(gp: GamePlayer, fallbackIdx: number): Player {
+  // characterWsName es el nombre capitalizado que coincide con el tipo Player['role']
+  const roleNames = ["Banquero", "Videojugador", "Escapista", "Vidente"] as const;
+  const role = (gp.characterWsName as Player['role']) ?? roleNames[fallbackIdx % 4];
+  const avatarUrl = gp.character
+    ? `/personajes_profile/${gp.character}_profile.png`
+    : `/personajes_profile/${roleNames[fallbackIdx % 4].toLowerCase()}_profile.png`;
+
+  return {
+    id: gp.username,
+    name: gp.username,
+    role,
+    coins: gp.balance,
+    avatarUrl,
+  };
+}
+
 const PlayerHUD = () => {
+  const { playerOrder } = useGameContext();
+
+  const players: Player[] = playerOrder.map((gp, idx) => mapGamePlayer(gp, idx));
+
   return (
     <aside className="flex flex-col gap-2 p-1 pointer-events-auto">
-      {MOCK_PLAYERS.map((player) => (
+      {players.map((player) => (
         <PlayerCard key={player.id} player={player} />
       ))}
-
-      {/* 
-          NOTA PARA EL FUTURO:
-          Aquí se conectará el estado real de los jugadores.
-          Ejemplo: const { players } = useGameStore();
-      */}
     </aside>
   );
 };
