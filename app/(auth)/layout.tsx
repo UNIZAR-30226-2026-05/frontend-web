@@ -15,12 +15,14 @@ export default function AuthLayout({
                 backgroundPosition: 'center'
             }}
         >
-            {/* Zona interactiva del Logo (dibujado en el fondo) */}
+            {/* 
+            Zona interactiva del Logo (dibujado en el fondo)
             <Link 
                 href="/"
                 className="absolute top-4 left-4 w-[12rem] h-[10rem] cursor-pointer z-20"
                 aria-label="Volver al inicio"
             />
+            */}
 
             <div className="z-10 relative">
                 {children}
