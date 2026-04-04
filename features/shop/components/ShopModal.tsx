@@ -37,11 +37,18 @@ export default function ShopModal({ onClose }: ShopModalProps) {
       return;
     }
     if (!myPlayer || myPlayer.balance < item.price) return;
-    ws.send(JSON.stringify({ action: 'comprar_objeto', payload: { objeto: item.name } }));
-    // Uso instantáneo: el objeto no se guarda en inventario, se usa en el momento de comprarlo
-    ws.send(JSON.stringify({ action: 'usar_objeto', payload: { objeto: item.name } }));
-    if (item.name === 'Avanzar Casillas') {
-      setAvanzarCount(prev => prev + 1);
+
+    const isSalvavidas = item.name === 'Salvavidas movimiento' || item.name === 'Salvavidas bloqueo';
+    if (isSalvavidas) {
+      // El backend gestiona compra y uso en un único action
+      ws.send(JSON.stringify({ action: 'usar_salvavidas', payload: { objeto: item.name } }));
+    } else {
+      ws.send(JSON.stringify({ action: 'comprar_objeto', payload: { objeto: item.name } }));
+      // Uso instantáneo: el objeto no se guarda en inventario, se usa en el momento de comprarlo
+      ws.send(JSON.stringify({ action: 'usar_objeto', payload: { objeto: item.name } }));
+      if (item.name === 'Avanzar Casillas') {
+        setAvanzarCount(prev => prev + 1);
+      }
     }
   };
 
@@ -74,8 +81,21 @@ export default function ShopModal({ onClose }: ShopModalProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {SHOP_ITEMS.map((item) => {
               const isAvanzar = item.name === 'Avanzar Casillas';
-              // "Avanzar Casillas" solo se puede comprar antes de tirar los dados
-              const disabled = isAvanzar && state.hasMoved;
+              const isSalvavidasMov = item.name === 'Salvavidas movimiento';
+              const isSalvavidasBloqueo = item.name === 'Salvavidas bloqueo';
+
+              // Avanzar: solo antes de tirar
+              // Salvavidas: solo tras tirar Y haber caído en la casilla correspondiente
+              const disabled =
+                (isAvanzar && state.hasMoved) ||
+                (isSalvavidasMov && (!state.hasMoved || !state.landedOnNegativeMove)) ||
+                (isSalvavidasBloqueo && (!state.hasMoved || !state.landedOnBarrera));
+
+              const disabledReason =
+                isAvanzar ? 'Solo antes de tirar' :
+                isSalvavidasMov ? (state.hasMoved ? 'No caíste en casilla negativa' : 'Solo tras tirar los dados') :
+                isSalvavidasBloqueo ? (state.hasMoved ? 'No caíste en barrera' : 'Solo tras tirar los dados') :
+                '';
 
               return (
                 <div
@@ -113,7 +133,7 @@ export default function ShopModal({ onClose }: ShopModalProps) {
                   </PixelButton>
                   {disabled && (
                     <p className="text-[#ffb3b3] font-pixel text-[9px] -mt-2">
-                      Solo antes de tirar
+                      {disabledReason}
                     </p>
                   )}
                 </div>

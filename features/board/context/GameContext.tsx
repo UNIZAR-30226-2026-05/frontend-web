@@ -40,6 +40,10 @@ interface GameState {
   myUsername: string | null;
   /** Mostrar el minijuego de reflejos para determinar el orden de la siguiente ronda */
   showOrderMinigame: boolean;
+  /** El jugador local cayó en una casilla de movimiento negativo este turno */
+  landedOnNegativeMove: boolean;
+  /** El jugador local cayó en una casilla de barrera este turno */
+  landedOnBarrera: boolean;
 }
 
 // -------------------------------------------------------------------
@@ -55,7 +59,8 @@ type Action =
   | { type: 'RECONNECT_SUCCESS'; boardState: { positions?: Record<string, number>; balances?: Record<string, number>; characters?: Record<string, string>; order?: Record<string, number> } }
   | { type: 'LOCAL_END_ROUND' }
   | { type: 'SHOW_ORDER_MINIGAME' }
-  | { type: 'HIDE_ORDER_MINIGAME' };
+  | { type: 'HIDE_ORDER_MINIGAME' }
+  | { type: 'SET_CASILLA_TIPO'; casilla: 'mov_negativo' | 'barrera' | 'none' };
 
 // -------------------------------------------------------------------
 // Reducer
@@ -158,6 +163,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         currentTurnOrder: 1,
         hasMoved: false,
         awaitingEndRound: false,
+        landedOnNegativeMove: false,
+        landedOnBarrera: false,
       };
     }
 
@@ -186,7 +193,14 @@ function gameReducer(state: GameState, action: Action): GameState {
     }
 
     case 'LOCAL_END_ROUND':
-      return { ...state, awaitingEndRound: false };
+      return { ...state, awaitingEndRound: false, landedOnNegativeMove: false, landedOnBarrera: false };
+
+    case 'SET_CASILLA_TIPO':
+      return {
+        ...state,
+        landedOnNegativeMove: action.casilla === 'mov_negativo',
+        landedOnBarrera: action.casilla === 'barrera',
+      };
 
     case 'SHOW_ORDER_MINIGAME':
       return { ...state, showOrderMinigame: true };
@@ -207,6 +221,8 @@ const initialState: GameState = {
   lastDice: null,
   myUsername: null,
   showOrderMinigame: false,
+  landedOnNegativeMove: false,
+  landedOnBarrera: false,
 };
 
 // -------------------------------------------------------------------
@@ -259,6 +275,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const ws = getGameSocket();
     if (!ws) return;
 
+    // Rastrea qué jugador acaba de mover para saber si tipo_casilla es del jugador local
+    let lastMovedUser: string | null = null;
+
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data as string) as Record<string, unknown>;
@@ -280,6 +299,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           case 'player_moved': {
             const user = data.user as string;
             const newPos = data.nueva_casilla as number;
+            lastMovedUser = user;
             // Si trae dado1/dado2 es un movimiento por tirada normal
             // Si no, es un movimiento forzado por casilla de movimiento
             if ('dado1' in data && 'dado2' in data) {
@@ -341,8 +361,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             dispatch({ type: 'SHOW_ORDER_MINIGAME' });
             break;
 
+          case 'tipo_casilla': {
+            const myUsername = sessionStorage.getItem('username');
+            if (lastMovedUser === myUsername) {
+              const casilla = data.casilla as string;
+              const extra = data.extra as number;
+              if (casilla === 'mov' && extra < 0) {
+                dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'mov_negativo' });
+              } else if (casilla === 'barrera') {
+                dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'barrera' });
+              } else {
+                dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'none' });
+              }
+            }
+            break;
+          }
+
           // Mensajes de casillas especiales: ignorados intencionalmente
-          case 'tipo_casilla':
           case 'intercambiar_objeto':
           case 'obtener_objeto':
           case 'minijuego_casilla':
