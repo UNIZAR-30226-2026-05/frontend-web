@@ -27,6 +27,17 @@ export default function Dice() {
 
   // Referencia al lastDice previo para detectar cambios
   const prevLastDiceRef = useRef<typeof lastDice>(null);
+  // Referencia para detectar la transición false→true de isMyTurn
+  const prevIsMyTurnRef = useRef(isMyTurn);
+
+  // Al inicio de cada turno propio, limpiar cualquier waitingForResponse residual
+  // (puede quedarse colgado si el backend ignoró un move_player prematuro)
+  useEffect(() => {
+    if (isMyTurn && !prevIsMyTurnRef.current) {
+      setWaitingForResponse(false);
+    }
+    prevIsMyTurnRef.current = isMyTurn;
+  }, [isMyTurn]);
 
   // Cuando llegue una respuesta player_moved con dados, animar y mostrar resultado
   useEffect(() => {
