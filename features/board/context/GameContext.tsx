@@ -381,15 +381,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'LOCAL_END_ROUND' });
   }, []);
 
-  // Auto-envío de end_round tras la animación de movimiento del jugador local.
-  // Timeout calculado para cubrir la animación máxima posible:
-  //   1200 ms (delay dado) + 12 pasos × 280 ms + 400 ms (pausa casilla mov) + 5 pasos × 280 ms ≈ 6400 ms
-  useEffect(() => {
-    if (!state.awaitingEndRound) return;
-    const id = setTimeout(sendEndRound, 8000);
-    return () => clearTimeout(id);
-  }, [state.awaitingEndRound, sendEndRound]);
-
   const sendScoreReflejos = useCallback((reactionTimeMs: number) => {
     const ws = getGameSocket();
     if (!ws || ws.readyState !== WebSocket.OPEN) {
