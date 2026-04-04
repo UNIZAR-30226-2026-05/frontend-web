@@ -306,9 +306,9 @@ export default function MenuPage() {
                     </div>
 
                     <div className="flex justify-between w-full gap-5">
-                        <PixelButton variant="purple" className="flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider">{jugadoresEnLobby[0] ?? 'Vacío'}</PixelButton>
-                        <PixelButton variant="purple" className="flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider opacity-70">{jugadoresEnLobby[1] ?? 'Vacío'}</PixelButton>
-                        <PixelButton variant="purple" className="flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider opacity-70">{jugadoresEnLobby[2] ?? 'Vacío'}</PixelButton>
+                        <PixelButton variant="purple" className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[0] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[0] ?? 'Vacío'}</PixelButton>
+                        <PixelButton variant="purple" className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[1] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[1] ?? 'Vacío'}</PixelButton>
+                        <PixelButton variant="purple" className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[2] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[2] ?? 'Vacío'}</PixelButton>
                     </div>
                 </div>
 
