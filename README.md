@@ -43,3 +43,18 @@ Para utilizar React components debemos importar dicha librería, la versión con
 npm install zod
 ```
 De cara a validar que los datos en los formularios de inicio de sesión y registro son correctos, utilizaremos la librería ``Zod`` para ello ya que nos proporciona multitud de herramientas para validar dichos campos.
+
+
+# Flujo para debug o jugar:  
+---
+**En la terminal:**
+```
+cd {directorio_front_web}  
+npm run dev
+```
+
+**En el navegador, abrir "http://localhost:3000".**
+
+Una vez tenemos esto podemos debugear con la consola viendo los logs que dejamos (quien es el encargado en cada momento de logear y el contenido propio del log).  
+En el entorno de desarrollador podemos navegar al apartado `Aplication` y ver el JWT en el sub-apartado de `cookies` así como el id de la partida, el nombre de usuario y el array de jugadores en el lobby en el sub-apartado de `Session Storage`.
+
