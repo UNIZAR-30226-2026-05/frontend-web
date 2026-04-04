@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import PixelButton from '@/components/UI/PixelButton';
+import RulesModal from '@/components/UI/RulesModal';
 
 import { CrearPartidaService, UnirsePartidaService } from '@/lib/backend';
 import { replaceGameSocket, setLobbyPlayers } from '@/lib/gameSocket';
@@ -18,6 +18,7 @@ export default function MenuPage() {
     const [joinSuccess, setJoinSuccess] = useState<string | null>(null);
     const [playersConnected, setPlayersConnected] = useState<number | null>(null);
     const [jugadoresEnLobby, setJugadoresEnLobby] = useState<string[]>([]);
+    const [isRulesOpen, setIsRulesOpen] = useState(false);
 
     const usernameRef = useRef<string | null>(null);
     const socketRef = useRef<WebSocket | null>(null);
@@ -419,11 +420,14 @@ export default function MenuPage() {
                 */}
 
                 {/* Zona interactiva de Reglas (Mago dibujado en el fondo) */}
-                <Link
-                    href="/rules"
+                <div
                     className="absolute bottom-0 right-0 w-[20rem] h-[25rem] cursor-pointer z-10"
+                    onClick={() => setIsRulesOpen(true)}
                     aria-label="Reglas del juego"
+                    role="button"
                 />
+
+                {isRulesOpen && <RulesModal onClose={() => setIsRulesOpen(false)} />}
 
             </div>
 
