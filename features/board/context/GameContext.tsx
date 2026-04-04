@@ -22,7 +22,7 @@ export interface GamePlayer {
   character: string | null;       // id local: 'banquero', etc.
   characterWsName: string | null; // nombre WS: 'Banquero', etc.
   position: number;               // índice en BOARD_COORDS (0-based)
-  balance: number;
+  balance: number;                // monedas actuales
   turnOrder: number;              // 1-4, posición en el orden actual
   diceType: DiceType;             // dado especial que le corresponde
 }
@@ -70,7 +70,7 @@ function gameReducer(state: GameState, action: Action): GameState {
           character: null,
           characterWsName: null,
           position: 0,
-          balance: 0,
+          balance: 1, // inicio con 1 modneda
           turnOrder: index + 1,
           diceType: 'normal',
         };
@@ -380,6 +380,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     ws.send(JSON.stringify({ action: 'end_round' }));
     dispatch({ type: 'LOCAL_END_ROUND' });
   }, []);
+
+  // Auto-envío de end_round tras la animación de movimiento del jugador local.
+  // Timeout calculado para cubrir la animación máxima posible:
+  //   1200 ms (delay dado) + 12 pasos × 280 ms + 400 ms (pausa casilla mov) + 5 pasos × 280 ms ≈ 6400 ms
+  useEffect(() => {
+    if (!state.awaitingEndRound) return;
+    const id = setTimeout(sendEndRound, 8000);
+    return () => clearTimeout(id);
+  }, [state.awaitingEndRound, sendEndRound]);
 
   const sendScoreReflejos = useCallback((reactionTimeMs: number) => {
     const ws = getGameSocket();
