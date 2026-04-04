@@ -22,6 +22,9 @@ export default function MenuPage() {
     const usernameRef = useRef<string | null>(null);
     const socketRef = useRef<WebSocket | null>(null);
     const detachSocketListenersRef = useRef<(() => void) | null>(null);
+    const routerRef = useRef(router);
+    useEffect(() => { routerRef.current = router; }, [router]);
+    const hasInitialized = useRef(false);
 
     const updateJugadoresEnLobby = useCallback(
         (players: unknown[]) => {
@@ -84,7 +87,7 @@ export default function MenuPage() {
                     }
 
                     console.log('La partida ha comenzado, redirigiendo a /game');
-                    router.push('/game');
+                    routerRef.current.push('/game');
                 }
             } catch (error) {
                 console.warn('No se pudo parsear el mensaje de WebSocket:', error);
@@ -114,7 +117,7 @@ export default function MenuPage() {
             ws.removeEventListener('close', onClose);
             ws.removeEventListener('error', onError);
         };
-    }, [router, updateJugadoresEnLobby]);
+    }, [updateJugadoresEnLobby]);
 
     const connectToRoom = useCallback((roomId: number, token: string | null) => {
         // Solo evitar reconexión si ya hay socket abierto A LA MISMA SALA
@@ -170,6 +173,9 @@ export default function MenuPage() {
     };
 
     useEffect(() => {
+        if (hasInitialized.current) return;
+        hasInitialized.current = true;
+
         const init = async () => {
             const currentUsername = window.sessionStorage.getItem('username');
             const resUser = await fetch('/api/me', { method: 'GET' });
