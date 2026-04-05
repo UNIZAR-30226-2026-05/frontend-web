@@ -74,14 +74,18 @@ function mapGamePlayer(gp: GamePlayer, fallbackIdx: number): Player {
 }
 
 const PlayerHUD = () => {
-  const { playerOrder, state } = useGameContext();
-  const { currentTurnOrder } = state;
+  const { playerOrder, state, myPlayer } = useGameContext();
+  const { currentTurnOrder, awaitingEndRound } = state;
+
+  const visualTurnOrder = (awaitingEndRound && myPlayer)
+    ? myPlayer.turnOrder
+    : currentTurnOrder;
 
   return (
     <aside className="flex flex-col gap-2 p-6 pointer-events-auto">
       {playerOrder.map((gp, idx) => {
         const player = mapGamePlayer(gp, idx);
-        const isTurn = gp.turnOrder === currentTurnOrder;
+        const isTurn = gp.turnOrder === visualTurnOrder;
         return <PlayerCard key={player.id} player={player} isTurn={isTurn} />;
       })}
     </aside>
