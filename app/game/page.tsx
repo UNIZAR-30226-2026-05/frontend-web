@@ -153,7 +153,7 @@ export default function GamePage() {
       <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-10 z-50 flex flex-col items-end gap-4">
         <Dice />
         
-        {/* Debug: Menú de Minijuegos */}
+        {/* Debug: Menú de Minijuegos 
         <div className="flex flex-wrap justify-end gap-2 max-w-[200px]">
           {(['tren', 'reflejos', 'pan', 'crono', 'cartas'] as OrderMinigameType[]).map((type) => (
             <button
@@ -165,6 +165,7 @@ export default function GamePage() {
             </button>
           ))}
         </div>
+        */}
       </div>
 
       {/* Overlay de Minijuego de Orden (Reflejos) - gestionado por el backend */}
