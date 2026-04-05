@@ -26,9 +26,14 @@ const RoleAvatar = ({ player }: { player: Player }) => {
   );
 };
 
-const PlayerCard = ({ player }: { player: Player }) => {
+const PlayerCard = ({ player, isTurn }: { player: Player; isTurn: boolean }) => {
   return (
-    <div className="flex items-center gap-2 p-2 bg-[var(--color-sp-bg-medium)] border-2 border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] min-w-[200px]">
+    <div
+      className={`relative flex items-center gap-2 p-2 bg-[var(--color-sp-bg-medium)] border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] min-w-[200px] transition-all duration-300 ${isTurn
+          ? "border-green-400 scale-[1.05] z-10 [filter:drop-shadow(0_0_12px_rgba(74,222,128,0.8))_drop-shadow(0_0_20px_rgba(74,222,128,0.4))]"
+          : "border-white"
+        }`}
+    >
       {/* Avatar de Personaje */}
       <RoleAvatar player={player} />
 
@@ -69,15 +74,16 @@ function mapGamePlayer(gp: GamePlayer, fallbackIdx: number): Player {
 }
 
 const PlayerHUD = () => {
-  const { playerOrder } = useGameContext();
-
-  const players: Player[] = playerOrder.map((gp, idx) => mapGamePlayer(gp, idx));
+  const { playerOrder, state } = useGameContext();
+  const { currentTurnOrder } = state;
 
   return (
-    <aside className="flex flex-col gap-2 p-1 pointer-events-auto">
-      {players.map((player) => (
-        <PlayerCard key={player.id} player={player} />
-      ))}
+    <aside className="flex flex-col gap-2 p-6 pointer-events-auto">
+      {playerOrder.map((gp, idx) => {
+        const player = mapGamePlayer(gp, idx);
+        const isTurn = gp.turnOrder === currentTurnOrder;
+        return <PlayerCard key={player.id} player={player} isTurn={isTurn} />;
+      })}
     </aside>
   );
 };
