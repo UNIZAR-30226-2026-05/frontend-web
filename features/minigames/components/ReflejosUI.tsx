@@ -46,7 +46,7 @@ export default function ReflejosUI({ onAction }: ReflejosUIProps) {
   };
 
   return (
-    <div className="relative flex flex-col items-center justify-center w-full h-full font-pixel overflow-hidden rounded-xl border-4 border-white/10 shadow-2xl">
+    <div className="relative flex flex-col items-center justify-center w-full h-full font-pixel overflow-hidden  shadow-2xl">
       {/* Fondo Reflejos */}
       <div className="absolute inset-0 z-0">
         <Image 
@@ -58,23 +58,23 @@ export default function ReflejosUI({ onAction }: ReflejosUIProps) {
         />
       </div>
 
-      {/* Círculo de Reacción (Posicionado sobre el tablero central) */}
-      <div className="relative z-10 w-full max-w-4xl aspect-[16/9]">
+      {/* Rectángulo de Reacción (Posicionado sobre el tablero central) */}
+      <div className="relative z-10 w-full max-w-4xl aspect-[16/10.8]">
         <div 
-          className={`absolute w-32 h-32 md:w-48 md:h-48 rounded-full flex items-center justify-center border-4 border-white/30 transition-all duration-150 active:scale-95
-            ${gameState === "waiting" ? "bg-red-600/90 shadow-[0_0_40px_rgba(220,38,38,0.5)]" : 
-              gameState === "ready" ? "bg-green-500/90 shadow-[0_0_60px_rgba(34,197,94,0.7)]" : 
+          className={`absolute w-72 h-44 md:w-[515px] md:h-[280px]  flex items-center justify-center transition-all duration-150 active:scale-95
+            ${gameState === "waiting" ? "bg-red-600/90" : 
+              gameState === "ready" ? "bg-green-500/90" : 
               "bg-slate-700/80 shadow-none grayscale opacity-60"}`}
           style={{ 
             left: '50%', 
-            top: '43%', 
+            top: '40%', 
             transform: 'translate(-50%, -50%)' 
           }}
         >
           <button 
             onClick={handleClick}
             disabled={gameState === "clicked"}
-            className="w-full h-full rounded-full flex flex-col items-center justify-center text-white text-2xl md:text-4xl font-bold tracking-widest uppercase outline-none"
+            className="w-full h-full flex flex-col items-center justify-center text-white text-2xl md:text-4xl font-bold tracking-widest uppercase outline-none"
           >
             {gameState === "waiting" && "¡LISTO!"}
             {gameState === "ready" && "¡YA!"}
