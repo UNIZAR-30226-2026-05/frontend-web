@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import PixelButton from "@/components/UI/PixelButton";
 import { useGameContext } from "@/features/board/context/GameContext";
 
@@ -18,6 +18,7 @@ const typeStyles: Record<DiceType, string> = {
 export default function Dice() {
   const { state, isMyTurn, myPlayer, sendMovePlayer, sendEndRound } = useGameContext();
   const { hasMoved, awaitingEndRound, lastDice } = state;
+  const penaltyTurns = state.penaltyTurns;
 
   const [currentNormal, setCurrentNormal] = useState(1);
   const [currentSpecial, setCurrentSpecial] = useState(1);
@@ -25,35 +26,40 @@ export default function Dice() {
   // Controla el estado "esperando respuesta del backend" tras pulsar el botón
   const [waitingForResponse, setWaitingForResponse] = useState(false);
 
-  // Referencia al lastDice previo para detectar cambios
-  const prevLastDiceRef = useRef<typeof lastDice>(null);
-  // Referencia para detectar la transición false→true de isMyTurn
-  const prevIsMyTurnRef = useRef(isMyTurn);
+  // ── Render-phase: detectar nuevo lastDice para arrancar animación ──────────
+  // Patrón "storing information from previous renders" (React docs) – evita
+  // llamar a setState de forma síncrona dentro de un useEffect (cascade renders).
+  const [prevLastDice, setPrevLastDice] = useState<typeof lastDice>(null);
+  if (prevLastDice !== lastDice) {
+    setPrevLastDice(lastDice);
+    if (lastDice !== null) {
+      const prev = prevLastDice;
+      const didChange =
+        !prev ||
+        prev.dado1 !== lastDice.dado1 ||
+        prev.dado2 !== lastDice.dado2 ||
+        prev.user !== lastDice.user;
+      if (didChange) {
+        setIsAnimating(true);
+        setWaitingForResponse(false);
+      }
+    }
+  }
 
-  // Al inicio de cada turno propio, limpiar cualquier waitingForResponse residual
-  // (puede quedarse colgado si el backend ignoró un move_player prematuro)
-  useEffect(() => {
-    if (isMyTurn && !prevIsMyTurnRef.current) {
+  // ── Render-phase: limpiar waitingForResponse al recuperar el turno ────────
+  const [prevIsMyTurn, setPrevIsMyTurn] = useState(isMyTurn);
+  if (prevIsMyTurn !== isMyTurn) {
+    setPrevIsMyTurn(isMyTurn);
+    if (isMyTurn && waitingForResponse) {
       setWaitingForResponse(false);
     }
-    prevIsMyTurnRef.current = isMyTurn;
-  }, [isMyTurn]);
+  }
 
-  // Cuando llegue una respuesta player_moved con dados, animar y mostrar resultado
+  // ── Effect: ciclar los dados aleatoriamente 1 s cuando se activa animación ─
+  // Solo llama a setState dentro de callbacks (setInterval/setTimeout), no en
+  // el cuerpo síncrono del efecto → sin cascade renders.
   useEffect(() => {
-    if (!lastDice) return;
-    // Evitar re-animar si no cambió nada
-    const prev = prevLastDiceRef.current;
-    if (
-      prev &&
-      prev.dado1 === lastDice.dado1 &&
-      prev.dado2 === lastDice.dado2 &&
-      prev.user === lastDice.user
-    ) return;
-    prevLastDiceRef.current = lastDice;
-
-    setIsAnimating(true);
-    setWaitingForResponse(false);
+    if (!lastDice || !isAnimating) return;
 
     const maxSpecial = DICE_MAX[lastDice.diceType];
     const showSpecial = lastDice.diceType !== 'normal' && lastDice.dado2 > 0;
@@ -76,7 +82,7 @@ export default function Dice() {
       clearInterval(rollInterval);
       clearTimeout(timeout);
     };
-  }, [lastDice]);
+  }, [lastDice, isAnimating]);
 
   // Tipo de dado a mostrar: el de la última tirada o el del turno actual
   const currentTurnPlayer = Object.values(state.players).find(
@@ -89,7 +95,8 @@ export default function Dice() {
     ? (lastDice.diceType !== 'normal' && lastDice.dado2 > 0)
     : (isMyTurn && myPlayer !== null && myPlayer.diceType !== 'normal');
 
-  const canRoll = isMyTurn && !hasMoved && !waitingForResponse && !awaitingEndRound;
+  const isBlocked = penaltyTurns > 0;
+  const canRoll = isMyTurn && !hasMoved && !waitingForResponse && !awaitingEndRound && !isBlocked;
   const isRolling = isAnimating || waitingForResponse;
 
   const handleRollDice = () => {
@@ -101,6 +108,7 @@ export default function Dice() {
   // Texto del botón de tirar
   const rollButtonLabel = () => {
     if (isRolling) return "Tirando...";
+    if (isBlocked) return `Bloqueado (${penaltyTurns} turno${penaltyTurns > 1 ? 's' : ''} restante${penaltyTurns > 1 ? 's' : ''})`;
     if (!isMyTurn) return "Esperando turno...";
     return displayType === "normal" ? "Tirar Dado" : "Tirar Dados";
   };
@@ -140,6 +148,10 @@ export default function Dice() {
       {awaitingEndRound ? (
         <PixelButton onClick={sendEndRound} variant="purple" className="w-full">
           Fin de Turno
+        </PixelButton>
+      ) : isBlocked && isMyTurn ? (
+        <PixelButton onClick={sendEndRound} variant="red" className="w-full">
+          Saltar Turno ({penaltyTurns} restante{penaltyTurns > 1 ? 's' : ''})
         </PixelButton>
       ) : (
         <PixelButton

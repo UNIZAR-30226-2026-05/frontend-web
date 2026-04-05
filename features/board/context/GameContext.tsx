@@ -44,6 +44,8 @@ interface GameState {
   landedOnNegativeMove: boolean;
   /** El jugador local cayó en una casilla de barrera este turno */
   landedOnBarrera: boolean;
+  /** Turnos de penalización restantes para el jugador local (casilla barrera) */
+  penaltyTurns: number;
 }
 
 // -------------------------------------------------------------------
@@ -60,7 +62,9 @@ type Action =
   | { type: 'LOCAL_END_ROUND' }
   | { type: 'SHOW_ORDER_MINIGAME' }
   | { type: 'HIDE_ORDER_MINIGAME' }
-  | { type: 'SET_CASILLA_TIPO'; casilla: 'mov_negativo' | 'barrera' | 'none' };
+  | { type: 'SET_CASILLA_TIPO'; casilla: 'mov_negativo' | 'barrera' | 'none' }
+  | { type: 'SET_PENALTY_TURNS'; turns: number }
+  | { type: 'CLEAR_PENALTY_TURNS' };
 
 // -------------------------------------------------------------------
 // Reducer
@@ -192,8 +196,25 @@ function gameReducer(state: GameState, action: Action): GameState {
       return { ...state, players: updatedPlayers };
     }
 
-    case 'LOCAL_END_ROUND':
-      return { ...state, awaitingEndRound: false, landedOnNegativeMove: false, landedOnBarrera: false };
+    case 'LOCAL_END_ROUND': {
+      // Cuando el jugador tiró dados, PLAYER_MOVED_DICE ya avanzó currentTurnOrder.
+      // Cuando el jugador pasó de turno sin tirar (bloqueado), debemos avanzarlo aquí,
+      // o el siguiente jugador nunca verá isMyTurn = true y el juego queda congelado.
+      const myPlayer = state.players[state.myUsername ?? ''];
+      let newCurrentTurnOrder = state.currentTurnOrder;
+      if (!state.hasMoved && myPlayer) {
+        const totalPlayers = Object.keys(state.players).length;
+        const nextOrder = myPlayer.turnOrder + 1;
+        newCurrentTurnOrder = nextOrder <= totalPlayers ? nextOrder : 0;
+      }
+      return {
+        ...state,
+        currentTurnOrder: newCurrentTurnOrder,
+        awaitingEndRound: false,
+        landedOnNegativeMove: false,
+        landedOnBarrera: false,
+      };
+    }
 
     case 'SET_CASILLA_TIPO':
       return {
@@ -201,6 +222,12 @@ function gameReducer(state: GameState, action: Action): GameState {
         landedOnNegativeMove: action.casilla === 'mov_negativo',
         landedOnBarrera: action.casilla === 'barrera',
       };
+
+    case 'SET_PENALTY_TURNS':
+      return { ...state, penaltyTurns: action.turns };
+
+    case 'CLEAR_PENALTY_TURNS':
+      return { ...state, penaltyTurns: 0, landedOnBarrera: false };
 
     case 'SHOW_ORDER_MINIGAME':
       return { ...state, showOrderMinigame: true };
@@ -223,6 +250,7 @@ const initialState: GameState = {
   showOrderMinigame: false,
   landedOnNegativeMove: false,
   landedOnBarrera: false,
+  penaltyTurns: 0,
 };
 
 // -------------------------------------------------------------------
@@ -370,9 +398,30 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
                 dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'mov_negativo' });
               } else if (casilla === 'barrera') {
                 dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'barrera' });
+                // Fijar ya los turnos de penalización para que el bloqueo se aplique
+                // en los próximos turnos sin esperar al end_round
+                if (extra > 0) {
+                  dispatch({ type: 'SET_PENALTY_TURNS', turns: extra });
+                }
               } else {
                 dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'none' });
               }
+            }
+            break;
+          }
+
+          case 'penalizacion_actualizada': {
+            const myUsername = sessionStorage.getItem('username');
+            if ((data.user as string) === myUsername) {
+              dispatch({ type: 'SET_PENALTY_TURNS', turns: data.penalizacion as number });
+            }
+            break;
+          }
+
+          case 'penalizacion_eliminada': {
+            const myUsername = sessionStorage.getItem('username');
+            if ((data.user as string) === myUsername) {
+              dispatch({ type: 'CLEAR_PENALTY_TURNS' });
             }
             break;
           }

@@ -29,6 +29,8 @@ export default function ShopModal({ onClose }: ShopModalProps) {
   const { myPlayer, state } = useGameContext();
   // Contador local: cuántos "Avanzar Casillas" se han comprado en este turno (solo UX)
   const [avanzarCount, setAvanzarCount] = useState(0);
+  const penaltyTurns = state.penaltyTurns;
+  const isBlocked = penaltyTurns > 0;
 
   const handleBuy = (item: ShopItem) => {
     const ws = getGameSocket();
@@ -76,6 +78,15 @@ export default function ShopModal({ onClose }: ShopModalProps) {
           </div>
         </div>
 
+        {/* Banner de bloqueo por penalización */}
+        {isBlocked && (
+          <div className="px-6 py-3 bg-red-900/70 border-b-4 border-red-500 text-center">
+            <p className="text-[#ffb3b3] font-pixel text-sm tracking-wide">
+              Estás bloqueado — {penaltyTurns} turno{penaltyTurns > 1 ? 's' : ''} restante{penaltyTurns > 1 ? 's' : ''}. No puedes comprar objetos.
+            </p>
+          </div>
+        )}
+
         {/* Contenido con scroll */}
         <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -84,14 +95,17 @@ export default function ShopModal({ onClose }: ShopModalProps) {
               const isSalvavidasMov = item.name === 'Salvavidas movimiento';
               const isSalvavidasBloqueo = item.name === 'Salvavidas bloqueo';
 
+              // Bloqueado globalmente si hay penalización activa
               // Avanzar: solo antes de tirar
               // Salvavidas: solo tras tirar Y haber caído en la casilla correspondiente
               const disabled =
+                isBlocked ||
                 (isAvanzar && state.hasMoved) ||
                 (isSalvavidasMov && (!state.hasMoved || !state.landedOnNegativeMove)) ||
                 (isSalvavidasBloqueo && (!state.hasMoved || !state.landedOnBarrera));
 
               const disabledReason =
+                isBlocked ? '' : // el banner ya lo explica
                 isAvanzar ? 'Solo antes de tirar' :
                 isSalvavidasMov ? (state.hasMoved ? 'No caíste en casilla negativa' : 'Solo tras tirar los dados') :
                 isSalvavidasBloqueo ? (state.hasMoved ? 'No caíste en barrera' : 'Solo tras tirar los dados') :
