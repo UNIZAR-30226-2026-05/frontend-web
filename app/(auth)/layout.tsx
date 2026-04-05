@@ -10,7 +10,7 @@ export default function AuthLayout({
         <div
             className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
             style={{
-                backgroundImage: "url('/lobby.png')",
+                backgroundImage: "url('/bg_inicio.png')",
                 backgroundSize: 'cover',
                 backgroundPosition: 'center'
             }}
