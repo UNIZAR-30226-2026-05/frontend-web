@@ -5,8 +5,8 @@ type UserData = {
 }
 
 
-export async function registerUserService (userData: object) {
-    const url = `${process.env.API_URL}/usuarios/registro/`;
+export async function registerUserService(userData: object) {
+    const url = `${process.env.API_URL}usuarios/registro/`;
 
     try {
         const response = await fetch(url, {
@@ -22,7 +22,7 @@ export async function registerUserService (userData: object) {
 
         return data;
 
-    }catch (error) {
+    } catch (error) {
         console.error('Error registering user:', error);
         throw error;
     }
@@ -30,8 +30,8 @@ export async function registerUserService (userData: object) {
 }
 
 
-export async function loginUserService (userData: UserData) {
-    const url = `${process.env.API_URL}/usuarios/login`;
+export async function loginUserService(userData: UserData) {
+    const url = `${process.env.API_URL}usuarios/login`;
 
     const params = new URLSearchParams();
     params.append('username', userData.username);
@@ -48,17 +48,17 @@ export async function loginUserService (userData: UserData) {
 
         const data = await response.json();
         console.log('Response from backend:', data); // Para verificar la respuesta del backend
-        
+
         return data;
 
-    }catch (error) {
+    } catch (error) {
         console.error('Error logging in user:', error);
         throw error;
     }
 
 }
 // como getItem devuelve string | null, el token puede ser null, por eso el tipo de token es string | null
-export async function CrearPartidaService (token: string | null) : Promise<number> {
+export async function CrearPartidaService(token: string | null): Promise<number> {
 
     // Usamos NEXT_PUBLIC_API_URL porque es invocado desde un Client Component
     const apiHost = process.env.NEXT_PUBLIC_API_URL || 'localhost:8080';
@@ -73,17 +73,17 @@ export async function CrearPartidaService (token: string | null) : Promise<numbe
                 'Authorization': `Bearer ${token}`
             },
         });
-        
+
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`Error ${response.status}: ${errorText}`);
         }
-        
+
         const data = await response.json();
 
         return data;
 
-    }catch (error) {
+    } catch (error) {
         console.error('Error creating game:', error);
         throw error;
     }
