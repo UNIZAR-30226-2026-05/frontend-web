@@ -6,7 +6,7 @@ type UserData = {
 
 
 export async function registerUserService(userData: object) {
-    const url = `${process.env.API_URL}usuarios/registro/`;
+    const url = `${process.env.API_URL}/usuarios/registro/`;
 
     try {
         const response = await fetch(url, {
@@ -31,7 +31,7 @@ export async function registerUserService(userData: object) {
 
 
 export async function loginUserService(userData: UserData) {
-    const url = `${process.env.API_URL}usuarios/login`;
+    const url = `${process.env.API_URL}/usuarios/login`;
 
     const params = new URLSearchParams();
     params.append('username', userData.username);
