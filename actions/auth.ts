@@ -21,7 +21,6 @@ const cookieConfig = {
     //maxAge: 60 * 60 * 24 * 7, // 7 días
     path: '/',
     httpOnly: true, // solo se puede acceder a la cookie desde el servidor, no desde el cliente, de esta manera se evita mandar al cliente.
-    domain: process.env.HOST ?? 'localhost', // si no se define la variable de entorno HOST, se usará localhost por defecto
     secure: process.env.NODE_ENV === 'production', // solo se enviará la cookie a través de HTTPS en producción
 };
 
