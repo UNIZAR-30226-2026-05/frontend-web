@@ -62,7 +62,7 @@ export async function CrearPartidaService(token: string | null): Promise<number>
 
     // Usamos NEXT_PUBLIC_API_URL porque es invocado desde un Client Component
     const apiHost = process.env.NEXT_PUBLIC_API_URL || 'localhost:8080';
-    const baseUrl = `http://${apiHost}`;
+    const baseUrl = `${apiHost}`;
     const url = `${baseUrl}/partidas/crear_partida`;
 
     try {
@@ -93,7 +93,7 @@ export async function CrearPartidaService(token: string | null): Promise<number>
 export async function UnirsePartidaService(codigoPartida: number, token: string | null): Promise<number> {
 
     const apiHost = process.env.NEXT_PUBLIC_API_URL || 'localhost:8080';
-    const baseUrl = `http://${apiHost}`;
+    const baseUrl = `${apiHost}`;
 
     const attempts: Array<{ url: string; body: Record<string, number> | null }> = [
         { url: `${baseUrl}/partidas/unirse_partida`, body: { id_partida: codigoPartida } },
