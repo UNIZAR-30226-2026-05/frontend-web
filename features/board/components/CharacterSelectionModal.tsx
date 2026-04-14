@@ -16,13 +16,13 @@ const CHARACTERS: Character[] = [
   {
     id: 'banquero',
     name: 'Banquero',
-    description: 'Roba una cantidad de monedas X a un jugador elegido por el propio banquero en cada turno.',
+    description: 'Roba 2 monedas a un jugador elegido por el propio banquero en cada turno (al escapista únicamente 1 moneda).',
     image: '/personajes_profile/banquero_profile.png'
   },
   {
     id: 'videojugador',
     name: 'Videojugador',
-    description: 'Vota entre dos opciones de minijuegos posibles.',
+    description: 'Vota entre dos opciones de minijuegos de elección posibles.',
     image: '/personajes_profile/videojugador_profile.png'
   },
   {

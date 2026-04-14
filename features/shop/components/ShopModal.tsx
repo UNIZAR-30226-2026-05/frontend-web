@@ -17,7 +17,7 @@ const SHOP_ITEMS: ShopItem[] = [
   { id: 1, name: "Avanzar Casillas",      emoji: "👞", price: 1,  description: "Avanza una casilla extra tras tirar los dados" },
   { id: 2, name: "Mejorar Dados",          emoji: "🎲", price: 3,  description: "Mejora tu segundo dado un nivel para esta tirada" },
   { id: 3, name: "Barrera",               emoji: "🚧", price: 10, description: "Añade un turno de penalización al jugador elegido" },
-  { id: 4, name: "Salvavidas bloqueo",    emoji: "🔒", price: 10, description: "Anula el efecto de una casilla de bloqueo" },
+  { id: 4, name: "Salvavidas bloqueo",    emoji: "🔒", price: 10, description: "Anula el efecto de una casilla de bloqueo (este objeto no anula la barrera impuesta por otro jugador)" },
 ];
 
 interface ShopModalProps {
@@ -55,7 +55,7 @@ export default function ShopModal({ onClose }: ShopModalProps) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       {/* Contenedor del Modal */}
-      <div className="relative w-full max-w-4xl max-h-[90vh] bg-[var(--color-sp-bg-dark)] border-4 border-white flex flex-col shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+      <div className="relative w-full max-w-6xl max-h-[90vh] bg-[var(--color-sp-bg-dark)] border-4 border-white flex flex-col shadow-[0_0_20px_rgba(0,0,0,0.5)]">
 
         {/* Cabecera */}
         <div className="p-4 border-b-4 border-white flex justify-between items-center bg-[var(--color-sp-bg-medium)]">
@@ -71,7 +71,7 @@ export default function ShopModal({ onClose }: ShopModalProps) {
               className="text-white hover:text-red-400 transition-colors text-3xl font-bold p-2 leading-none"
               aria-label="Cerrar"
             >
-              ×
+              X
             </button>
           </div>
         </div>
@@ -96,7 +96,7 @@ export default function ShopModal({ onClose }: ShopModalProps) {
 
         {/* Contenido con scroll */}
         <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
             {SHOP_ITEMS.map((item) => {
               const purchaseCount = state.purchasedItems[item.name] ?? 0;
 
@@ -111,15 +111,15 @@ export default function ShopModal({ onClose }: ShopModalProps) {
                     </span>
                     {purchaseCount > 0 && (
                       <span className="absolute -top-2 -right-3 bg-yellow-400 text-black font-pixel text-xs px-1.5 py-0.5">
-                        ×{purchaseCount}
+                        x{purchaseCount}
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-1 flex-1 w-full">
                     <h3 className="text-white font-pixel text-sm sm:text-base leading-tight">
                       {item.name}
                     </h3>
-                    <p className="text-[var(--color-sp-text-light)]/70 font-pixel text-[10px] leading-tight">
+                    <p className="flex-1 flex items-center justify-center text-[var(--color-sp-text-light)]/70 font-pixel text-[10px] leading-tight">
                       {item.description}
                     </p>
                     <p className="text-[var(--color-sp-coin-light)] font-pixel text-lg">
