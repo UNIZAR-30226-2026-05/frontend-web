@@ -40,10 +40,10 @@ interface GameState {
   myUsername: string | null;
   /** Mostrar el minijuego de reflejos para determinar el orden de la siguiente ronda */
   showOrderMinigame: boolean;
-  /** El jugador local cayó en una casilla de movimiento negativo este turno */
-  landedOnNegativeMove: boolean;
   /** El jugador local cayó en una casilla de barrera este turno */
   landedOnBarrera: boolean;
+  /** Objetos comprados en el turno actual (nombre -> cantidad), persiste entre aperturas de la tienda */
+  purchasedItems: Record<string, number>;
   /** Turnos de penalización restantes para el jugador local (casilla barrera) */
   penaltyTurns: number;
 }
@@ -62,7 +62,8 @@ type Action =
   | { type: 'LOCAL_END_ROUND' }
   | { type: 'SHOW_ORDER_MINIGAME' }
   | { type: 'HIDE_ORDER_MINIGAME' }
-  | { type: 'SET_CASILLA_TIPO'; casilla: 'mov_negativo' | 'barrera' | 'none' }
+  | { type: 'SET_CASILLA_TIPO'; casilla: 'barrera' | 'none' }
+  | { type: 'MARK_ITEM_PURCHASED'; item: string }
   | { type: 'SET_PENALTY_TURNS'; turns: number }
   | { type: 'CLEAR_PENALTY_TURNS' };
 
@@ -167,8 +168,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         currentTurnOrder: 1,
         hasMoved: false,
         awaitingEndRound: false,
-        landedOnNegativeMove: false,
         landedOnBarrera: false,
+        purchasedItems: {},
       };
     }
 
@@ -211,16 +212,24 @@ function gameReducer(state: GameState, action: Action): GameState {
         ...state,
         currentTurnOrder: newCurrentTurnOrder,
         awaitingEndRound: false,
-        landedOnNegativeMove: false,
         landedOnBarrera: false,
+        purchasedItems: {},
       };
     }
 
     case 'SET_CASILLA_TIPO':
       return {
         ...state,
-        landedOnNegativeMove: action.casilla === 'mov_negativo',
         landedOnBarrera: action.casilla === 'barrera',
+      };
+
+    case 'MARK_ITEM_PURCHASED':
+      return {
+        ...state,
+        purchasedItems: {
+          ...state.purchasedItems,
+          [action.item]: (state.purchasedItems[action.item] ?? 0) + 1,
+        },
       };
 
     case 'SET_PENALTY_TURNS':
@@ -248,9 +257,9 @@ const initialState: GameState = {
   lastDice: null,
   myUsername: null,
   showOrderMinigame: false,
-  landedOnNegativeMove: false,
   landedOnBarrera: false,
   penaltyTurns: 0,
+  purchasedItems: {},
 };
 
 // -------------------------------------------------------------------
@@ -267,6 +276,8 @@ export interface GameContextType {
   sendEndRound: () => void;
   /** Enviar puntuación del minijuego de reflejos al backend y cerrar el overlay */
   sendScoreReflejos: (reactionTimeMs: number) => void;
+  /** Registrar la compra de un objeto en el turno actual */
+  markItemPurchased: (item: string) => void;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -394,9 +405,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             if (lastMovedUser === myUsername) {
               const casilla = data.casilla as string;
               const extra = data.extra as number;
-              if (casilla === 'mov' && extra < 0) {
-                dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'mov_negativo' });
-              } else if (casilla === 'barrera') {
+              if (casilla === 'barrera') {
                 dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'barrera' });
                 // Fijar ya los turnos de penalización para que el bloqueo se aplique
                 // en los próximos turnos sin esperar al end_round
@@ -465,6 +474,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'LOCAL_END_ROUND' });
   }, []);
 
+  const markItemPurchased = useCallback((item: string) => {
+    dispatch({ type: 'MARK_ITEM_PURCHASED', item });
+  }, []);
+
   const sendScoreReflejos = useCallback((reactionTimeMs: number) => {
     const ws = getGameSocket();
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -488,7 +501,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
-    <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos }}>
+    <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, markItemPurchased }}>
       {children}
     </GameContext.Provider>
   );

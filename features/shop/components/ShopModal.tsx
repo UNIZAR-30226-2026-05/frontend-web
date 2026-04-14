@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import PixelButton from '@/components/UI/PixelButton';
 import { useGameContext } from '@/features/board/context/GameContext';
 import { getGameSocket } from '@/lib/gameSocket';
@@ -17,8 +17,7 @@ const SHOP_ITEMS: ShopItem[] = [
   { id: 1, name: "Avanzar Casillas",      emoji: "👞", price: 1,  description: "Avanza una casilla extra tras tirar los dados" },
   { id: 2, name: "Mejorar Dados",          emoji: "🎲", price: 3,  description: "Mejora tu segundo dado un nivel para esta tirada" },
   { id: 3, name: "Barrera",               emoji: "🚧", price: 10, description: "Añade un turno de penalización al jugador elegido" },
-  { id: 4, name: "Salvavidas movimiento", emoji: "🛟", price: 5,  description: "Anula el efecto de una casilla de movimiento" },
-  { id: 5, name: "Salvavidas bloqueo",    emoji: "🔒", price: 10, description: "Anula el efecto de una casilla de bloqueo" },
+  { id: 4, name: "Salvavidas bloqueo",    emoji: "🔒", price: 10, description: "Anula el efecto de una casilla de bloqueo" },
 ];
 
 interface ShopModalProps {
@@ -26,11 +25,10 @@ interface ShopModalProps {
 }
 
 export default function ShopModal({ onClose }: ShopModalProps) {
-  const { myPlayer, state } = useGameContext();
-  // Contador local: cuántos "Avanzar Casillas" se han comprado en este turno (solo UX)
-  const [avanzarCount, setAvanzarCount] = useState(0);
+  const { myPlayer, state, markItemPurchased } = useGameContext();
   const penaltyTurns = state.penaltyTurns;
   const isBlocked = penaltyTurns > 0;
+  const hasRolled = state.hasMoved;
 
   const handleBuy = (item: ShopItem) => {
     const ws = getGameSocket();
@@ -40,7 +38,7 @@ export default function ShopModal({ onClose }: ShopModalProps) {
     }
     if (!myPlayer || myPlayer.balance < item.price) return;
 
-    const isSalvavidas = item.name === 'Salvavidas movimiento' || item.name === 'Salvavidas bloqueo';
+    const isSalvavidas = item.name === 'Salvavidas bloqueo';
     if (isSalvavidas) {
       // El backend gestiona compra y uso en un único action
       ws.send(JSON.stringify({ action: 'usar_salvavidas', payload: { objeto: item.name } }));
@@ -48,11 +46,11 @@ export default function ShopModal({ onClose }: ShopModalProps) {
       ws.send(JSON.stringify({ action: 'comprar_objeto', payload: { objeto: item.name } }));
       // Uso instantáneo: el objeto no se guarda en inventario, se usa en el momento de comprarlo
       ws.send(JSON.stringify({ action: 'usar_objeto', payload: { objeto: item.name } }));
-      if (item.name === 'Avanzar Casillas') {
-        setAvanzarCount(prev => prev + 1);
-      }
     }
+    markItemPurchased(item.name);
   };
+
+  const shopDisabled = isBlocked || hasRolled;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -87,29 +85,20 @@ export default function ShopModal({ onClose }: ShopModalProps) {
           </div>
         )}
 
+        {/* Banner de dados ya tirados */}
+        {!isBlocked && hasRolled && (
+          <div className="px-6 py-3 bg-yellow-900/70 border-b-4 border-yellow-600 text-center">
+            <p className="text-yellow-200 font-pixel text-sm tracking-wide">
+              Ya has tirado los dados. Los objetos solo se pueden comprar antes de tirar.
+            </p>
+          </div>
+        )}
+
         {/* Contenido con scroll */}
         <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {SHOP_ITEMS.map((item) => {
-              const isAvanzar = item.name === 'Avanzar Casillas';
-              const isSalvavidasMov = item.name === 'Salvavidas movimiento';
-              const isSalvavidasBloqueo = item.name === 'Salvavidas bloqueo';
-
-              // Bloqueado globalmente si hay penalización activa
-              // Avanzar: solo antes de tirar
-              // Salvavidas: solo tras tirar Y haber caído en la casilla correspondiente
-              const disabled =
-                isBlocked ||
-                (isAvanzar && state.hasMoved) ||
-                (isSalvavidasMov && (!state.hasMoved || !state.landedOnNegativeMove)) ||
-                (isSalvavidasBloqueo && (!state.hasMoved || !state.landedOnBarrera));
-
-              const disabledReason =
-                isBlocked ? '' : // el banner ya lo explica
-                isAvanzar ? 'Solo antes de tirar' :
-                isSalvavidasMov ? (state.hasMoved ? 'No caíste en casilla negativa' : 'Solo tras tirar los dados') :
-                isSalvavidasBloqueo ? (state.hasMoved ? 'No caíste en barrera' : 'Solo tras tirar los dados') :
-                '';
+              const purchaseCount = state.purchasedItems[item.name] ?? 0;
 
               return (
                 <div
@@ -120,9 +109,9 @@ export default function ShopModal({ onClose }: ShopModalProps) {
                     <span className="text-6xl group-hover:scale-110 transition-transform duration-200" role="img" aria-label={item.name}>
                       {item.emoji}
                     </span>
-                    {isAvanzar && avanzarCount > 0 && (
+                    {purchaseCount > 0 && (
                       <span className="absolute -top-2 -right-3 bg-yellow-400 text-black font-pixel text-xs px-1.5 py-0.5">
-                        ×{avanzarCount}
+                        ×{purchaseCount}
                       </span>
                     )}
                   </div>
@@ -140,16 +129,11 @@ export default function ShopModal({ onClose }: ShopModalProps) {
                   <PixelButton
                     variant="green"
                     onClick={() => handleBuy(item)}
-                    disabled={disabled}
+                    disabled={shopDisabled}
                     className="w-full text-xs py-2 px-4 h-12 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Comprar
                   </PixelButton>
-                  {disabled && (
-                    <p className="text-[#ffb3b3] font-pixel text-[9px] -mt-2">
-                      {disabledReason}
-                    </p>
-                  )}
                 </div>
               );
             })}
