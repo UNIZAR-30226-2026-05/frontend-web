@@ -11,6 +11,7 @@ import { useGameContext } from "@/features/board/context/GameContext";
 import { getGameSocket, getLobbyPlayers } from "@/lib/gameSocket";
 import { useEffect, useState } from "react";
 import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/components/OrderMinigameOverlay";
+import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
 
 // Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
 const WS_NAME_TO_ID: Record<string, string> = {
@@ -35,13 +36,25 @@ function ReflejosMinigameController() {
   );
 }
 
+/** Muestra el overlay de Doble o Nada cuando el jugador cae en la casilla correspondiente. */
+function DobleNadaController() {
+  const { state, closeDobleNada } = useGameContext();
+
+  if (!state.showDobleNada) return null;
+
+  return (
+    <DobleNadaOverlay onClose={closeDobleNada} />
+  );
+}
+
 export default function GamePage() {
-  const [isShopOpen, setIsShopOpen] = useState(false);
-  const [showCharacterSelect, setShowCharacterSelect] = useState(true);
   const [lobbyPlayers] = useState<unknown[]>(() => getLobbyPlayers());
   const [unavailableRoles, setUnavailableRoles] = useState<string[]>([]);
 
-  // Debug State for Minigames
+  const [isShopOpen, setIsShopOpen] = useState(false);
+  const [showCharacterSelect, setShowCharacterSelect] = useState(false);
+
+  // Debug State for Minigames - DESACTIVADO POR DEFECTO PARA VER EL BOARD
   const [activeMinigame, setActiveMinigame] = useState<OrderMinigameType | null>(null);
 
   const handleCharacterSelect = (roleId: string) => {
@@ -170,6 +183,9 @@ export default function GamePage() {
 
       {/* Overlay de Minijuego de Orden (Reflejos) - gestionado por el backend */}
       <ReflejosMinigameController />
+
+      {/* Overlay de Doble o Nada */}
+      <DobleNadaController />
 
       {/* Overlay de Minijuegos de Orden */}
       {activeMinigame && (

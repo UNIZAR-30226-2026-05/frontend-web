@@ -40,12 +40,16 @@ interface GameState {
   myUsername: string | null;
   /** Mostrar el minijuego de reflejos para determinar el orden de la siguiente ronda */
   showOrderMinigame: boolean;
+  /** Mostrar overlay de Doble o Nada */
+  showDobleNada: boolean;
   /** El jugador local cayó en una casilla de movimiento negativo este turno */
   landedOnNegativeMove: boolean;
   /** El jugador local cayó en una casilla de barrera este turno */
   landedOnBarrera: boolean;
   /** Turnos de penalización restantes para el jugador local (casilla barrera) */
   penaltyTurns: number;
+  /** Flag de inactividad global */
+  isInactive: boolean;
 }
 
 // -------------------------------------------------------------------
@@ -62,9 +66,12 @@ type Action =
   | { type: 'LOCAL_END_ROUND' }
   | { type: 'SHOW_ORDER_MINIGAME' }
   | { type: 'HIDE_ORDER_MINIGAME' }
+  | { type: 'SHOW_DOBLE_NADA' }
+  | { type: 'HIDE_DOBLE_NADA' }
   | { type: 'SET_CASILLA_TIPO'; casilla: 'mov_negativo' | 'barrera' | 'none' }
   | { type: 'SET_PENALTY_TURNS'; turns: number }
-  | { type: 'CLEAR_PENALTY_TURNS' };
+  | { type: 'CLEAR_PENALTY_TURNS' }
+  | { type: 'SET_INACTIVE' };
 
 // -------------------------------------------------------------------
 // Reducer
@@ -84,7 +91,7 @@ function gameReducer(state: GameState, action: Action): GameState {
           diceType: 'normal',
         };
       });
-      return { ...state, players, currentTurnOrder: 1, myUsername: action.myUsername };
+      return { ...state, players, currentTurnOrder: 1, myUsername: action.myUsername, isInactive: false };
     }
 
     case 'PLAYER_SELECTED': {
@@ -105,10 +112,6 @@ function gameReducer(state: GameState, action: Action): GameState {
       if (!player) return state;
 
       const isLocalPlayer = action.user === state.myUsername;
-      const nextTurnOrder = player.turnOrder + 1;
-      const totalPlayers = Object.keys(state.players).length;
-      // Si todos jugaron → 0 (esperando minijuego/nueva ronda)
-      const newCurrentTurnOrder = nextTurnOrder <= totalPlayers ? nextTurnOrder : 0;
 
       return {
         ...state,
@@ -116,7 +119,7 @@ function gameReducer(state: GameState, action: Action): GameState {
           ...state.players,
           [action.user]: { ...player, position: action.newPos },
         },
-        currentTurnOrder: newCurrentTurnOrder,
+        // MANTENER el currentTurnOrder hasta que el jugador envíe end_round o el backend cambie el turno
         hasMoved: isLocalPlayer ? true : state.hasMoved,
         awaitingEndRound: isLocalPlayer ? true : state.awaitingEndRound,
         lastDice: {
@@ -169,6 +172,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         awaitingEndRound: false,
         landedOnNegativeMove: false,
         landedOnBarrera: false,
+        showDobleNada: false,
       };
     }
 
@@ -193,13 +197,10 @@ function gameReducer(state: GameState, action: Action): GameState {
           updatedPlayers[username] = { ...updatedPlayers[username], ...updates };
         }
       }
-      return { ...state, players: updatedPlayers };
+      return { ...state, players: updatedPlayers, isInactive: false };
     }
 
     case 'LOCAL_END_ROUND': {
-      // Cuando el jugador tiró dados, PLAYER_MOVED_DICE ya avanzó currentTurnOrder.
-      // Cuando el jugador pasó de turno sin tirar (bloqueado), debemos avanzarlo aquí,
-      // o el siguiente jugador nunca verá isMyTurn = true y el juego queda congelado.
       const myPlayer = state.players[state.myUsername ?? ''];
       let newCurrentTurnOrder = state.currentTurnOrder;
       if (!state.hasMoved && myPlayer) {
@@ -213,6 +214,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         awaitingEndRound: false,
         landedOnNegativeMove: false,
         landedOnBarrera: false,
+        showDobleNada: false,
       };
     }
 
@@ -235,6 +237,15 @@ function gameReducer(state: GameState, action: Action): GameState {
     case 'HIDE_ORDER_MINIGAME':
       return { ...state, showOrderMinigame: false };
 
+    case 'SHOW_DOBLE_NADA':
+      return { ...state, showDobleNada: true };
+    
+    case 'HIDE_DOBLE_NADA':
+      return { ...state, showDobleNada: false };
+
+    case 'SET_INACTIVE':
+      return { ...state, isInactive: true };
+
     default:
       return state;
   }
@@ -248,9 +259,11 @@ const initialState: GameState = {
   lastDice: null,
   myUsername: null,
   showOrderMinigame: false,
+  showDobleNada: false,
   landedOnNegativeMove: false,
   landedOnBarrera: false,
   penaltyTurns: 0,
+  isInactive: false,
 };
 
 // -------------------------------------------------------------------
@@ -267,9 +280,11 @@ export interface GameContextType {
   sendEndRound: () => void;
   /** Enviar puntuación del minijuego de reflejos al backend y cerrar el overlay */
   sendScoreReflejos: (reactionTimeMs: number) => void;
+  /** Cerrar el overlay de Doble o Nada */
+  closeDobleNada: () => void;
 }
 
-const GameContext = createContext<GameContextType | null>(null);
+export const GameContext = createContext<GameContextType | null>(null);
 
 export function useGameContext(): GameContextType {
   const ctx = useContext(GameContext);
@@ -282,6 +297,7 @@ export function useGameContext(): GameContextType {
 // -------------------------------------------------------------------
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [timeLeft, setTimeLeft] = React.useState(20);
 
   // Inicialización desde sessionStorage (solo cliente)
   useEffect(() => {
@@ -297,6 +313,50 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       console.error('GameProvider: error al parsear lobbyPlayers');
     }
   }, []);
+
+  // Timer de Inactividad (20 segundos)
+  useEffect(() => {
+    if (state.isInactive) return;
+
+    // Solo activamos el timer si hay una interacción pendiente:
+    // 1. Es mi turno de tirar
+    // 2. He tirado y espero a terminar ronda (Tienda abierta o esperando confirmación)
+    // 3. Hay un minijuego de orden activo (Reflejos)
+    // 4. Hay un Doble o Nada activo
+    const interactionRequired = 
+      (state.myUsername && state.players[state.myUsername]?.turnOrder === state.currentTurnOrder) || 
+      state.awaitingEndRound ||
+      state.showOrderMinigame || 
+      state.showDobleNada;
+
+    if (!interactionRequired) {
+      if (timeLeft !== 20) setTimeLeft(20);
+      return;
+    }
+
+    // El timer se reinicia si cambia el turno, si se activa un minijuego, 
+    // o si el jugador local se mueve (hasMoved cambia)
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          dispatch({ type: 'SET_INACTIVE' });
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [
+    state.currentTurnOrder, 
+    state.showOrderMinigame, 
+    state.showDobleNada, 
+    state.hasMoved, 
+    state.awaitingEndRound, 
+    state.isInactive, 
+    state.myUsername
+  ]);
 
   // Listener de mensajes WebSocket
   useEffect(() => {
@@ -315,12 +375,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             const user = data.user as string;
             const character = data.character as string;
             dispatch({ type: 'PLAYER_SELECTED', user, character });
-            // Guardar personaje propio en sessionStorage
-            const myUsername = sessionStorage.getItem('username');
-            if (user === myUsername) {
-              const roleId = WS_CHAR_TO_ROLE_ID[character] ?? character.toLowerCase();
-              sessionStorage.setItem('myCharacter', roleId);
-            }
             break;
           }
 
@@ -328,8 +382,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             const user = data.user as string;
             const newPos = data.nueva_casilla as number;
             lastMovedUser = user;
-            // Si trae dado1/dado2 es un movimiento por tirada normal
-            // Si no, es un movimiento forzado por casilla de movimiento
             if ('dado1' in data && 'dado2' in data) {
               dispatch({
                 type: 'PLAYER_MOVED_DICE',
@@ -360,21 +412,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             break;
           }
 
-          case 'reconnect_success': {
-            const board = data.current_board as {
-              positions?: Record<string, number>;
-              balances?: Record<string, number>;
-              characters?: Record<string, string>;
-              order?: Record<string, number>;
-            } | undefined;
-            if (board) {
-              dispatch({ type: 'RECONNECT_SUCCESS', boardState: board });
-            }
-            break;
-          }
-
           case 'choose_minijuego': {
-            // No se muestra UI de elección: auto-responder siempre con Reflejos
             const ws = getGameSocket();
             if (ws && ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({
@@ -398,14 +436,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
                 dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'mov_negativo' });
               } else if (casilla === 'barrera') {
                 dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'barrera' });
-                // Fijar ya los turnos de penalización para que el bloqueo se aplique
-                // en los próximos turnos sin esperar al end_round
                 if (extra > 0) {
                   dispatch({ type: 'SET_PENALTY_TURNS', turns: extra });
                 }
               } else {
                 dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'none' });
               }
+            }
+            break;
+          }
+
+          case 'minijuego_casilla': {
+            const myUsername = sessionStorage.getItem('username');
+            if (lastMovedUser === myUsername && data.minijuego === 'Doble_Nada') {
+              dispatch({ type: 'SHOW_DOBLE_NADA' });
             }
             break;
           }
@@ -425,16 +469,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             }
             break;
           }
-
-          // Mensajes de casillas especiales: ignorados intencionalmente
-          case 'intercambiar_objeto':
-          case 'obtener_objeto':
-          case 'minijuego_casilla':
-          case 'inventory_updated':
-          case 'objeto_usado':
-          // Habilidades de personaje del vidente: ignoradas intencionalmente
-          case 'dice_shown':
-            break;
         }
       } catch {
         // Mensaje no-JSON u otros errores → ignorar
@@ -448,30 +482,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   // Acciones enviadas al WebSocket
   const sendMovePlayer = useCallback(() => {
     const ws = getGameSocket();
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.warn('WebSocket no disponible para move_player');
-      return;
-    }
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ action: 'move_player' }));
   }, []);
 
   const sendEndRound = useCallback(() => {
     const ws = getGameSocket();
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.warn('WebSocket no disponible para end_round');
-      return;
-    }
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ action: 'end_round' }));
     dispatch({ type: 'LOCAL_END_ROUND' });
   }, []);
 
   const sendScoreReflejos = useCallback((reactionTimeMs: number) => {
     const ws = getGameSocket();
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.warn('WebSocket no disponible para score_minijuego');
-      return;
-    }
-    // El backend espera ms * 1000 para reflejos
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({
       action: 'score_minijuego',
       payload: { score: reactionTimeMs * 1000 },
@@ -479,16 +503,30 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'HIDE_ORDER_MINIGAME' });
   }, []);
 
+  const closeDobleNada = useCallback(() => {
+    dispatch({ type: 'HIDE_DOBLE_NADA' });
+  }, []);
+
   // Datos derivados
   const myPlayer = state.myUsername ? (state.players[state.myUsername] ?? null) : null;
   const isMyTurn =
     myPlayer !== null &&
     myPlayer.turnOrder === state.currentTurnOrder &&
-    !state.hasMoved;
+    !state.hasMoved &&
+    !state.isInactive;
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
-    <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos }}>
+    <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, closeDobleNada }}>
+        {state.isInactive && (
+            <div className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center font-pixel">
+                <div className="border-4 border-red-500 p-12 bg-red-950/20 shadow-[0_0_50px_rgba(239,68,68,0.4)]">
+                    <h2 className="text-red-500 text-5xl mb-6 tracking-widest uppercase animate-pulse">SESIÓN SUSPENDIDA</h2>
+                    <p className="text-white text-xl uppercase tracking-widest max-w-md">Has sido marcado como inactivo por no responder en 20s.</p>
+                    <p className="text-white/40 text-sm mt-8 uppercase tracking-widest">Reconéctate para continuar la partida.</p>
+                </div>
+            </div>
+        )}
       {children}
     </GameContext.Provider>
   );

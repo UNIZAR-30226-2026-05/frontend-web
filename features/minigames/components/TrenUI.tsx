@@ -2,87 +2,195 @@
 
 import React, { useState, useEffect } from "react";
 import PixelButton from "@/components/UI/PixelButton";
-import PixelInput from "@/components/UI/PixelInput";
 import Image from "next/image";
 
 interface TrenUIProps {
-  onAction: (result: { count: number }) => void;
+  onAction: (result: { score: number }) => void;
 }
 
-const CHARACTERS = [
-  "/personajes_profile/banquero_profile.png",
-  "/personajes_profile/escapista_profile.png",
-  "/personajes_profile/vidente_profile.png",
-  "/personajes_profile/videojugador_profile.png"
-];
+// Pool de 10 vagones con recuentos fijos
+const WAGON_POOL = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, count: i + 1 }));
 
-// Centros de las ventanas en % de ancho del vagón
-const WINDOW_X_CENTERS = [11.0, 19.5, 28.0, 36.5, 45.0, 53.5, 62.0, 70.5, 79.0, 87.5];
-const WINDOW_Y_TOP = "39%"; // 45% center - half passenger height (approx 6%) 
-
+/**
+ * TrenUI: Minijuego de contar pasajeros.
+ * 
+ * Diseño Responsivo: 
+ * Utilizamos un contenedor "Scene" que mantiene el aspect ratio nativo de vias.png (2816x1536).
+ * Esto permite posicionar el tren con coordenadas relativas (%) que coinciden exactamente
+ * con el dibujo de las vías en cualquier resolución.
+ */
 export default function TrenUI({ onAction }: TrenUIProps) {
-  const [inputValue, setInputValue] = useState("");
+  const [userCount, setUserCount] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
-  const [wagonCount, setWagonCount] = useState<number>(0);
-  const [passengers, setPassengers] = useState<{ wagonIndex: number, windowIndex: number, charImg: string }[]>([]);
-  const [totalCharacters, setTotalCharacters] = useState(0);
+  const [selectedWagons, setSelectedWagons] = useState<{ id: number; count: number }[]>([]);
+
+  const [debugTop, setDebugTop] = useState(76.7);
+  const [debugTranslateY, setDebugTranslateY] = useState(-113.5);
+  const [debugScale, setDebugScale] = useState(46.0); // Ancho en %
+  const [debugStartX, setDebugStartX] = useState(-234); // Inicio en %
+  const [debugTimePerWagon, setDebugTimePerWagon] = useState(4.0); // Tiempo (s) por vagón en escena
+  const [debugWagonCount, setDebugWagonCount] = useState(4);
+  const [isPreviewing, setIsPreviewing] = useState(true); // En producción se activa al cargar
+  const [isDebug, setIsDebug] = useState(false);
 
   useEffect(() => {
-    // Generar un número aleatorio de vagones entre 3 y 5 (para que no sea eterno)
-    const wCount = Math.floor(Math.random() * 3) + 3;
-    setWagonCount(wCount);
-    
-    // Generar pasajeros aleatorios
-    const pCount = Math.floor(Math.random() * 6) + 4; // Entre 4 y 10 personajes
-    setTotalCharacters(pCount);
-    
-    const newPassengers = [];
-    const usedSlots = new Set();
-    
-    while (newPassengers.length < pCount) {
-      const wagonIndex = Math.floor(Math.random() * wCount);
-      const windowIndex = Math.floor(Math.random() * WINDOW_X_CENTERS.length);
-      const slotId = `${wagonIndex}-${windowIndex}`;
-      
-      if (!usedSlots.has(slotId)) {
-        usedSlots.add(slotId);
-        newPassengers.push({
-          wagonIndex,
-          windowIndex,
-          charImg: CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)]
-        });
-      }
+    // Activar debug si estamos en la ruta de debug
+    if (typeof window !== "undefined" && window.location.pathname.includes("debug")) {
+      setIsDebug(true);
+      setIsPreviewing(false); // En debug no queremos que empiece la animación sola
     }
-    setPassengers(newPassengers);
   }, []);
 
-  const handleSubmit = () => {
-    const value = parseInt(inputValue);
-    if (!isNaN(value)) {
-      setIsFinished(true);
-      onAction({ count: value });
+  useEffect(() => {
+    // Actualizar vagones según el contador (en debug) o al inicio (producción)
+    const count = isDebug ? debugWagonCount : 4;
+    const pool = [...WAGON_POOL];
+    
+    if (isDebug) {
+      // En debug, ordenado para facilitar pruebas
+      pool.sort((a,b) => a.id - b.id);
+    } else {
+      // En producción, aleatorio para el juego
+      pool.sort(() => Math.random() - 0.5);
     }
+    
+    setSelectedWagons(pool.slice(0, count));
+  }, [debugWagonCount, isDebug]);
+
+  const handleSubmit = () => {
+    if (isFinished) return;
+    setIsFinished(true);
+    
+    const trueTotal = selectedWagons.reduce((sum, w) => sum + w.count, 0);
+    const diff = Math.abs(trueTotal - userCount);
+    const score = Math.max(0, Math.min(9999, Math.floor(diff)));
+    
+    onAction({ score });
+  };
+
+  const adjustCount = (val: number) => {
+    if (isFinished) return;
+    setUserCount(prev => Math.max(0, prev + val));
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full gap-12 font-pixel">
-      {/* Vía del Tren */}
-      <div className="relative w-full h-[400px] bg-[#0f172a] border-y-8 border-slate-700 overflow-hidden flex items-center shadow-2xl">
-        {/* Fondo de Vías (Estático) */}
-        <div 
-          className="absolute inset-0 z-0"
-          style={{ 
-            backgroundImage: "url('/minijuegos/tren/vias.png')", 
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
-          }} 
-        />
+    <div className="relative w-screen h-screen overflow-hidden font-pixel bg-slate-900 flex items-center justify-center">
+      
+      {/* Debug Controls Overlay */}
+      {isDebug && (
+        <div className="absolute top-4 left-4 z-50 bg-black/80 p-4 border-2 border-amber-500 text-white text-xs flex flex-col gap-2 rounded-lg backdrop-blur-md">
+          <div className="font-bold text-amber-500 mb-2 underline">ALIGNMENT DEBUGGER</div>
+          <div className="flex flex-col">
+            <label>Top Pos (Rail): {debugTop.toFixed(2)}%</label>
+            <input 
+              type="range" min="0" max="100" step="0.1" 
+              value={debugTop} onChange={(e) => setDebugTop(parseFloat(e.target.value))}
+              className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label>TranslateY (Wheels): {debugTranslateY.toFixed(2)}%</label>
+            <input 
+              type="range" min="-200" max="0" step="0.5" 
+              value={debugTranslateY} onChange={(e) => setDebugTranslateY(parseFloat(e.target.value))}
+              className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label>Train Scale: {debugScale.toFixed(1)}%</label>
+            <input 
+              type="range" min="10" max="60" step="0.5" 
+              value={debugScale} onChange={(e) => setDebugScale(parseFloat(e.target.value))}
+              className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label>Start X (Spawn): {debugStartX.toFixed(0)}%</label>
+            <input 
+              type="range" min="-300" max="0" step="1" 
+              value={debugStartX} onChange={(e) => setDebugStartX(parseFloat(e.target.value))}
+              className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label>Wagons (Count): {debugWagonCount}</label>
+            <input 
+              type="range" min="1" max="10" step="1" 
+              value={debugWagonCount} onChange={(e) => setDebugWagonCount(parseInt(e.target.value))}
+              className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label>Time per Wagon (Speed): {debugTimePerWagon.toFixed(1)}s</label>
+            <input 
+              type="range" min="0.5" max="10" step="0.1" 
+              value={debugTimePerWagon} onChange={(e) => setDebugTimePerWagon(parseFloat(e.target.value))}
+              className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
+            />
+          </div>
+          <div className="mt-2 p-2 bg-white/10 rounded font-mono text-[9px]">
+            top: "{debugTop.toFixed(1)}%",<br/>
+            translateY: "{debugTranslateY.toFixed(1)}%",<br/>
+            width: "{debugScale.toFixed(1)}%",<br/>
+            startX: "{debugStartX.toFixed(0)}%",<br/>
+            wagons: {debugWagonCount},<br/>
+            wagonSpeed: "{debugTimePerWagon.toFixed(1)}s"
+          </div>
+          
+          <div className="flex gap-2 mt-2">
+            <button 
+              onClick={() => setIsPreviewing(!isPreviewing)}
+              className={`flex-1 text-[10px] py-1 rounded transition-colors ${isPreviewing ? 'bg-green-500/40' : 'bg-blue-500/40'}`}
+            >
+              {isPreviewing ? 'STOP PREVIEW' : 'PREVIEW ANIMATION'}
+            </button>
+            <button 
+              onClick={() => setIsDebug(false)}
+              className="px-3 text-[10px] bg-red-500/20 hover:bg-red-500/40 py-1 rounded transition-colors"
+            >
+              HIDE
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 
+          Scene Wrapper: 
+          Mantiene el aspect ratio 2816:1536 (11:6).
+          Usa w-full h-full con object-cover logic manual para asegurar alineación.
+      */}
+      <div className="relative aspect-[2816/1536] w-full max-h-full flex items-center justify-center overflow-hidden">
         
-        {/* Contenedor de Tren Animado */}
-        <div className="flex z-10 animate-[moveTrain_10s_linear_forwards] items-end">
-            {/* Locomotora (Cabeza) - Usamos la misma imagen por ahora según reporte de subagente */}
-            <div className="relative w-[500px] h-[280px] shrink-0 mb-[-20px]">
+        {/* Fondo de Vías */}
+        <div className="absolute inset-0 z-0">
+          <Image 
+            src="/minijuegos/tren/vias.png" 
+            alt="Vías del tren" 
+            fill 
+            className="object-cover"
+            priority
+            unoptimized
+          />
+          {/* Overlay oscuro */}
+          <div className="absolute inset-0 bg-black/20" />
+        </div>
+
+        {/* 
+            Contenedor del Convoy:
+            - Posicionado a debugTop% de altura (donde están los raíles de vias.png).
+            - Usamos translate-y para que la base de las ruedas coincida.
+        */}
+        <div 
+            key={isPreviewing ? `preview-${debugWagonCount}-${debugTimePerWagon}` : 'static'}
+            className={`absolute left-0 w-full z-10 flex ${isPreviewing ? 'animate-[moveTrain_var(--duration)_linear_forwards]' : ''} items-baseline`}
+            style={{ 
+                top: `${debugTop}%`, 
+                transform: `translateY(${debugTranslateY}%) translateX(${debugStartX}%)`,
+                '--duration': `${(debugTimePerWagon * (100 + (debugWagonCount + 1) * debugScale)) / (100 + debugScale)}s`
+            } as any}
+        >
+            {/* Locomotora */}
+            <div className="relative shrink-0" style={{ width: `${debugScale}%`, aspectRatio: '677/369' }}>
                 <Image 
                     src="/minijuegos/tren/locomotora.png" 
                     alt="Locomotora" 
@@ -92,69 +200,72 @@ export default function TrenUI({ onAction }: TrenUIProps) {
                 />
             </div>
             
-            {/* Vagones (Lo que hay que contar) */}
-            {Array.from({ length: wagonCount }).map((_, wIdx) => (
-                <div key={wIdx} className="relative w-[500px] h-[280px] shrink-0 mb-[-20px]">
+            {/* Vagones Dinámicos */}
+            {selectedWagons.map((wagon, wIdx) => (
+                <div key={wIdx} className="relative shrink-0 ml-[-0.5%]" style={{ width: `${debugScale}%`, aspectRatio: '677/369' }}>
                     <Image 
-                        src="/minijuegos/tren/bagon.png" 
-                        alt="Vagón" 
+                        src={`/minijuegos/tren/vagon${wagon.count}.png`} 
+                        alt={`Vagón con ${wagon.count} pasajeros`} 
                         fill 
                         className="object-contain"
                         unoptimized
                     />
-                    
-                    {/* Pasajeros en este vagón */}
-                    {passengers.filter(p => p.wagonIndex === wIdx).map((p, i) => (
-                      <div 
-                        key={i}
-                        className="absolute w-[35px] h-[35px] overflow-hidden rounded-full border-2 border-white/20 bg-black/40"
-                        style={{ 
-                          left: `${WINDOW_X_CENTERS[p.windowIndex]}%`, 
-                          top: WINDOW_Y_TOP,
-                          transform: 'translateX(-50%)' 
-                        }}
-                      >
-                        <Image 
-                          src={p.charImg} 
-                          alt="Pasajero" 
-                          fill 
-                          className="object-cover scale-125 translate-y-1"
-                        />
-                      </div>
-                    ))}
                 </div>
             ))}
         </div>
       </div>
 
-      {/* Input de Respuesta */}
-      <div className="flex flex-col items-center gap-4 animate-in fade-in duration-1000 delay-[8000ms]">
-        <p className="text-white text-lg md:text-xl tracking-widest text-center uppercase drop-shadow-lg">
-          ¿CUÁNTOS PERSONAJES HAS VISTO EN LAS VENTANAS?
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
-          <PixelInput
-            type="number"
-            placeholder="0"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            className="w-24 text-center text-2xl h-14"
-            disabled={isFinished}
-          />
-          <PixelButton 
-            variant="green" 
-            onClick={handleSubmit}
-            disabled={isFinished || !inputValue}
-          >
-            ENVIAR
-          </PixelButton>
+      {/* 
+          UI Controls Layer:
+          Siempre por encima de la escena 
+      */}
+      <div className="absolute inset-0 z-20 pointer-events-none flex flex-col items-center justify-end pb-12">
+        <div className="pointer-events-auto flex flex-col items-center gap-6">
+            <h2 className="text-white text-xl tracking-[0.3em] uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] px-4 text-center">
+            ¿CUÁNTOS PASAJEROS HAS VISTO?
+            </h2>
+            
+            <div className="flex items-center gap-8 bg-black/60 p-6 border-4 border-white/20 rounded-2xl backdrop-blur-md shadow-2xl scale-75 md:scale-100">
+                <PixelButton 
+                    variant="red" 
+                    onClick={() => adjustCount(-1)}
+                    disabled={isFinished || userCount === 0}
+                    className="w-16 h-16 text-3xl shadow-[0_6px_0_rgb(153,27,27)] active:shadow-none active:translate-y-1 transition-all"
+                >
+                    -
+                </PixelButton>
+
+                <div className="w-24 text-center">
+                    <span className="text-6xl text-amber-400 font-bold drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]">
+                    {userCount}
+                    </span>
+                </div>
+
+                <PixelButton 
+                    variant="green" 
+                    onClick={() => adjustCount(1)}
+                    disabled={isFinished}
+                    className="w-16 h-16 text-3xl shadow-[0_6px_0_rgb(22,101,52)] active:shadow-none active:translate-y-1 transition-all"
+                >
+                    +
+                </PixelButton>
+            </div>
+
+            <PixelButton 
+                variant="purple" 
+                onClick={handleSubmit}
+                disabled={isFinished}
+                className="px-16 py-4 text-xl tracking-[0.4em] uppercase shadow-[0_8px_0_rgb(88,28,135)] active:shadow-none active:translate-y-1 transition-all"
+            >
+                ENVIAR
+            </PixelButton>
         </div>
       </div>
 
       <style jsx>{`
         @keyframes moveTrain {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(110vw); }
+          0% { transform: translateY(${debugTranslateY}%) translateX(${debugStartX}%); }
+          100% { transform: translateY(${debugTranslateY}%) translateX(120vw); }
         }
       `}</style>
     </div>
