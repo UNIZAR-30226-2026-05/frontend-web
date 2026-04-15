@@ -57,7 +57,7 @@ interface GameState {
 // -------------------------------------------------------------------
 // Acciones del reducer
 // -------------------------------------------------------------------
-type Action =
+export type Action =
   | { type: 'INIT'; myUsername: string | null; lobbyPlayers: string[] }
   | { type: 'PLAYER_SELECTED'; user: string; character: string }
   | { type: 'PLAYER_MOVED_DICE'; user: string; newPos: number; dado1: number; dado2: number }
@@ -297,6 +297,8 @@ export interface GameContextType {
   closeDobleNada: () => void;
   /** Registrar la compra de un objeto en el turno actual */
   markItemPurchased: (item: string) => void;
+  /** Dispatcher para depuración y casos avanzados */
+  dispatch: React.Dispatch<Action>;
 }
 
 export const GameContext = createContext<GameContextType | null>(null);
@@ -536,7 +538,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
-    <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, closeDobleNada, markItemPurchased }}>
+    <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, closeDobleNada, markItemPurchased, dispatch }}>
         {state.isInactive && (
             <div className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center font-pixel">
                 <div className="border-4 border-red-500 p-12 bg-red-950/20 shadow-[0_0_50px_rgba(239,68,68,0.4)]">

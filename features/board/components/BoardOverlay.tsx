@@ -12,33 +12,7 @@ import { useGameContext } from '@/features/board/context/GameContext';
  *   se aplica el desplazamiento adicional.
  */
 
-// Coordenadas calibradas manualmente (0-71)
-const BOARD_COORDS = [
-  { "x": 15.03, "y": 87.72 }, { "x": 23.02, "y": 87.95 }, { "x": 28.16, "y": 87.72 },
-  { "x": 33.3, "y": 88.11 }, { "x": 38.4, "y": 88.11 }, { "x": 43.5, "y": 88.19 },
-  { "x": 48.69, "y": 88.03 }, { "x": 53.97, "y": 88.03 }, { "x": 58.98, "y": 88.03 },
-  { "x": 64.17, "y": 88.03 }, { "x": 69.36, "y": 88.19 }, { "x": 74.63, "y": 87.56 },
-  { "x": 80.13, "y": 83.62 }, { "x": 84.48, "y": 78.74 }, { "x": 87.98, "y": 72.05 },
-  { "x": 91.18, "y": 64.09 }, { "x": 92.42, "y": 54.17 }, { "x": 92.68, "y": 45.2 },
-  { "x": 92.28, "y": 35.28 }, { "x": 89.49, "y": 26.06 }, { "x": 85.54, "y": 18.98 },
-  { "x": 80.4, "y": 14.09 }, { "x": 74.77, "y": 12.76 }, { "x": 69.31, "y": 12.6 },
-  { "x": 64.3, "y": 12.68 }, { "x": 58.98, "y": 12.52 }, { "x": 53.92, "y": 12.76 },
-  { "x": 48.96, "y": 12.83 }, { "x": 43.68, "y": 12.52 }, { "x": 38.71, "y": 12.76 },
-  { "x": 33.26, "y": 12.44 }, { "x": 28.03, "y": 12.52 }, { "x": 22.66, "y": 12.76 },
-  { "x": 17.56, "y": 15.51 }, { "x": 13.13, "y": 22.36 }, { "x": 10.33, "y": 30.24 },
-  { "x": 9.27, "y": 40.87 }, { "x": 10.16, "y": 50.47 }, { "x": 12.37, "y": 59.21 },
-  { "x": 17.52, "y": 65.2 }, { "x": 23.1, "y": 66.46 }, { "x": 28.07, "y": 66.54 },
-  { "x": 33.44, "y": 66.77 }, { "x": 38.71, "y": 66.61 }, { "x": 43.68, "y": 66.38 },
-  { "x": 48.51, "y": 66.69 }, { "x": 53.88, "y": 66.77 }, { "x": 58.94, "y": 66.85 },
-  { "x": 64.39, "y": 66.93 }, { "x": 69.53, "y": 66.54 }, { "x": 75.34, "y": 64.41 },
-  { "x": 79.2, "y": 56.22 }, { "x": 79.2, "y": 45.43 }, { "x": 74.81, "y": 36.38 },
-  { "x": 69.45, "y": 34.49 }, { "x": 64.26, "y": 34.02 }, { "x": 59.07, "y": 34.33 },
-  { "x": 53.92, "y": 34.09 }, { "x": 48.65, "y": 34.09 }, { "x": 43.64, "y": 34.41 },
-  { "x": 38.31, "y": 34.17 }, { "x": 33.26, "y": 34.25 }, { "x": 27.41, "y": 35.51 },
-  { "x": 23.24, "y": 45.12 }, { "x": 27.72, "y": 54.49 }, { "x": 33.17, "y": 55.28 },
-  { "x": 38.18, "y": 54.88 }, { "x": 43.46, "y": 55.2 }, { "x": 48.91, "y": 55.43 },
-  { "x": 53.92, "y": 55.28 }, { "x": 59.02, "y": 55.51 }, { "x": 68.29, "y": 51.34 }
-];
+import { BOARD_COORDS } from '@/features/board/constants/board';
 
 const ROLE_ASSETS: Record<string, string> = {
   banquero: '/personajes_tablero/banquero_t_der.png',
@@ -188,6 +162,8 @@ export default function BoardOverlay() {
           ? (ROLE_ASSETS[player.character] ?? FALLBACK_ASSETS[playerIdx % 4])
           : FALLBACK_ASSETS[playerIdx % 4];
 
+        const isFacingLeft = (displayPos >= 16 && displayPos < 36) || (displayPos >= 51 && displayPos < 63);
+
         return (
           <div
             key={player.username}
@@ -197,7 +173,7 @@ export default function BoardOverlay() {
               top: `${c.y}%`,
               width: `${size}px`,
               height: `${size}px`,
-              transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px)`,
+              transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) ${isFacingLeft ? 'scaleX(-1)' : 'scaleX(1)'}`,
               zIndex: 30 + playerIdx,
             }}
           >
