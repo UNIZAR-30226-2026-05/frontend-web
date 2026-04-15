@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import PixelButton from '@/components/UI/PixelButton';
 import RulesModal from '@/components/UI/RulesModal';
 import ChangePasswordForm from '@/components/Forms/ChangePasswordForm';
+import UserSearchModal from '@/components/Modals/UserSearchModal';
 
 import { CrearPartidaService, UnirsePartidaService } from '@/lib/backend';
 import { replaceGameSocket, setLobbyPlayers } from '@/lib/gameSocket';
@@ -21,6 +22,7 @@ export default function MenuPage() {
     const [jugadoresEnLobby, setJugadoresEnLobby] = useState<string[]>([]);
     const [isRulesOpen, setIsRulesOpen] = useState(false);
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
     const usernameRef = useRef<string | null>(null);
     const socketRef = useRef<WebSocket | null>(null);
@@ -377,7 +379,18 @@ export default function MenuPage() {
             </div>
 
             {/* Columna Derecha: Amigos y Reglas */}
-            <div className="flex flex-col justify-between h-full z-10 relative">
+            <div className="flex flex-col justify-start h-full z-10 relative pt-10">
+
+                {/* Botón Buscar Jugadores */}
+                <div className="flex justify-end mb-8">
+                    <PixelButton
+                        variant="purple"
+                        className="!px-6 !py-4 !text-[1.2rem]"
+                        onClick={() => setIsSearchModalOpen(true)}
+                    >
+                        <span className="mr-2">🔍</span> Buscar Jugadores
+                    </PixelButton>
+                </div>
             
                 {/*
                 Lista de amigos
@@ -433,6 +446,7 @@ export default function MenuPage() {
                 />
 
                 {isRulesOpen && <RulesModal onClose={() => setIsRulesOpen(false)} />}
+                {isSearchModalOpen && <UserSearchModal onClose={() => setIsSearchModalOpen(false)} />}
 
             </div>
 
