@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/components/OrderMinigameOverlay";
 import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
 import RuletaUI from "@/features/board/components/RuletaUI";
+import BanqueroRoboModal from "@/features/board/components/BanqueroRoboModal";
+import VideojugadorEleccionModal from "@/features/board/components/VideojugadorEleccionModal";
 import PixelButton from "@/components/UI/PixelButton";
 
 // Mocking the GameContext for DobleNadaOverlay in debug mode
@@ -16,7 +18,9 @@ import PixelButton from "@/components/UI/PixelButton";
 import { GameContext } from "@/features/board/context/GameContext";
 
 export default function DebugMinigamesPage() {
-  const [activeMinigame, setActiveMinigame] = useState<OrderMinigameType | "doblenada" | "ruleta" | null>(null);
+  const [activeMinigame, setActiveMinigame] = useState<
+    OrderMinigameType | "doblenada" | "ruleta" | "banquero" | "videojugador_elector" | "videojugador_espectador" | null
+  >(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [mockBalance, setMockBalance] = useState(10);
 
@@ -60,6 +64,9 @@ export default function DebugMinigamesPage() {
     { id: "reflejos", label: "Reflejos (Original)" },
     { id: "doblenada", label: "Doble o Nada (Modal)" },
     { id: "ruleta", label: "Ruleta (Interactivo)" },
+    { id: "banquero" as any, label: "Habilidad Banquero" },
+    { id: "videojugador_elector" as any, label: "Videojugador (Elector)" },
+    { id: "videojugador_espectador" as any, label: "Videojugador (Espectador)" },
   ];
 
   return (
@@ -70,13 +77,13 @@ export default function DebugMinigamesPage() {
             <h1 className="text-4xl text-amber-500 uppercase tracking-tighter mb-2">Minigames Debug Menu</h1>
             <p className="text-slate-400 text-xs text-balance mb-4">Snow Party UI Refactoring Suite • Balance para DobleNada: {mockBalance}¢</p>
             <div className="flex items-center justify-center gap-4">
-               <span className="text-xs">0¢</span>
-               <input 
-                 type="range" min="0" max="50" value={mockBalance} 
-                 onChange={(e) => setMockBalance(parseInt(e.target.value))}
-                 className="w-64 accent-amber-500"
-               />
-               <span className="text-xs">50¢</span>
+              <span className="text-xs">0¢</span>
+              <input
+                type="range" min="0" max="50" value={mockBalance}
+                onChange={(e) => setMockBalance(parseInt(e.target.value))}
+                className="w-64 accent-amber-500"
+              />
+              <span className="text-xs">50¢</span>
             </div>
           </header>
 
@@ -116,9 +123,35 @@ export default function DebugMinigamesPage() {
           )}
 
           {activeMinigame === "ruleta" && (
-            <RuletaUI 
-              onAction={handleAction} 
-              onClose={() => setActiveMinigame(null)} 
+            <RuletaUI
+              onAction={handleAction}
+              onClose={() => setActiveMinigame(null)}
+            />
+          )}
+
+          {activeMinigame === "banquero" && (
+            <BanqueroRoboModal
+              targetPlayers={[
+                { username: "David", character: "Escapista" },
+                { username: "Maria", character: "Vidente" },
+                { username: "Alex", character: "Videojugador" },
+              ]}
+              onSelect={(username) => {
+                handleAction({ type: 'robbery', target: username });
+              }}
+            />
+          )}
+
+          {(activeMinigame === "videojugador_elector" || activeMinigame === "videojugador_espectador") && (
+            <VideojugadorEleccionModal
+              isVideojugador={activeMinigame === "videojugador_elector"}
+              opciones={[
+                { id: "tren", name: "Tren", description: "Atrapa a todos los pasajeros que puedas." },
+                { id: "pan", name: "Corta Pan", description: "Demuestra tu precisión con el cuchillo." },
+              ]}
+              onSelect={(id) => {
+                handleAction({ type: 'minigame_selection', selection: id });
+              }}
             />
           )}
         </div>
