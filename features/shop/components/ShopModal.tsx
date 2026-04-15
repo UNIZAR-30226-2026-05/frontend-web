@@ -17,7 +17,7 @@ const SHOP_ITEMS: ShopItem[] = [
   { id: 1, name: "Avanzar Casillas",      emoji: "👞", price: 1,  description: "Avanza una casilla extra tras tirar los dados" },
   { id: 2, name: "Mejorar Dados",          emoji: "🎲", price: 3,  description: "Mejora tu segundo dado un nivel para esta tirada" },
   { id: 3, name: "Barrera",               emoji: "🚧", price: 10, description: "Añade un turno de penalización al jugador elegido" },
-  { id: 5, name: "Salvavidas bloqueo",    emoji: "🔒", price: 10, description: "Anula el efecto de una casilla de bloqueo" },
+  { id: 4, name: "Salvavidas bloqueo",    emoji: "🔒", price: 10, description: "Anula el efecto de una casilla de bloqueo (este objeto no anula la barrera impuesta por otro jugador)" },
 ];
 
 interface ShopModalProps {
@@ -25,10 +25,12 @@ interface ShopModalProps {
 }
 
 export default function ShopModal({ onClose }: ShopModalProps) {
-  const { myPlayer, state } = useGameContext();
-  const [avanzarCount, setAvanzarCount] = useState(0);
+  const { myPlayer, state, markItemPurchased } = useGameContext();
+  const [avanzarCount, setAvanzarCount] = useState(0); // Para UI local si fuera necesario
+  
   const penaltyTurns = state.penaltyTurns;
   const isBlocked = penaltyTurns > 0;
+  const hasRolled = state.hasMoved;
 
   // Calcular ranking por posición en el tablero
   const sortedPlayers = Object.values(state.players).sort((a, b) => b.position - a.position);
@@ -40,15 +42,15 @@ export default function ShopModal({ onClose }: ShopModalProps) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     if (!myPlayer || myPlayer.balance < item.price) return;
 
-    if (item.name === 'Salvavidas bloqueo') {
+    const isSalvavidas = item.name === 'Salvavidas bloqueo';
+    if (isSalvavidas) {
+      // El backend gestiona compra y uso en un único action
       ws.send(JSON.stringify({ action: 'usar_salvavidas', payload: { objeto: item.name } }));
     } else {
       ws.send(JSON.stringify({ action: 'comprar_objeto', payload: { objeto: item.name } }));
       ws.send(JSON.stringify({ action: 'usar_objeto', payload: { objeto: item.name } }));
-      if (item.name === 'Avanzar Casillas') {
-        setAvanzarCount(prev => prev + 1);
-      }
     }
+    markItemPurchased(item.name);
   };
 
   return (
@@ -75,7 +77,7 @@ export default function ShopModal({ onClose }: ShopModalProps) {
               onClick={onClose}
               className="text-white hover:text-red-500 transition-colors text-4xl font-bold leading-none p-2"
             >
-              ×
+              X
             </button>
           </div>
         </div>
@@ -89,10 +91,20 @@ export default function ShopModal({ onClose }: ShopModalProps) {
           </div>
         )}
 
-        {/* Contenido (4 items en horizontal) */}
-        <div className="p-8 overflow-x-auto">
+        {/* Banner de dados ya tirados */}
+        {!isBlocked && hasRolled && (
+          <div className="px-6 py-3 bg-yellow-900/70 border-b-4 border-yellow-600 text-center">
+            <p className="text-yellow-200 font-pixel text-sm tracking-wide">
+              Ya has tirado los dados. Los objetos solo se pueden comprar antes de tirar.
+            </p>
+          </div>
+        )}
+
+        {/* Contenido (Items) */}
+        <div className="p-8 overflow-x-auto min-h-[400px]">
           <div className="flex flex-row justify-center gap-6 min-w-max md:min-w-0">
             {SHOP_ITEMS.map((item) => {
+              const purchaseCount = state.purchasedItems[item.name] ?? 0;
               const isAvanzar = item.name === 'Avanzar Casillas';
               const isMejorarDados = item.name === 'Mejorar Dados';
               const isSalvavidasBloqueo = item.name === 'Salvavidas bloqueo';
@@ -106,8 +118,8 @@ export default function ShopModal({ onClose }: ShopModalProps) {
               const disabledReason =
                 isBlocked ? '' :
                 (isMejorarDados && isFirstPlace) ? 'BLOQUEADO: VAS 1º' :
-                isAvanzar ? 'Solo antes de tirar' :
-                isSalvavidasBloqueo ? (state.hasMoved ? 'No caíste en barrera' : 'Solo tras tirar') :
+                isAvanzar && state.hasMoved ? 'Solo antes de tirar' :
+                isSalvavidasBloqueo ? (!state.hasMoved ? 'Solo tras tirar' : (!state.landedOnBarrera ? 'No caíste en barrera' : '')) :
                 '';
 
               return (
@@ -119,6 +131,11 @@ export default function ShopModal({ onClose }: ShopModalProps) {
                     <span className="text-7xl group-hover:scale-110 transition-transform duration-300 block" role="img">
                       {item.emoji}
                     </span>
+                    {purchaseCount > 0 && (
+                      <span className="absolute -top-2 -right-3 bg-yellow-400 text-black font-pixel text-xs px-1.5 py-0.5 border-2 border-black shadow-lg">
+                        x{purchaseCount}
+                      </span>
+                    )}
                     {isFirstPlace && isMejorarDados && (
                         <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center rotate-[-15deg]">
                             <div className="bg-red-600 text-white font-pixel text-[10px] px-2 py-1 border-2 border-white shadow-xl">PROHIBIDO</div>
