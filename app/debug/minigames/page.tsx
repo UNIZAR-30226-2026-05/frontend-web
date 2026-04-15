@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/components/OrderMinigameOverlay";
 import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
+import RuletaUI from "@/features/board/components/RuletaUI";
 import PixelButton from "@/components/UI/PixelButton";
 
 // Mocking the GameContext for DobleNadaOverlay in debug mode
@@ -15,7 +16,7 @@ import PixelButton from "@/components/UI/PixelButton";
 import { GameContext } from "@/features/board/context/GameContext";
 
 export default function DebugMinigamesPage() {
-  const [activeMinigame, setActiveMinigame] = useState<OrderMinigameType | "doblenada" | null>(null);
+  const [activeMinigame, setActiveMinigame] = useState<OrderMinigameType | "doblenada" | "ruleta" | null>(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [mockBalance, setMockBalance] = useState(10);
 
@@ -50,7 +51,7 @@ export default function DebugMinigamesPage() {
     sendScoreReflejos: (score: number) => handleAction({ score }),
   };
 
-  const minigames: { id: OrderMinigameType | "doblenada"; label: string }[] = [
+  const minigames: { id: OrderMinigameType | "doblenada" | "ruleta"; label: string }[] = [
     { id: "tren", label: "Tren (Pasajeros)" },
     { id: "pan", label: "Cortar Pan" },
     { id: "crono", label: "Cronómetro Ciego" },
@@ -58,6 +59,7 @@ export default function DebugMinigamesPage() {
     { id: "dilema", label: "Dilema del Prisionero" },
     { id: "reflejos", label: "Reflejos (Original)" },
     { id: "doblenada", label: "Doble o Nada (Modal)" },
+    { id: "ruleta", label: "Ruleta (Interactivo)" },
   ];
 
   return (
@@ -82,7 +84,7 @@ export default function DebugMinigamesPage() {
             {minigames.map((mg) => (
               <PixelButton
                 key={mg.id}
-                variant={mg.id === "doblenada" ? "purple" : "green"}
+                variant={mg.id === "doblenada" ? "purple" : mg.id === "ruleta" ? "purple" : "green"}
                 onClick={() => setActiveMinigame(mg.id)}
                 className="w-full text-xs py-4"
               >
@@ -111,6 +113,13 @@ export default function DebugMinigamesPage() {
 
           {activeMinigame === "doblenada" && (
             <DobleNadaOverlay onClose={() => setActiveMinigame(null)} />
+          )}
+
+          {activeMinigame === "ruleta" && (
+            <RuletaUI 
+              onAction={handleAction} 
+              onClose={() => setActiveMinigame(null)} 
+            />
           )}
         </div>
       </div>
