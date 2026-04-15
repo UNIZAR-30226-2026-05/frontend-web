@@ -23,6 +23,7 @@ export default function MenuPage() {
     const [isRulesOpen, setIsRulesOpen] = useState(false);
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [invitedFriends, setInvitedFriends] = useState<string[]>([]);
 
     // Mock Data
     const [invitations] = useState([
@@ -222,6 +223,18 @@ export default function MenuPage() {
             }
         };
     }, [connectToRoom]);
+
+    const handleInvite = (friendUsername: string) => {
+        if (!invitedFriends.includes(friendUsername)) {
+            setInvitedFriends((prev) => [...prev, friendUsername]);
+        }
+    };
+
+    const getFriendStatus = (friendUsername: string) => {
+        if (jugadoresEnLobby.includes(friendUsername)) return 'contigo';
+        if (invitedFriends.includes(friendUsername)) return 'invitado';
+        return 'invitar';
+    };
 
 
     return (
@@ -424,6 +437,7 @@ export default function MenuPage() {
 
                     <div className="flex flex-col gap-[1.8rem] px-2 mt-2 overflow-y-auto scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent pr-2">
                         {friends.map((friend) => {
+                            const status = getFriendStatus(friend.username);
                             return (
                                 <div key={friend.username} className="flex justify-between items-center w-full gap-4 flex-nowrap">
                                     <span
@@ -433,10 +447,11 @@ export default function MenuPage() {
                                         {friend.username}
                                     </span>
                                     <PixelButton
-                                        variant="purple"
-                                        className="!px-3 !py-2 !text-[1.1rem] min-w-[8rem] whitespace-nowrap"
+                                        variant={status === 'contigo' ? "green" : "purple"}
+                                        className={`!px-3 !py-2 !text-[1.1rem] min-w-[8rem] whitespace-nowrap ${status !== 'invitar' ? 'opacity-80' : ''}`}
+                                        onClick={() => status === 'invitar' && handleInvite(friend.username)}
                                     >
-                                        Invitar
+                                        {status === 'contigo' ? 'Contigo' : status === 'invitado' ? 'Invitado' : 'Invitar'}
                                     </PixelButton>
                                 </div>
                             );
