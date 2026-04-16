@@ -10,6 +10,7 @@ import VidenteDadosModal from "@/features/board/components/VidenteDadosModal";
 import GameOverOverlay from "@/features/board/components/GameOverOverlay";
 import MinigameResultOverlay from "@/features/board/components/MinigameResultOverlay";
 import PokerUI from "@/features/minigames/components/PokerUI";
+import VideojugadorEleccionModal from "@/features/board/components/VideojugadorEleccionModal";
 
 // Mocking the GameContext for DobleNadaOverlay in debug mode
 // Since DobleNadaOverlay uses useGameContext(), we provide a simple mock if needed,

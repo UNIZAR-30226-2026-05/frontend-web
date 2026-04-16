@@ -30,7 +30,7 @@ function ReflejosMinigameController() {
   return (
     <OrderMinigameOverlay
       minigameType="reflejos"
-      onAction={(result: { reactionTimeMs: number }) => sendScoreReflejos(result.reactionTimeMs)}
+      onAction={(result: { score: number }) => sendScoreReflejos(result.score)}
       onClose={() => {/* no se puede cerrar manualmente */}}
     />
   );

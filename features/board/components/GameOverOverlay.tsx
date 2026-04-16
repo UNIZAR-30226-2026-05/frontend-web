@@ -123,17 +123,6 @@ export default function GameOverOverlay({ players, onReturnToMenu }: GameOverOve
                     VOLVER AL MENÚ
                 </PixelButton>
             </div>
-
-            <style jsx selection>{`
-                .pixelated {
-                    image-rendering: pixelated;
-                    image-rendering: -moz-crisp-edges;
-                    image-rendering: crisp-edges;
-                }
-                .glow-text-yellow {
-                    text-shadow: 0 0 15px rgba(234, 179, 8, 0.5), 0 0 30px rgba(234, 179, 8, 0.2);
-                }
-            `}</style>
         </div>
     );
 }
