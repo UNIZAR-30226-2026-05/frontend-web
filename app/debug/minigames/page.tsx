@@ -9,6 +9,7 @@ import PixelButton from "@/components/UI/PixelButton";
 import VidenteDadosModal from "@/features/board/components/VidenteDadosModal";
 import GameOverOverlay from "@/features/board/components/GameOverOverlay";
 import MinigameResultOverlay from "@/features/board/components/MinigameResultOverlay";
+import PokerUI from "@/features/minigames/components/PokerUI";
 
 // Mocking the GameContext for DobleNadaOverlay in debug mode
 // Since DobleNadaOverlay uses useGameContext(), we provide a simple mock if needed,
@@ -30,6 +31,7 @@ export default function DebugMinigamesPage() {
     | "vidente"
     | "gameover"
     | "resultado_minijuego"
+    | "poker"
     | null
   >(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
@@ -81,6 +83,7 @@ export default function DebugMinigamesPage() {
     { id: "vidente" as any, label: "Test: Habilidad Vidente" },
     { id: "gameover" as any, label: "Test: Fin de Partida" },
     { id: "resultado_minijuego" as any, label: "Test: Resultado Minijuego" },
+    { id: "poker" as any, label: "Póker (Texas Hold'em)" },
   ];
 
   return (
@@ -124,7 +127,11 @@ export default function DebugMinigamesPage() {
             ))}
           </div>
 
-          {activeMinigame && activeMinigame !== "doblenada" && (
+          {activeMinigame === "poker" && (
+            <PokerUI onAction={handleAction} />
+          )}
+
+          {activeMinigame && activeMinigame !== "doblenada" && activeMinigame !== "poker" && (
             <OrderMinigameOverlay
               minigameType={activeMinigame as OrderMinigameType}
               onAction={handleAction}
