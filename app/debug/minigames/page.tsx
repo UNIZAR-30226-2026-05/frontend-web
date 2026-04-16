@@ -7,6 +7,8 @@ import RuletaUI from "@/features/board/components/RuletaUI";
 import BanqueroRoboModal from "@/features/board/components/BanqueroRoboModal";
 import PixelButton from "@/components/UI/PixelButton";
 import VidenteDadosModal from "@/features/board/components/VidenteDadosModal";
+import GameOverOverlay from "@/features/board/components/GameOverOverlay";
+import MinigameResultOverlay from "@/features/board/components/MinigameResultOverlay";
 
 // Mocking the GameContext for DobleNadaOverlay in debug mode
 // Since DobleNadaOverlay uses useGameContext(), we provide a simple mock if needed,
@@ -26,6 +28,8 @@ export default function DebugMinigamesPage() {
     | "videojugador_elector"
     | "videojugador_espectador"
     | "vidente"
+    | "gameover"
+    | "resultado_minijuego"
     | null
   >(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
@@ -75,6 +79,8 @@ export default function DebugMinigamesPage() {
     { id: "videojugador_elector" as any, label: "Videojugador (Elector)" },
     { id: "videojugador_espectador" as any, label: "Videojugador (Espectador)" },
     { id: "vidente" as any, label: "Test: Habilidad Vidente" },
+    { id: "gameover" as any, label: "Test: Fin de Partida" },
+    { id: "resultado_minijuego" as any, label: "Test: Resultado Minijuego" },
   ];
 
   return (
@@ -170,6 +176,32 @@ export default function DebugMinigamesPage() {
                 { dado1: 1, dado2: 4, diceType: "plata" },
                 { dado1: 6, dado2: 1, diceType: "bronce" },
                 { dado1: 3, dado2: 5, diceType: "normal" },
+              ]}
+              onClose={() => setActiveMinigame(null)}
+            />
+          )}
+
+          {activeMinigame === "gameover" && (
+            <GameOverOverlay
+              players={[
+                { username: "David", character: "vidente", balance: 35 },
+                { username: "Maria", character: "banquero", balance: 20 },
+                { username: "Alex", character: "videojugador", balance: 10 },
+                { username: "Sofi", character: "escapista", balance: 0 },
+              ]}
+              onReturnToMenu={() => setActiveMinigame(null)}
+            />
+          )}
+
+          {activeMinigame === "resultado_minijuego" && (
+            <MinigameResultOverlay
+              minigameName="REFLEJOS"
+              subtitle="¿Ser rápido es tu virtud?"
+              results={[
+                { username: "lorien2", score: 515, character: "vidente" },
+                { username: "Jugador 2", score: 2744, character: "banquero" },
+                { username: "Jugador 4", score: 3730, character: "escapista" },
+                { username: "Jugador 3", score: 4340, character: "videojugador" },
               ]}
               onClose={() => setActiveMinigame(null)}
             />
