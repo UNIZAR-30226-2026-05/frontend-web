@@ -5,8 +5,8 @@ import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/co
 import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
 import RuletaUI from "@/features/board/components/RuletaUI";
 import BanqueroRoboModal from "@/features/board/components/BanqueroRoboModal";
-import VideojugadorEleccionModal from "@/features/board/components/VideojugadorEleccionModal";
 import PixelButton from "@/components/UI/PixelButton";
+import VidenteDadosModal from "@/features/board/components/VidenteDadosModal";
 
 // Mocking the GameContext for DobleNadaOverlay in debug mode
 // Since DobleNadaOverlay uses useGameContext(), we provide a simple mock if needed,
@@ -19,7 +19,14 @@ import { GameContext } from "@/features/board/context/GameContext";
 
 export default function DebugMinigamesPage() {
   const [activeMinigame, setActiveMinigame] = useState<
-    OrderMinigameType | "doblenada" | "ruleta" | "banquero" | "videojugador_elector" | "videojugador_espectador" | null
+    | OrderMinigameType
+    | "doblenada"
+    | "ruleta"
+    | "banquero"
+    | "videojugador_elector"
+    | "videojugador_espectador"
+    | "vidente"
+    | null
   >(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [mockBalance, setMockBalance] = useState(10);
@@ -67,6 +74,7 @@ export default function DebugMinigamesPage() {
     { id: "banquero" as any, label: "Habilidad Banquero" },
     { id: "videojugador_elector" as any, label: "Videojugador (Elector)" },
     { id: "videojugador_espectador" as any, label: "Videojugador (Espectador)" },
+    { id: "vidente" as any, label: "Test: Habilidad Vidente" },
   ];
 
   return (
@@ -152,6 +160,18 @@ export default function DebugMinigamesPage() {
               onSelect={(id) => {
                 handleAction({ type: 'minigame_selection', selection: id });
               }}
+            />
+          )}
+
+          {activeMinigame === "vidente" && (
+            <VidenteDadosModal
+              tiradas={[
+                { dado1: 4, dado2: 2, diceType: "oro" },
+                { dado1: 1, dado2: 4, diceType: "plata" },
+                { dado1: 6, dado2: 1, diceType: "bronce" },
+                { dado1: 3, dado2: 5, diceType: "normal" },
+              ]}
+              onClose={() => setActiveMinigame(null)}
             />
           )}
         </div>
