@@ -5,16 +5,19 @@ import { GameProvider, useGameContext } from '@/features/board/context/GameConte
 import BoardOverlay from '@/features/board/components/BoardOverlay';
 import { BOARD_COORDS } from '@/features/board/constants/board';
 import PixelButton from '@/components/UI/PixelButton';
+import Dice from '@/features/board/components/Dice';
+import ShopModal from '@/features/shop/components/ShopModal';
 
 function GameDebugger() {
   const { state, dispatch, playerOrder } = useGameContext();
   const [showIndices, setShowIndices] = useState(true);
+  const [isShopOpen, setIsShopOpen] = useState(false);
 
   // Initialize 4 test players if empty
   const initBots = () => {
     dispatch({ 
       type: 'INIT', 
-      myUsername: 'videojugador', 
+      myUsername: 'Videojugador', 
       lobbyPlayers: ['Banquero', 'Escapista', 'Videojugador', 'Vidente'] 
     });
     
@@ -66,7 +69,7 @@ function GameDebugger() {
       <BoardOverlay />
 
       {/* Panel de Control de Debug */}
-      <div className="absolute top-4 right-4 z-[100] w-72 bg-slate-900/95 border-2 border-amber-500 p-6 font-pixel shadow-2xl rounded-lg">
+      <div className="absolute top-4 right-4 z-[100] w-72 bg-slate-900/95 border-2 border-amber-500 p-6 font-pixel shadow-2xl rounded-lg text-white">
         <h2 className="text-amber-500 text-lg mb-4 uppercase tracking-widest border-b border-amber-500/30 pb-2">Game Debugger</h2>
         
         <div className="flex flex-col gap-4">
@@ -121,6 +124,66 @@ function GameDebugger() {
               </PixelButton>
             </div>
           )}
+
+          {/* Nuevos Controles de Turno y Rango */}
+          {playerOrder.length > 0 && (
+            <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-amber-500/30">
+              <p className="text-amber-500/70 text-[10px] uppercase border-b border-amber-500/20 pb-1">Control de Turnos</p>
+              
+              <PixelButton 
+                variant="purple" 
+                onClick={() => {
+                  const myPlayer = state.players[state.myUsername || 'Videojugador'];
+                  if (myPlayer) dispatch({ type: 'DEBUG_SET_TURN_ORDER', order: myPlayer.turnOrder });
+                }}
+                className="text-[10px] py-1"
+              >
+                Forzar mi Turno
+              </PixelButton>
+
+              <div className="flex gap-2 mt-2">
+                <PixelButton 
+                  variant="red" 
+                  onClick={() => dispatch({ type: 'SET_PENALTY_TURNS', turns: 1 })}
+                  className="flex-1 text-[8px] py-1"
+                >
+                  Bloquear (1 T.)
+                </PixelButton>
+                <PixelButton 
+                  variant="green" 
+                  onClick={() => dispatch({ type: 'CLEAR_PENALTY_TURNS' })}
+                  className="flex-1 text-[8px] py-1"
+                >
+                  Desbloquear
+                </PixelButton>
+              </div>
+
+              <p className="text-amber-500/70 text-[10px] uppercase border-b border-amber-500/20 pb-1 mt-2">Simular Puestos (Rango)</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[1, 2, 3, 4].map((rank) => (
+                  <button
+                    key={rank}
+                    onClick={() => {
+                      const players = Object.keys(state.players);
+                      const customOrder: Record<string, number> = {};
+                      customOrder[state.myUsername || 'Videojugador'] = rank;
+                      let nextRank = 1;
+                      players.forEach(p => {
+                        if (p !== (state.myUsername || 'Videojugador')) {
+                          if (nextRank === rank) nextRank++;
+                          customOrder[p] = nextRank++;
+                        }
+                      });
+                      dispatch({ type: 'MINIJUEGO_RESULTADOS', nuevo_orden: customOrder });
+                    }}
+                    className="bg-slate-800 hover:bg-slate-700 text-amber-400 text-[10px] p-1 border border-amber-500/30 rounded uppercase font-pixel"
+                  >
+                    Puesto {rank}º
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 pt-4 border-t border-amber-500/30">
@@ -129,6 +192,20 @@ function GameDebugger() {
           </p>
         </div>
       </div>
+
+      {/* Contenedor central de acciones (Dados) */}
+      <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+        <div className="pointer-events-auto">
+          <Dice onOpenShop={() => setIsShopOpen(true)} />
+        </div>
+      </div>
+
+      {/* Tienda Modal */}
+      {isShopOpen && (
+        <div className="fixed inset-0 z-[200]">
+          <ShopModal onClose={() => setIsShopOpen(false)} />
+        </div>
+      )}
 
     </main>
   );

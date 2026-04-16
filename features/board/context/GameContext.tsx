@@ -50,8 +50,6 @@ interface GameState {
   purchasedItems: Record<string, number>;
   /** Turnos de penalización restantes para el jugador local (casilla barrera) */
   penaltyTurns: number;
-  /** Flag de inactividad global */
-  isInactive: boolean;
 }
 
 // -------------------------------------------------------------------
@@ -74,7 +72,7 @@ export type Action =
   | { type: 'MARK_ITEM_PURCHASED'; item: string }
   | { type: 'SET_PENALTY_TURNS'; turns: number }
   | { type: 'CLEAR_PENALTY_TURNS' }
-  | { type: 'SET_INACTIVE' };
+  | { type: 'DEBUG_SET_TURN_ORDER'; order: number };
 
 // -------------------------------------------------------------------
 // Reducer
@@ -94,7 +92,7 @@ function gameReducer(state: GameState, action: Action): GameState {
           diceType: 'normal',
         };
       });
-      return { ...state, players, currentTurnOrder: 1, myUsername: action.myUsername, isInactive: false };
+      return { ...state, players, currentTurnOrder: 1, myUsername: action.myUsername };
     }
 
     case 'PLAYER_SELECTED': {
@@ -200,7 +198,7 @@ function gameReducer(state: GameState, action: Action): GameState {
           updatedPlayers[username] = { ...updatedPlayers[username], ...updates };
         }
       }
-      return { ...state, players: updatedPlayers, isInactive: false };
+      return { ...state, players: updatedPlayers };
     }
 
     case 'LOCAL_END_ROUND': {
@@ -255,8 +253,8 @@ function gameReducer(state: GameState, action: Action): GameState {
     case 'HIDE_DOBLE_NADA':
       return { ...state, showDobleNada: false };
 
-    case 'SET_INACTIVE':
-      return { ...state, isInactive: true };
+    case 'DEBUG_SET_TURN_ORDER':
+      return { ...state, currentTurnOrder: action.order, hasMoved: false, awaitingEndRound: false };
 
     default:
       return state;
@@ -275,7 +273,6 @@ const initialState: GameState = {
   landedOnNegativeMove: false,
   landedOnBarrera: false,
   penaltyTurns: 0,
-  isInactive: false,
   purchasedItems: {},
 };
 
@@ -314,7 +311,6 @@ export function useGameContext(): GameContextType {
 // -------------------------------------------------------------------
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, initialState);
-  const [timeLeft, setTimeLeft] = React.useState(20);
 
   // Inicialización desde sessionStorage (solo cliente)
   useEffect(() => {
@@ -331,49 +327,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Timer de Inactividad (20 segundos)
-  useEffect(() => {
-    if (state.isInactive) return;
 
-    // Solo activamos el timer si hay una interacción pendiente:
-    // 1. Es mi turno de tirar
-    // 2. He tirado y espero a terminar ronda (Tienda abierta o esperando confirmación)
-    // 3. Hay un minijuego de orden activo (Reflejos)
-    // 4. Hay un Doble o Nada activo
-    const interactionRequired = 
-      (state.myUsername && state.players[state.myUsername]?.turnOrder === state.currentTurnOrder) || 
-      state.awaitingEndRound ||
-      state.showOrderMinigame || 
-      state.showDobleNada;
-
-    if (!interactionRequired) {
-      if (timeLeft !== 20) setTimeLeft(20);
-      return;
-    }
-
-    // El timer se reinicia si cambia el turno, si se activa un minijuego, 
-    // o si el jugador local se mueve (hasMoved cambia)
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          dispatch({ type: 'SET_INACTIVE' });
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [
-    state.currentTurnOrder, 
-    state.showOrderMinigame, 
-    state.showDobleNada, 
-    state.hasMoved, 
-    state.awaitingEndRound, 
-    state.isInactive, 
-    state.myUsername
-  ]);
 
   // Listener de mensajes WebSocket
   useEffect(() => {
@@ -533,21 +487,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const isMyTurn =
     myPlayer !== null &&
     myPlayer.turnOrder === state.currentTurnOrder &&
-    !state.hasMoved &&
-    !state.isInactive;
+    !state.hasMoved;
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
     <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, closeDobleNada, markItemPurchased, dispatch }}>
-        {state.isInactive && (
-            <div className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center font-pixel">
-                <div className="border-4 border-red-500 p-12 bg-red-950/20 shadow-[0_0_50px_rgba(239,68,68,0.4)]">
-                    <h2 className="text-red-500 text-5xl mb-6 tracking-widest uppercase animate-pulse">SESIÓN SUSPENDIDA</h2>
-                    <p className="text-white text-xl uppercase tracking-widest max-w-md">Has sido marcado como inactivo por no responder en 20s.</p>
-                    <p className="text-white/40 text-sm mt-8 uppercase tracking-widest">Reconéctate para continuar la partida.</p>
-                </div>
-            </div>
-        )}
       {children}
     </GameContext.Provider>
   );

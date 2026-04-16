@@ -110,16 +110,15 @@ export default function ShopModal({ onClose }: ShopModalProps) {
               const isSalvavidasBloqueo = item.name === 'Salvavidas bloqueo';
 
               const disabled =
-                isBlocked ||
+                (isSalvavidasBloqueo ? !isBlocked : isBlocked) ||
                 (isAvanzar && state.hasMoved) ||
-                (isMejorarDados && isFirstPlace) ||
-                (isSalvavidasBloqueo && (!state.hasMoved || !state.landedOnBarrera));
+                (isMejorarDados && isFirstPlace);
 
               const disabledReason =
-                isBlocked ? '' :
+                (isBlocked && !isSalvavidasBloqueo) ? 'BLOQUEADO' :
                 (isMejorarDados && isFirstPlace) ? 'BLOQUEADO: VAS 1º' :
-                isAvanzar && state.hasMoved ? 'Solo antes de tirar' :
-                isSalvavidasBloqueo ? (!state.hasMoved ? 'Solo tras tirar' : (!state.landedOnBarrera ? 'No caíste en barrera' : '')) :
+                (isAvanzar && state.hasMoved) ? 'Solo antes de tirar' :
+                (isSalvavidasBloqueo && !isBlocked) ? 'No estás bloqueado' :
                 '';
 
               return (
