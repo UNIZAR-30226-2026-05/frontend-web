@@ -36,7 +36,7 @@ export default function Dice({ onOpenShop }: DiceProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [waitingForResponse, setWaitingForResponse] = useState(false);
 
-  // ── Render-phase: detectar nuevo lastDice para arrancar animación ──────────
+  // Render-phase: detectar nuevo lastDice para arrancar animación
   const [prevLastDice, setPrevLastDice] = useState<typeof lastDice>(null);
   if (prevLastDice !== lastDice) {
     setPrevLastDice(lastDice);
@@ -54,7 +54,7 @@ export default function Dice({ onOpenShop }: DiceProps) {
     }
   }
 
-  // ── Render-phase: limpiar waitingForResponse al recuperar el turno ────────
+  // Render-phase: limpiar waitingForResponse al recuperar el turno 
   const [prevIsMyTurn, setPrevIsMyTurn] = useState(isMyTurn);
   if (prevIsMyTurn !== isMyTurn) {
     setPrevIsMyTurn(isMyTurn);
@@ -63,7 +63,7 @@ export default function Dice({ onOpenShop }: DiceProps) {
     }
   }
 
-  // ── Effect: ciclar los dados aleatoriamente 1 s cuando se activa animación ─
+  // Effect: ciclar los dados aleatoriamente 1 s cuando se activa animación 
   useEffect(() => {
     if (!lastDice || !isAnimating) return;
 
@@ -121,10 +121,9 @@ export default function Dice({ onOpenShop }: DiceProps) {
     return "";
   };
 
-  // Helper para renderizar un dado (o su placeholder)
   const renderDie = (value: number, type: DiceType, isSpecial: boolean) => {
     const isPlaceholder = !lastDice && !isAnimating;
-    
+
     return (
       <div className="flex flex-col items-center gap-3">
         <div className={`relative w-24 h-24 rounded-xl border-4 overflow-hidden transition-all duration-300 bg-slate-800 flex items-center justify-center
@@ -166,8 +165,8 @@ export default function Dice({ onOpenShop }: DiceProps) {
       {/* Botones de acción */}
       <div className="flex gap-4 w-full">
         {isMyTurn && !hasMoved && (
-          <PixelButton 
-            variant="purple" 
+          <PixelButton
+            variant="purple"
             onClick={onOpenShop}
             className="flex-1 text-sm py-4 uppercase"
           >
