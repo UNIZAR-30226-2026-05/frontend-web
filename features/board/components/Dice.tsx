@@ -16,7 +16,7 @@ const typeStyles: Record<DiceType, string> = {
 };
 
 export default function Dice() {
-  const { state, isMyTurn, myPlayer, sendMovePlayer, sendEndRound } = useGameContext();
+  const { state, isMyTurn, myPlayer, sendMovePlayer, sendEndRound, isAnyoneAnimating } = useGameContext();
   const { hasMoved, awaitingEndRound, lastDice } = state;
   const penaltyTurns = state.penaltyTurns;
 
@@ -96,7 +96,7 @@ export default function Dice() {
     : (isMyTurn && myPlayer !== null && myPlayer.diceType !== 'normal');
 
   const isBlocked = penaltyTurns > 0;
-  const canRoll = isMyTurn && !hasMoved && !waitingForResponse && !awaitingEndRound && !isBlocked;
+  const canRoll = isMyTurn && !hasMoved && !waitingForResponse && !awaitingEndRound && !isBlocked && !isAnyoneAnimating;
   const isRolling = isAnimating || waitingForResponse;
 
   const handleRollDice = () => {
@@ -108,6 +108,7 @@ export default function Dice() {
   // Texto del botón de tirar
   const rollButtonLabel = () => {
     if (isRolling) return "Tirando...";
+    if (awaitingEndRound) return "Moviendo...";
     if (isBlocked) return `Bloqueado (${penaltyTurns} turno${penaltyTurns > 1 ? 's' : ''} restante${penaltyTurns > 1 ? 's' : ''})`;
     if (!isMyTurn) return "Esperando turno...";
     return displayType === "normal" ? "Tirar Dado" : "Tirar Dados";
@@ -145,18 +146,14 @@ export default function Dice() {
       </div>
 
       {/* Botones de acción */}
-      {awaitingEndRound ? (
-        <PixelButton onClick={sendEndRound} variant="purple" className="w-full">
-          Fin de Turno
-        </PixelButton>
-      ) : isBlocked && isMyTurn ? (
+      {isBlocked && isMyTurn ? (
         <PixelButton onClick={sendEndRound} variant="red" className="w-full">
           Saltar Turno ({penaltyTurns} restante{penaltyTurns > 1 ? 's' : ''})
         </PixelButton>
       ) : (
         <PixelButton
           onClick={handleRollDice}
-          disabled={!canRoll || isRolling}
+          disabled={!canRoll || isRolling || awaitingEndRound}
           variant="purple"
           className="w-full"
         >

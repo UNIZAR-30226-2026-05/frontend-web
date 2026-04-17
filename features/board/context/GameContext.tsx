@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useReducer, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useCallback, useState, useRef } from 'react';
 import { getGameSocket } from '@/lib/gameSocket';
 import type { DiceType } from '@/features/board/components/Dice';
 
@@ -46,6 +46,8 @@ interface GameState {
   purchasedItems: Record<string, number>;
   /** Turnos de penalización restantes para el jugador local (casilla barrera) */
   penaltyTurns: number;
+  /** true mientras cualquier ficha esté animándose en el tablero */
+  isAnyoneAnimating: boolean;
 }
 
 // -------------------------------------------------------------------
@@ -65,7 +67,10 @@ type Action =
   | { type: 'SET_CASILLA_TIPO'; casilla: 'barrera' | 'none' }
   | { type: 'MARK_ITEM_PURCHASED'; item: string }
   | { type: 'SET_PENALTY_TURNS'; turns: number }
-  | { type: 'CLEAR_PENALTY_TURNS' };
+  | { type: 'CLEAR_PENALTY_TURNS' }
+  | { type: 'SET_ANYONE_ANIMATING'; value: boolean }
+  /** Otro jugador saltó su turno bloqueado (el backend hizo broadcast de penalizacion_actualizada) */
+  | { type: 'REMOTE_SKIPPED'; user: string };
 
 // -------------------------------------------------------------------
 // Reducer
@@ -108,7 +113,7 @@ function gameReducer(state: GameState, action: Action): GameState {
       const isLocalPlayer = action.user === state.myUsername;
       const nextTurnOrder = player.turnOrder + 1;
       const totalPlayers = Object.keys(state.players).length;
-      // Si todos jugaron → 0 (esperando minijuego/nueva ronda)
+      // Si todos jugaron -> 0 (esperando minijuego/nueva ronda)
       const newCurrentTurnOrder = nextTurnOrder <= totalPlayers ? nextTurnOrder : 0;
 
       return {
@@ -120,6 +125,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         currentTurnOrder: newCurrentTurnOrder,
         hasMoved: isLocalPlayer ? true : state.hasMoved,
         awaitingEndRound: isLocalPlayer ? true : state.awaitingEndRound,
+        isAnyoneAnimating: true,
         lastDice: {
           dado1: action.dado1,
           dado2: action.dado2,
@@ -134,6 +140,7 @@ function gameReducer(state: GameState, action: Action): GameState {
       if (!player) return state;
       return {
         ...state,
+        isAnyoneAnimating: true,
         players: {
           ...state.players,
           [action.user]: { ...player, position: action.newPos },
@@ -170,6 +177,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         awaitingEndRound: false,
         landedOnBarrera: false,
         purchasedItems: {},
+        isAnyoneAnimating: false,
       };
     }
 
@@ -208,12 +216,23 @@ function gameReducer(state: GameState, action: Action): GameState {
         const nextOrder = myPlayer.turnOrder + 1;
         newCurrentTurnOrder = nextOrder <= totalPlayers ? nextOrder : 0;
       }
+      // Si el jugador NO movió (turno bloqueado), consumimos un turno de penalización.
+      // Si SÍ movió (acaba de caer en barrera), la penalización empieza el turno siguiente.
+      // El backend confirmará el valor real con penalizacion_actualizada.
+      const newPenaltyTurns =
+        !state.hasMoved && state.penaltyTurns > 0
+          ? state.penaltyTurns - 1
+          : state.penaltyTurns;
       return {
         ...state,
         currentTurnOrder: newCurrentTurnOrder,
         awaitingEndRound: false,
         landedOnBarrera: false,
         purchasedItems: {},
+        penaltyTurns: newPenaltyTurns,
+        // Si el jugador pasó sin moverse (bloqueado), ninguna animación está pendiente.
+        // Garantizamos isAnyoneAnimating = false para que el siguiente pueda tirar de inmediato.
+        isAnyoneAnimating: state.hasMoved ? state.isAnyoneAnimating : false,
       };
     }
 
@@ -238,6 +257,24 @@ function gameReducer(state: GameState, action: Action): GameState {
     case 'CLEAR_PENALTY_TURNS':
       return { ...state, penaltyTurns: 0, landedOnBarrera: false };
 
+    case 'SET_ANYONE_ANIMATING':
+      return { ...state, isAnyoneAnimating: action.value };
+
+    case 'REMOTE_SKIPPED': {
+      // El jugador remoto saltó su turno bloqueado (no tiró dados).
+      // Avanzamos currentTurnOrder solo si aún apunta a ese jugador;
+      // si ya apuntaba a otro es que esto llegó después de un player_moved y no hace falta.
+      const skipped = state.players[action.user];
+      if (!skipped || skipped.turnOrder !== state.currentTurnOrder) return state;
+      const totalPlayers = Object.keys(state.players).length;
+      const next = skipped.turnOrder + 1;
+      return {
+        ...state,
+        currentTurnOrder: next <= totalPlayers ? next : 0,
+        isAnyoneAnimating: false,
+      };
+    }
+
     case 'SHOW_ORDER_MINIGAME':
       return { ...state, showOrderMinigame: true };
 
@@ -260,6 +297,7 @@ const initialState: GameState = {
   landedOnBarrera: false,
   penaltyTurns: 0,
   purchasedItems: {},
+  isAnyoneAnimating: false,
 };
 
 // -------------------------------------------------------------------
@@ -278,6 +316,11 @@ export interface GameContextType {
   sendScoreReflejos: (reactionTimeMs: number) => void;
   /** Registrar la compra de un objeto en el turno actual */
   markItemPurchased: (item: string) => void;
+  /** BoardOverlay llama a esto cuando termina la cadena de animación de un jugador.
+   *  isLocalPlayer=true → si procede, se envía end_round automáticamente. */
+  notifyAnimationEnded: (isLocalPlayer: boolean) => void;
+  /** true mientras cualquier ficha esté animándose en el tablero */
+  isAnyoneAnimating: boolean;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -293,6 +336,14 @@ export function useGameContext(): GameContextType {
 // -------------------------------------------------------------------
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
+
+  // Auto-dismiss del toast de error tras 4 segundos
+  useEffect(() => {
+    if (!errorToast) return;
+    const timer = setTimeout(() => setErrorToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [errorToast]);
 
   // Inicialización desde sessionStorage (solo cliente)
   useEffect(() => {
@@ -320,6 +371,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data as string) as Record<string, unknown>;
+
+        // Errores del backend (sin campo type, con campo error)
+        if ('error' in data && typeof data.error === 'string') {
+          setErrorToast(data.error);
+          return;
+        }
 
         switch (data.type as string) {
           case 'player_selected': {
@@ -421,8 +478,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
           case 'penalizacion_actualizada': {
             const myUsername = sessionStorage.getItem('username');
-            if ((data.user as string) === myUsername) {
+            const affectedUser = data.user as string;
+            if (affectedUser === myUsername) {
+              // Actualizar los turnos de penalización del jugador local
               dispatch({ type: 'SET_PENALTY_TURNS', turns: data.penalizacion as number });
+            } else {
+              // Otro jugador saltó su turno bloqueado → avanzar currentTurnOrder si toca
+              dispatch({ type: 'REMOTE_SKIPPED', user: affectedUser });
             }
             break;
           }
@@ -478,6 +540,27 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'MARK_ITEM_PURCHASED', item });
   }, []);
 
+  // Ref siempre actualizado para leer el estado más reciente sin crear closures obsoletas.
+  const awaitingEndRoundRef = useRef(false);
+  useEffect(() => {
+    awaitingEndRoundRef.current = state.awaitingEndRound;
+  }, [state.awaitingEndRound]);
+
+  /** ms extra tras terminar la animación antes de desbloquear el botón del siguiente jugador */
+  const POST_ANIMATION_DELAY_MS = 800;
+
+  /** Llamado por BoardOverlay al finalizar la cadena de animación de un jugador.
+   *  Si es el jugador local y está esperando end_round, lo envía automáticamente. */
+  const notifyAnimationEnded = useCallback((isLocalPlayer: boolean) => {
+    if (isLocalPlayer && awaitingEndRoundRef.current) {
+      sendEndRound();
+    }
+    // Pequeño delay extra antes de desbloquear el botón del siguiente jugador
+    setTimeout(() => {
+      dispatch({ type: 'SET_ANYONE_ANIMATING', value: false });
+    }, POST_ANIMATION_DELAY_MS);
+  }, [sendEndRound]);
+
   const sendScoreReflejos = useCallback((reactionTimeMs: number) => {
     const ws = getGameSocket();
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -501,8 +584,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
-    <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, markItemPurchased }}>
+    <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating }}>
       {children}
+      {errorToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 bg-red-900 border-2 border-red-400 px-5 py-3 shadow-lg animate-in slide-in-from-bottom duration-300">
+          <span className="text-red-300 text-lg select-none">⚠</span>
+          <p className="font-pixel text-white text-xs tracking-wide">{errorToast}</p>
+          <button
+            onClick={() => setErrorToast(null)}
+            className="ml-2 text-red-300 hover:text-white font-bold text-base leading-none"
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </GameContext.Provider>
   );
 }

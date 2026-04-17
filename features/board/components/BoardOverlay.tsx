@@ -63,7 +63,7 @@ const STEP_INTERVAL_MS = 280;
 const FORCED_MOVE_PAUSE_MS = 400;
 
 export default function BoardOverlay() {
-  const { playerOrder } = useGameContext();
+  const { playerOrder, myPlayer, notifyAnimationEnded } = useGameContext();
 
   // Posición que se renderiza actualmente (animada, puede ir por detrás de la real)
   const [displayPositions, setDisplayPositions] = useState<Record<string, number>>({});
@@ -88,6 +88,9 @@ export default function BoardOverlay() {
         }, FORCED_MOVE_PAUSE_MS);
       } else {
         busy.current[username] = false;
+        // Si acaba de terminar la cadena de animaciones del jugador local,
+        // notificar al contexto para que termine el turno automáticamente.
+        notifyAnimationEnded(username === myPlayer?.username);
       }
     };
 
