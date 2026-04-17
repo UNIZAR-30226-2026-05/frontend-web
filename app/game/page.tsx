@@ -2,7 +2,6 @@
 
 import Dice from "@/features/board/components/Dice";
 import PlayerHUD from "@/features/board/components/PlayerHUD";
-import PixelButton from "@/components/UI/PixelButton";
 import ShopModal from "@/features/shop/components/ShopModal";
 import BoardOverlay from "@/features/board/components/BoardOverlay";
 import CharacterSelectionModal from "@/features/board/components/CharacterSelectionModal";
@@ -11,6 +10,7 @@ import { useGameContext } from "@/features/board/context/GameContext";
 import { getGameSocket, getLobbyPlayers } from "@/lib/gameSocket";
 import { useEffect, useState } from "react";
 import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/components/OrderMinigameOverlay";
+import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
 
 // Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
 const WS_NAME_TO_ID: Record<string, string> = {
@@ -29,19 +29,31 @@ function ReflejosMinigameController() {
   return (
     <OrderMinigameOverlay
       minigameType="reflejos"
-      onAction={(result: { reactionTimeMs: number }) => sendScoreReflejos(result.reactionTimeMs)}
+      onAction={(result: { score: number }) => sendScoreReflejos(result.score)}
       onClose={() => {/* no se puede cerrar manualmente */}}
     />
   );
 }
 
+/** Muestra el overlay de Doble o Nada cuando el jugador cae en la casilla correspondiente. */
+function DobleNadaController() {
+  const { state, closeDobleNada } = useGameContext();
+
+  if (!state.showDobleNada) return null;
+
+  return (
+    <DobleNadaOverlay onClose={closeDobleNada} />
+  );
+}
+
 export default function GamePage() {
-  const [isShopOpen, setIsShopOpen] = useState(false);
-  const [showCharacterSelect, setShowCharacterSelect] = useState(true);
   const [lobbyPlayers] = useState<unknown[]>(() => getLobbyPlayers());
   const [unavailableRoles, setUnavailableRoles] = useState<string[]>([]);
 
-  // Debug State for Minigames
+  const [isShopOpen, setIsShopOpen] = useState(false);
+  const [showCharacterSelect, setShowCharacterSelect] = useState(false);
+
+  // Debug State for Minigames - DESACTIVADO POR DEFECTO PARA VER EL BOARD
   const [activeMinigame, setActiveMinigame] = useState<OrderMinigameType | null>(null);
 
   const handleCharacterSelect = (roleId: string) => {
@@ -133,43 +145,25 @@ export default function GamePage() {
       )}
       */}
 
-      {/* Botón Tienda (Esquina inferior izquierda) */}
-      <div className="absolute bottom-6 left-6 z-50">
-        <PixelButton 
-          variant="purple" 
-          onClick={() => setIsShopOpen(true)}
-          className="text-sm px-8 py-4 uppercase"
-        >
-          Tienda
-        </PixelButton>
+      {/* Contenedor central de acciones (Dados) */}
+      <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+        <div className="pointer-events-auto">
+          <Dice onOpenShop={() => setIsShopOpen(true)} />
+        </div>
       </div>
 
       {/* Tienda Modal */}
       {isShopOpen && (
-        <ShopModal onClose={() => setIsShopOpen(false)} />
-      )}
-
-      {/* Contenedor superpuesto para controles (esquina inferior derecha) */}
-      <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-10 z-50 flex flex-col items-end gap-4">
-        <Dice />
-        
-        {/* Debug: Menú de Minijuegos 
-        <div className="flex flex-wrap justify-end gap-2 max-w-[200px]">
-          {(['tren', 'reflejos', 'pan', 'crono', 'cartas'] as OrderMinigameType[]).map((type) => (
-            <button
-              key={type}
-              onClick={() => setActiveMinigame(type)}
-              className="bg-black/50 hover:bg-black/80 text-white text-[8px] font-pixel p-2 border border-white/20 rounded uppercase"
-            >
-              {type}
-            </button>
-          ))}
+        <div className="fixed inset-0 z-[200]">
+          <ShopModal onClose={() => setIsShopOpen(false)} />
         </div>
-        */}
-      </div>
+      )}
 
       {/* Overlay de Minijuego de Orden (Reflejos) - gestionado por el backend */}
       <ReflejosMinigameController />
+
+      {/* Overlay de Doble o Nada */}
+      <DobleNadaController />
 
       {/* Overlay de Minijuegos de Orden */}
       {activeMinigame && (
