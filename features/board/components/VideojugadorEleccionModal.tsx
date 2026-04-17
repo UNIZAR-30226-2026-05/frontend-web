@@ -7,12 +7,15 @@ interface VideojugadorEleccionModalProps {
     isVideojugador: boolean;
     opciones: { id: string; name: string; description?: string }[];
     onSelect: (id: string) => void;
+    /** Llamado cuando el contador llega a 0 sin que el videojugador haya elegido */
+    onTimeout?: () => void;
 }
 
 export default function VideojugadorEleccionModal({ 
     isVideojugador, 
     opciones, 
-    onSelect 
+    onSelect,
+    onTimeout,
 }: VideojugadorEleccionModalProps) {
     const [countdown, setCountdown] = React.useState(10);
 
@@ -21,7 +24,10 @@ export default function VideojugadorEleccionModal({
             const timer = setInterval(() => setCountdown(prev => prev - 1), 1000);
             return () => clearInterval(timer);
         }
-    }, [isVideojugador, countdown]);
+        if (isVideojugador && countdown === 0 && onTimeout) {
+            onTimeout();
+        }
+    }, [isVideojugador, countdown, onTimeout]);
     
     return (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">

@@ -40,6 +40,12 @@ interface GameState {
   myUsername: string | null;
   /** Mostrar el minijuego de reflejos para determinar el orden de la siguiente ronda */
   showOrderMinigame: boolean;
+  /** El videojugador está eligiendo el minijuego de orden */
+  showVideojugadorEleccion: boolean;
+  /** Opciones enviadas por el backend para que el videojugador elija */
+  videojugadorOpciones: { nombre: string; descripcion: string | null }[];
+  /** Nombre del minijuego de orden actualmente en curso (de ini_minijuego) */
+  currentOrderMinijuego: string | null;
   /** Mostrar overlay de Doble o Nada */
   showDobleNada: boolean;
   /** El jugador local cayó en una casilla de movimiento negativo este turno */
@@ -68,6 +74,9 @@ export type Action =
   | { type: 'LOCAL_END_ROUND' }
   | { type: 'SHOW_ORDER_MINIGAME' }
   | { type: 'HIDE_ORDER_MINIGAME' }
+  | { type: 'SHOW_VIDEOJUGADOR_ELECCION'; opciones: { nombre: string; descripcion: string | null }[] }
+  | { type: 'HIDE_VIDEOJUGADOR_ELECCION' }
+  | { type: 'SET_CURRENT_ORDER_MINIJUEGO'; minijuego: string }
   | { type: 'SHOW_DOBLE_NADA' }
   | { type: 'HIDE_DOBLE_NADA' }
   | { type: 'SET_CASILLA_TIPO'; casilla: 'mov_negativo' | 'barrera' | 'none' }
@@ -292,6 +301,15 @@ function gameReducer(state: GameState, action: Action): GameState {
     case 'HIDE_ORDER_MINIGAME':
       return { ...state, showOrderMinigame: false };
 
+    case 'SHOW_VIDEOJUGADOR_ELECCION':
+      return { ...state, showVideojugadorEleccion: true, videojugadorOpciones: action.opciones };
+
+    case 'HIDE_VIDEOJUGADOR_ELECCION':
+      return { ...state, showVideojugadorEleccion: false };
+
+    case 'SET_CURRENT_ORDER_MINIJUEGO':
+      return { ...state, currentOrderMinijuego: action.minijuego };
+
     case 'SHOW_DOBLE_NADA':
       return { ...state, showDobleNada: true };
     
@@ -314,6 +332,9 @@ const initialState: GameState = {
   lastDice: null,
   myUsername: null,
   showOrderMinigame: false,
+  showVideojugadorEleccion: false,
+  videojugadorOpciones: [],
+  currentOrderMinijuego: null,
   showDobleNada: false,
   landedOnNegativeMove: false,
   landedOnBarrera: false,
@@ -336,6 +357,10 @@ export interface GameContextType {
   sendEndRound: () => void;
   /** Enviar puntuación del minijuego de reflejos al backend y cerrar el overlay */
   sendScoreReflejos: (reactionTimeMs: number) => void;
+  /** Enviar puntuación del minijuego de orden elegido por el videojugador */
+  sendScoreOrden: (score: number) => void;
+  /** El videojugador envía ini_round con el minijuego elegido */
+  sendIniRound: (minijuego: string, descripcion: string) => void;
   /** Cerrar el overlay de Doble o Nada */
   closeDobleNada: () => void;
   /** Registrar la compra de un objeto en el turno actual */
@@ -451,19 +476,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           }
 
           case 'choose_minijuego': {
-            const ws = getGameSocket();
-            if (ws && ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({
-                action: 'ini_round',
-                payload: { minijuego: 'Reflejos', descripcion: 'Reacciona en cuanto cambie el color' },
-              }));
-            }
+            const opciones = data.minijuegos as { nombre: string; descripcion: string | null }[];
+            dispatch({ type: 'SHOW_VIDEOJUGADOR_ELECCION', opciones });
             break;
           }
 
-          case 'ini_minijuego':
+          case 'ini_minijuego': {
+            const minijuego = data.minijuego as string;
+            dispatch({ type: 'HIDE_VIDEOJUGADOR_ELECCION' });
+            dispatch({ type: 'SET_CURRENT_ORDER_MINIJUEGO', minijuego });
             dispatch({ type: 'SHOW_ORDER_MINIGAME' });
             break;
+          }
 
           case 'tipo_casilla': {
             const myUsername = sessionStorage.getItem('username');
@@ -571,6 +595,25 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'HIDE_ORDER_MINIGAME' });
   }, []);
 
+  const sendScoreOrden = useCallback((score: number) => {
+    const ws = getGameSocket();
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    // Reflejos: el backend espera ms*1000. El resto de minijuegos usan el score directo.
+    const minijuego = state.currentOrderMinijuego;
+    const payload = minijuego === 'Reflejos'
+      ? { score: score * 1000 }
+      : { score };
+    ws.send(JSON.stringify({ action: 'score_minijuego', payload }));
+    dispatch({ type: 'HIDE_ORDER_MINIGAME' });
+  }, [state.currentOrderMinijuego]);
+
+  const sendIniRound = useCallback((minijuego: string, descripcion: string) => {
+    const ws = getGameSocket();
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ action: 'ini_round', payload: { minijuego, descripcion } }));
+    dispatch({ type: 'HIDE_VIDEOJUGADOR_ELECCION' });
+  }, []);
+
   const closeDobleNada = useCallback(() => {
     dispatch({ type: 'HIDE_DOBLE_NADA' });
   }, []);
@@ -584,7 +627,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
-        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, closeDobleNada, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch }}>
+        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendIniRound, closeDobleNada, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch }}>
 
 
 

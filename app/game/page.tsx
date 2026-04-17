@@ -5,6 +5,7 @@ import PlayerHUD from "@/features/board/components/PlayerHUD";
 import ShopModal from "@/features/shop/components/ShopModal";
 import BoardOverlay from "@/features/board/components/BoardOverlay";
 import CharacterSelectionModal from "@/features/board/components/CharacterSelectionModal";
+import VideojugadorEleccionModal from "@/features/board/components/VideojugadorEleccionModal";
 import { GameProvider } from "@/features/board/context/GameContext";
 import { useGameContext } from "@/features/board/context/GameContext";
 import { getGameSocket, getLobbyPlayers } from "@/lib/gameSocket";
@@ -20,17 +21,63 @@ const WS_NAME_TO_ID: Record<string, string> = {
   Vidente: 'vidente',
 };
 
-/** Muestra el overlay de reflejos cuando el backend lo indica y envía la puntuación. */
-function ReflejosMinigameController() {
-  const { state, sendScoreReflejos } = useGameContext();
+// Mapeo nombre backend → tipo local de OrderMinigameOverlay
+const MINIJUEGO_NAME_TO_TYPE: Record<string, OrderMinigameType> = {
+  'Tren': 'tren',
+  'Reflejos': 'reflejos',
+  'Cortar pan': 'pan',
+  'Cronometro ciego': 'crono',
+  'Mayor o Menor': 'cartas',
+};
+
+/** Muestra el overlay del minijuego de orden elegido por el videojugador. */
+function OrderMinigameController() {
+  const { state, sendScoreOrden } = useGameContext();
 
   if (!state.showOrderMinigame) return null;
 
+  const minijuegoType = state.currentOrderMinijuego
+    ? (MINIJUEGO_NAME_TO_TYPE[state.currentOrderMinijuego] ?? 'reflejos')
+    : 'reflejos';
+
   return (
     <OrderMinigameOverlay
-      minigameType="reflejos"
-      onAction={(result: { score: number }) => sendScoreReflejos(result.score)}
+      minigameType={minijuegoType}
+      onAction={(result: { score: number }) => sendScoreOrden(result.score)}
       onClose={() => {/* no se puede cerrar manualmente */}}
+    />
+  );
+}
+
+/** Muestra el modal de elección del videojugador (o vista espectador para el resto). */
+function VideojugadorEleccionController() {
+  const { state, myPlayer, sendIniRound } = useGameContext();
+
+  if (!state.showVideojugadorEleccion) return null;
+
+  const isVideojugador = myPlayer?.character === 'videojugador';
+
+  const opciones = state.videojugadorOpciones.map(o => ({
+    id: o.nombre,
+    name: o.nombre,
+    description: o.descripcion ?? undefined,
+  }));
+
+  const handleSelect = (id: string) => {
+    const opcion = state.videojugadorOpciones.find(o => o.nombre === id);
+    if (opcion) {
+      sendIniRound(opcion.nombre, opcion.descripcion ?? '');
+    }
+  };
+
+  return (
+    <VideojugadorEleccionModal
+      isVideojugador={isVideojugador}
+      opciones={opciones}
+      onSelect={handleSelect}
+      onTimeout={() => {
+        if (opciones.length > 0) handleSelect(opciones[0].id);
+      }}
     />
   );
 }
@@ -159,8 +206,11 @@ export default function GamePage() {
         </div>
       )}
 
-      {/* Overlay de Minijuego de Orden (Reflejos) - gestionado por el backend */}
-      <ReflejosMinigameController />
+      {/* Overlay de Minijuego de Orden (elegido por el videojugador) */}
+      <OrderMinigameController />
+
+      {/* Modal de elección del videojugador */}
+      <VideojugadorEleccionController />
 
       {/* Overlay de Doble o Nada */}
       <DobleNadaController />
