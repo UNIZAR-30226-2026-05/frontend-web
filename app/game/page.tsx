@@ -51,7 +51,7 @@ export default function GamePage() {
   const [unavailableRoles, setUnavailableRoles] = useState<string[]>([]);
 
   const [isShopOpen, setIsShopOpen] = useState(false);
-  const [showCharacterSelect, setShowCharacterSelect] = useState(false);
+  const [showCharacterSelect, setShowCharacterSelect] = useState(true);
 
   // Debug State for Minigames - DESACTIVADO POR DEFECTO PARA VER EL BOARD
   const [activeMinigame, setActiveMinigame] = useState<OrderMinigameType | null>(null);

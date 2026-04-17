@@ -130,7 +130,7 @@ function gameReducer(state: GameState, action: Action): GameState {
           ...state.players,
           [action.user]: { ...player, position: action.newPos },
         },
-        // MANTENER el currentTurnOrder hasta que el jugador envíe end_round o el backend cambie el turno
+        currentTurnOrder: newCurrentTurnOrder,
         hasMoved: isLocalPlayer ? true : state.hasMoved,
         awaitingEndRound: isLocalPlayer ? true : state.awaitingEndRound,
         isAnyoneAnimating: true,
@@ -215,6 +215,9 @@ function gameReducer(state: GameState, action: Action): GameState {
     }
 
     case 'LOCAL_END_ROUND': {
+      // Cuando el jugador tiró dados, PLAYER_MOVED_DICE ya avanzó currentTurnOrder.
+      // Cuando el jugador pasó de turno sin tirar (bloqueado), debemos avanzarlo aquí,
+      // o el siguiente jugador nunca verá isMyTurn = true y el juego queda congelado.
       const myPlayer = state.players[state.myUsername ?? ''];
       let newCurrentTurnOrder = state.currentTurnOrder;
       if (!state.hasMoved && myPlayer) {
