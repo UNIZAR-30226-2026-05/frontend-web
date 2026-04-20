@@ -94,13 +94,11 @@ function VideojugadorEleccionController() {
 
 /** Muestra el overlay de Doble o Nada cuando el jugador cae en la casilla correspondiente. */
 function DobleNadaController() {
-  const { state, closeDobleNada } = useGameContext();
+  const { state } = useGameContext();
 
-  if (!state.showDobleNada) return null;
+  if (!state.showDobleNada && !state.dobleNadaResult) return null;
 
-  return (
-    <DobleNadaOverlay onClose={closeDobleNada} />
-  );
+  return <DobleNadaOverlay />;
 }
 
 export default function GamePage() {

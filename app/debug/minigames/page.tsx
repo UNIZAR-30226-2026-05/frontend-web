@@ -87,15 +87,22 @@ export default function DebugMinigamesPage() {
       penaltyTurns: 0,
       isAnyoneAnimating: false,
       lastSwapEvent: null,
+      pendingBoardMinigame: { type: "Doble o Nada", user: "debug_user" },
+      isSubmittingDobleNada: false,
+      submittedDobleNadaBet: null,
+      dobleNadaResult: null,
     },
     isMyTurn: true,
     myPlayer: mockPlayer,
     playerOrder: [mockPlayer],
     sendMovePlayer: () => undefined,
     sendEndRound: () => undefined,
-    closeDobleNada: () => setActiveMinigame(null),
     sendScoreReflejos: (score: number) => handleAction({ score }),
     sendScoreOrden: (score: number) => handleAction({ score }),
+    sendScoreDobleNada: (score: number) => {
+      handleAction({ score });
+      setActiveMinigame(null);
+    },
     sendIniRound: (minijuego: string, descripcion: string) => handleAction({ minijuego, descripcion }),
     markItemPurchased: () => undefined,
     notifyAnimationEnded: () => undefined,
@@ -175,7 +182,7 @@ export default function DebugMinigamesPage() {
           )}
 
           {activeMinigame === "doblenada" && (
-            <DobleNadaOverlay onClose={() => setActiveMinigame(null)} />
+            <DobleNadaOverlay />
           )}
 
           {activeMinigame === "ruleta" && (

@@ -35,6 +35,18 @@ interface SwapAnimationEvent {
   otherUser: string;
 }
 
+interface PendingBoardMinigame {
+  type: 'Doble o Nada';
+  user: string;
+}
+
+interface DobleNadaResult {
+  user: string;
+  bet: number;
+  outcome: 'ganado' | 'perdido' | 'pasado';
+  delta: number;
+}
+
 interface GameState {
   players: Record<string, GamePlayer>;
   /** Qué posición del orden está jugando ahora (1–4). 0 = entre rondas. */
@@ -68,6 +80,14 @@ interface GameState {
   isAnyoneAnimating: boolean;
   /** Último intercambio instantáneo entre dos jugadores del tablero */
   lastSwapEvent: SwapAnimationEvent | null;
+  /** Minijuego de casilla pendiente de resolver antes de cerrar el turno */
+  pendingBoardMinigame: PendingBoardMinigame | null;
+  /** Evita reenvíos mientras se espera la resolución de Doble o Nada */
+  isSubmittingDobleNada: boolean;
+  /** Apuesta enviada por el jugador local para reutilizarla al mostrar el resultado */
+  submittedDobleNadaBet: number | null;
+  /** Resultado más reciente de Doble o Nada visible para todos los jugadores */
+  dobleNadaResult: DobleNadaResult | null;
 }
 
 // -------------------------------------------------------------------
@@ -88,8 +108,12 @@ export type Action =
   | { type: 'SHOW_VIDEOJUGADOR_ELECCION'; opciones: { nombre: string; descripcion: string | null }[] }
   | { type: 'HIDE_VIDEOJUGADOR_ELECCION' }
   | { type: 'SET_CURRENT_ORDER_MINIJUEGO'; minijuego: string }
-  | { type: 'SHOW_DOBLE_NADA' }
-  | { type: 'HIDE_DOBLE_NADA' }
+  | { type: 'SHOW_DOBLE_NADA'; user: string }
+  | { type: 'OPEN_DOBLE_NADA' }
+  | { type: 'SUBMIT_DOBLE_NADA'; score: number }
+  | { type: 'DOBLE_NADA_SUBMISSION_FAILED' }
+  | { type: 'SHOW_DOBLE_NADA_RESULT'; result: DobleNadaResult }
+  | { type: 'CLEAR_DOBLE_NADA_FLOW' }
   | { type: 'SET_CASILLA_TIPO'; casilla: 'mov_negativo' | 'barrera' | 'none' }
   | { type: 'MARK_ITEM_PURCHASED'; item: string }
   | { type: 'SET_PENALTY_TURNS'; turns: number }
@@ -118,7 +142,17 @@ function gameReducer(state: GameState, action: Action): GameState {
           diceType: 'normal',
         };
       });
-      return { ...state, players, currentTurnOrder: 1, myUsername: action.myUsername, lastSwapEvent: null };
+      return {
+        ...state,
+        players,
+        currentTurnOrder: 1,
+        myUsername: action.myUsername,
+        lastSwapEvent: null,
+        pendingBoardMinigame: null,
+        isSubmittingDobleNada: false,
+        submittedDobleNadaBet: null,
+        dobleNadaResult: null,
+      };
     }
 
     case 'PLAYER_SELECTED': {
@@ -229,6 +263,10 @@ function gameReducer(state: GameState, action: Action): GameState {
         currentOrderMinijuego: null,
         landedOnBarrera: false,
         showDobleNada: false,
+        pendingBoardMinigame: null,
+        isSubmittingDobleNada: false,
+        submittedDobleNadaBet: null,
+        dobleNadaResult: null,
         purchasedItems: {},
         isAnyoneAnimating: false,
       };
@@ -282,6 +320,10 @@ function gameReducer(state: GameState, action: Action): GameState {
         awaitingEndRound: false,
         landedOnBarrera: false,
         showDobleNada: false,
+        pendingBoardMinigame: null,
+        isSubmittingDobleNada: false,
+        submittedDobleNadaBet: null,
+        dobleNadaResult: null,
         purchasedItems: {},
         penaltyTurns: newPenaltyTurns,
         // Si el jugador pasó sin moverse (bloqueado), ninguna animación está pendiente.
@@ -346,13 +388,59 @@ function gameReducer(state: GameState, action: Action): GameState {
       return { ...state, currentOrderMinijuego: action.minijuego };
 
     case 'SHOW_DOBLE_NADA':
+      return {
+        ...state,
+        showDobleNada: false,
+        pendingBoardMinigame: { type: 'Doble o Nada', user: action.user },
+        isSubmittingDobleNada: false,
+        submittedDobleNadaBet: null,
+        dobleNadaResult: null,
+        isAnyoneAnimating: true,
+      };
+
+    case 'OPEN_DOBLE_NADA':
+      if (state.pendingBoardMinigame?.type !== 'Doble o Nada') return state;
+      if (state.pendingBoardMinigame.user !== state.myUsername) return state;
       return { ...state, showDobleNada: true };
-    
-    case 'HIDE_DOBLE_NADA':
-      return { ...state, showDobleNada: false };
+
+    case 'SUBMIT_DOBLE_NADA':
+      return { ...state, isSubmittingDobleNada: true, submittedDobleNadaBet: action.score };
+
+    case 'DOBLE_NADA_SUBMISSION_FAILED':
+      return { ...state, isSubmittingDobleNada: false };
+
+    case 'SHOW_DOBLE_NADA_RESULT':
+      return {
+        ...state,
+        showDobleNada: false,
+        isSubmittingDobleNada: false,
+        pendingBoardMinigame: state.pendingBoardMinigame ?? { type: 'Doble o Nada', user: action.result.user },
+        dobleNadaResult: action.result,
+        isAnyoneAnimating: true,
+      };
+
+    case 'CLEAR_DOBLE_NADA_FLOW':
+      return {
+        ...state,
+        showDobleNada: false,
+        pendingBoardMinigame: null,
+        isSubmittingDobleNada: false,
+        submittedDobleNadaBet: null,
+        dobleNadaResult: null,
+        isAnyoneAnimating: false,
+      };
 
     case 'DEBUG_SET_TURN_ORDER':
-      return { ...state, currentTurnOrder: action.order, hasMoved: false, awaitingEndRound: false };
+      return {
+        ...state,
+        currentTurnOrder: action.order,
+        hasMoved: false,
+        awaitingEndRound: false,
+        pendingBoardMinigame: null,
+        isSubmittingDobleNada: false,
+        submittedDobleNadaBet: null,
+        dobleNadaResult: null,
+      };
 
     default:
       return state;
@@ -377,6 +465,10 @@ const initialState: GameState = {
   purchasedItems: {},
   isAnyoneAnimating: false,
   lastSwapEvent: null,
+  pendingBoardMinigame: null,
+  isSubmittingDobleNada: false,
+  submittedDobleNadaBet: null,
+  dobleNadaResult: null,
 };
 
 // -------------------------------------------------------------------
@@ -395,10 +487,10 @@ export interface GameContextType {
   sendScoreReflejos: (reactionTimeMs: number) => void;
   /** Enviar puntuación del minijuego de orden elegido por el videojugador */
   sendScoreOrden: (score: number) => void;
+  /** Enviar apuesta de Doble o Nada; `0` equivale a pasar */
+  sendScoreDobleNada: (score: number) => void;
   /** El videojugador envía ini_round con el minijuego elegido */
   sendIniRound: (minijuego: string, descripcion: string) => void;
-  /** Cerrar el overlay de Doble o Nada */
-  closeDobleNada: () => void;
   /** Registrar la compra de un objeto en el turno actual */
   markItemPurchased: (item: string) => void;
   /** BoardOverlay llama a esto cuando termina la cadena de animación de un jugador.
@@ -427,6 +519,80 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const swapEventIdRef = useRef(0);
+  const awaitingEndRoundRef = useRef(false);
+  const pendingBoardMinigameRef = useRef<GameState['pendingBoardMinigame']>(null);
+  const isSubmittingDobleNadaRef = useRef(false);
+  const awaitingDobleNadaBalanceRef = useRef(false);
+  const submittedDobleNadaBetRef = useRef<number | null>(null);
+  const playersRef = useRef<GameState['players']>({});
+  const dobleNadaResultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    awaitingEndRoundRef.current = state.awaitingEndRound;
+  }, [state.awaitingEndRound]);
+
+  useEffect(() => {
+    pendingBoardMinigameRef.current = state.pendingBoardMinigame;
+  }, [state.pendingBoardMinigame]);
+
+  useEffect(() => {
+    isSubmittingDobleNadaRef.current = state.isSubmittingDobleNada;
+  }, [state.isSubmittingDobleNada]);
+
+  useEffect(() => {
+    submittedDobleNadaBetRef.current = state.submittedDobleNadaBet;
+  }, [state.submittedDobleNadaBet]);
+
+  useEffect(() => {
+    playersRef.current = state.players;
+  }, [state.players]);
+
+  const sendMovePlayer = useCallback(() => {
+    const ws = getGameSocket();
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ action: 'move_player' }));
+  }, []);
+
+  const sendEndRound = useCallback(() => {
+    const ws = getGameSocket();
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ action: 'end_round' }));
+    dispatch({ type: 'LOCAL_END_ROUND' });
+  }, []);
+
+  const markItemPurchased = useCallback((item: string) => {
+    dispatch({ type: 'MARK_ITEM_PURCHASED', item });
+  }, []);
+
+  /** ms extra tras terminar la animación antes de desbloquear el botón del siguiente jugador */
+  const POST_ANIMATION_DELAY_MS = 800;
+  /** tiempo de cortesía mostrando el resultado de Doble o Nada antes de cerrar la ronda */
+  const DOBLE_NADA_RESULT_DELAY_MS = 1800;
+
+  const clearDobleNadaResultTimer = useCallback(() => {
+    if (dobleNadaResultTimerRef.current !== null) {
+      clearTimeout(dobleNadaResultTimerRef.current);
+      dobleNadaResultTimerRef.current = null;
+    }
+  }, []);
+
+  const finalizeDobleNadaFlow = useCallback((resolvedUser: string) => {
+    clearDobleNadaResultTimer();
+    awaitingDobleNadaBalanceRef.current = false;
+    dobleNadaResultTimerRef.current = setTimeout(() => {
+      const myUsername = sessionStorage.getItem('username');
+      const shouldFinishLocalTurn = resolvedUser === myUsername && awaitingEndRoundRef.current;
+
+      if (shouldFinishLocalTurn) {
+        sendEndRound();
+      }
+
+      dispatch({ type: 'CLEAR_DOBLE_NADA_FLOW' });
+      dobleNadaResultTimerRef.current = null;
+    }, DOBLE_NADA_RESULT_DELAY_MS);
+  }, [clearDobleNadaResultTimer, sendEndRound]);
+
+  useEffect(() => clearDobleNadaResultTimer, [clearDobleNadaResultTimer]);
 
   // Auto-dismiss del toast de error tras 4 segundos
   useEffect(() => {
@@ -468,6 +634,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         // Errores del backend (sin campo type, con campo error)
         if ('error' in data && typeof data.error === 'string') {
           setErrorToast(data.error);
+          if (pendingBoardMinigameRef.current?.type === 'Doble o Nada' && isSubmittingDobleNadaRef.current) {
+            dispatch({ type: 'DOBLE_NADA_SUBMISSION_FAILED' });
+          }
           return;
         }
 
@@ -515,10 +684,39 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           }
 
           case 'balances_changed': {
+            const balances = data.balances as Record<string, number>;
+            const pendingBoardMinigame = pendingBoardMinigameRef.current;
+
             dispatch({
               type: 'BALANCES_CHANGED',
-              balances: data.balances as Record<string, number>,
+              balances,
             });
+
+            if (pendingBoardMinigame?.type === 'Doble o Nada' && awaitingDobleNadaBalanceRef.current) {
+              awaitingDobleNadaBalanceRef.current = false;
+              const resolvedUser = pendingBoardMinigame.user;
+              const previousBalance = playersRef.current[resolvedUser]?.balance;
+              const nextBalance = balances[resolvedUser];
+
+              if (typeof previousBalance === 'number' && typeof nextBalance === 'number') {
+                const delta = nextBalance - previousBalance;
+                const myUsername = sessionStorage.getItem('username');
+                const submittedBet = resolvedUser === myUsername
+                  ? submittedDobleNadaBetRef.current
+                  : null;
+
+                dispatch({
+                  type: 'SHOW_DOBLE_NADA_RESULT',
+                  result: {
+                    user: resolvedUser,
+                    bet: submittedBet ?? Math.abs(delta),
+                    outcome: delta > 0 ? 'ganado' : delta < 0 ? 'perdido' : 'pasado',
+                    delta,
+                  },
+                });
+                finalizeDobleNadaFlow(resolvedUser);
+              }
+            }
             break;
           }
 
@@ -567,9 +765,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           }
 
           case 'minijuego_casilla': {
-            const myUsername = sessionStorage.getItem('username');
-            if (lastMovedUser === myUsername && data.minijuego === 'Doble o Nada') {
-              dispatch({ type: 'SHOW_DOBLE_NADA' });
+            if (data.minijuego === 'Doble o Nada') {
+              awaitingDobleNadaBalanceRef.current = true;
+              dispatch({ type: 'SHOW_DOBLE_NADA', user: data.user as string });
             }
             break;
           }
@@ -602,38 +800,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     ws.addEventListener('message', handleMessage);
     return () => ws.removeEventListener('message', handleMessage);
-  }, []);
-
-  // Acciones enviadas al WebSocket
-  const sendMovePlayer = useCallback(() => {
-    const ws = getGameSocket();
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ action: 'move_player' }));
-  }, []);
-
-  const sendEndRound = useCallback(() => {
-    const ws = getGameSocket();
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ action: 'end_round' }));
-    dispatch({ type: 'LOCAL_END_ROUND' });
-  }, []);
-
-  const markItemPurchased = useCallback((item: string) => {
-    dispatch({ type: 'MARK_ITEM_PURCHASED', item });
-  }, []);
-
-  // Ref siempre actualizado para leer el estado más reciente sin crear closures obsoletas.
-  const awaitingEndRoundRef = useRef(false);
-  useEffect(() => {
-    awaitingEndRoundRef.current = state.awaitingEndRound;
-  }, [state.awaitingEndRound]);
-
-  /** ms extra tras terminar la animación antes de desbloquear el botón del siguiente jugador */
-  const POST_ANIMATION_DELAY_MS = 800;
+  }, [finalizeDobleNadaFlow]);
 
   /** Llamado por BoardOverlay al finalizar la cadena de animación de un jugador.
    *  Si es el jugador local y está esperando end_round, lo envía automáticamente. */
   const notifyAnimationEnded = useCallback((isLocalPlayer: boolean) => {
+    const pendingBoardMinigame = pendingBoardMinigameRef.current;
+    if (pendingBoardMinigame?.type === 'Doble o Nada') {
+      if (isLocalPlayer && pendingBoardMinigame.user === state.myUsername) {
+        dispatch({ type: 'OPEN_DOBLE_NADA' });
+      }
+      return;
+    }
+
     if (isLocalPlayer && awaitingEndRoundRef.current) {
       sendEndRound();
     }
@@ -641,7 +820,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => {
       dispatch({ type: 'SET_ANYONE_ANIMATING', value: false });
     }, POST_ANIMATION_DELAY_MS);
-  }, [sendEndRound]);
+  }, [sendEndRound, state.myUsername]);
 
   const sendScoreReflejos = useCallback((reactionTimeMs: number) => {
     const ws = getGameSocket();
@@ -665,15 +844,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'HIDE_ORDER_MINIGAME' });
   }, [state.currentOrderMinijuego]);
 
+  const sendScoreDobleNada = useCallback((score: number) => {
+    const ws = getGameSocket();
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    dispatch({ type: 'SUBMIT_DOBLE_NADA', score });
+    ws.send(JSON.stringify({
+      action: 'score_minijuego',
+      payload: { score },
+    }));
+  }, []);
+
   const sendIniRound = useCallback((minijuego: string, descripcion: string) => {
     const ws = getGameSocket();
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ action: 'ini_round', payload: { minijuego, descripcion } }));
     dispatch({ type: 'HIDE_VIDEOJUGADOR_ELECCION' });
-  }, []);
-
-  const closeDobleNada = useCallback(() => {
-    dispatch({ type: 'HIDE_DOBLE_NADA' });
   }, []);
 
   // Datos derivados
@@ -685,7 +870,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
-        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendIniRound, closeDobleNada, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch }}>
+        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendScoreDobleNada, sendIniRound, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch }}>
 
 
 
