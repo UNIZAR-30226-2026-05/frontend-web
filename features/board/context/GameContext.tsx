@@ -14,6 +14,8 @@ const WS_CHAR_TO_ROLE_ID: Record<string, string> = {
   Vidente: 'vidente',
 };
 
+const SWAP_POSITIONS_MESSAGE = 'Posiciones intercambiadas con otro jugador aleatoriamente';
+
 // -------------------------------------------------------------------
 // Tipos
 // -------------------------------------------------------------------
@@ -25,6 +27,12 @@ export interface GamePlayer {
   balance: number;                // monedas actuales
   turnOrder: number;              // 1-4, posición en el orden actual
   diceType: DiceType;             // dado especial que le corresponde
+}
+
+interface SwapAnimationEvent {
+  id: number;
+  actor: string;
+  otherUser: string;
 }
 
 interface GameState {
@@ -58,6 +66,8 @@ interface GameState {
   penaltyTurns: number;
   /** true mientras cualquier ficha esté animándose en el tablero */
   isAnyoneAnimating: boolean;
+  /** Último intercambio instantáneo entre dos jugadores del tablero */
+  lastSwapEvent: SwapAnimationEvent | null;
 }
 
 // -------------------------------------------------------------------
@@ -68,6 +78,7 @@ export type Action =
   | { type: 'PLAYER_SELECTED'; user: string; character: string }
   | { type: 'PLAYER_MOVED_DICE'; user: string; newPos: number; dado1: number; dado2: number }
   | { type: 'PLAYER_MOVED_FORCED'; user: string; newPos: number }
+  | { type: 'PLAYERS_SWAPPED'; actor: string; actorPos: number; otherUser: string; otherPos: number; swapEventId: number }
   | { type: 'BALANCES_CHANGED'; balances: Record<string, number> }
   | { type: 'MINIJUEGO_RESULTADOS'; nuevo_orden: Record<string, number> }
   | { type: 'RECONNECT_SUCCESS'; boardState: { positions?: Record<string, number>; balances?: Record<string, number>; characters?: Record<string, string>; order?: Record<string, number> } }
@@ -107,7 +118,7 @@ function gameReducer(state: GameState, action: Action): GameState {
           diceType: 'normal',
         };
       });
-      return { ...state, players, currentTurnOrder: 1, myUsername: action.myUsername };
+      return { ...state, players, currentTurnOrder: 1, myUsername: action.myUsername, lastSwapEvent: null };
     }
 
     case 'PLAYER_SELECTED': {
@@ -161,6 +172,26 @@ function gameReducer(state: GameState, action: Action): GameState {
         players: {
           ...state.players,
           [action.user]: { ...player, position: action.newPos },
+        },
+      };
+    }
+
+    case 'PLAYERS_SWAPPED': {
+      const actor = state.players[action.actor];
+      const otherPlayer = state.players[action.otherUser];
+      if (!actor || !otherPlayer) return state;
+      return {
+        ...state,
+        isAnyoneAnimating: true,
+        lastSwapEvent: {
+          id: action.swapEventId,
+          actor: action.actor,
+          otherUser: action.otherUser,
+        },
+        players: {
+          ...state.players,
+          [action.actor]: { ...actor, position: action.actorPos },
+          [action.otherUser]: { ...otherPlayer, position: action.otherPos },
         },
       };
     }
@@ -345,6 +376,7 @@ const initialState: GameState = {
   penaltyTurns: 0,
   purchasedItems: {},
   isAnyoneAnimating: false,
+  lastSwapEvent: null,
 };
 
 // -------------------------------------------------------------------
@@ -394,6 +426,7 @@ export function useGameContext(): GameContextType {
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [errorToast, setErrorToast] = useState<string | null>(null);
+  const swapEventIdRef = useRef(0);
 
   // Auto-dismiss del toast de error tras 4 segundos
   useEffect(() => {
@@ -426,6 +459,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     // Rastrea qué jugador acaba de mover para saber si tipo_casilla es del jugador local
     let lastMovedUser: string | null = null;
+    const pendingSwapMoves: { user: string; newPos: number }[] = [];
 
     const handleMessage = (event: MessageEvent) => {
       try {
@@ -450,6 +484,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             const newPos = data.nueva_casilla as number;
             lastMovedUser = user;
             if ('dado1' in data && 'dado2' in data) {
+              pendingSwapMoves.length = 0;
               dispatch({
                 type: 'PLAYER_MOVED_DICE',
                 user,
@@ -457,7 +492,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
                 dado1: data.dado1 as number,
                 dado2: data.dado2 as number,
               });
+            } else if (data.message === SWAP_POSITIONS_MESSAGE) {
+              pendingSwapMoves.push({ user, newPos });
+              if (pendingSwapMoves.length === 2) {
+                const [actorMove, otherMove] = pendingSwapMoves;
+                pendingSwapMoves.length = 0;
+                swapEventIdRef.current += 1;
+                dispatch({
+                  type: 'PLAYERS_SWAPPED',
+                  actor: actorMove.user,
+                  actorPos: actorMove.newPos,
+                  otherUser: otherMove.user,
+                  otherPos: otherMove.newPos,
+                  swapEventId: swapEventIdRef.current,
+                });
+              }
             } else {
+              pendingSwapMoves.length = 0;
               dispatch({ type: 'PLAYER_MOVED_FORCED', user, newPos });
             }
             break;

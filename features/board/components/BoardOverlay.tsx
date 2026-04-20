@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useGameContext } from '@/features/board/context/GameContext';
 
@@ -33,8 +33,12 @@ const FALLBACK_ASSETS = [
 const DICE_SHOW_DELAY_MS = 1200;
 /** ms entre cada avance de una casilla */
 const STEP_INTERVAL_MS = 280;
-/** pausa antes de empezar el movimiento forzado (casilla de movimiento) */
+/** pausa antes de aplicar el movimiento forzado o el intercambio */
 const FORCED_MOVE_PAUSE_MS = 400;
+
+type QueuedTransition =
+  | { kind: 'path'; to: number }
+  | { kind: 'swap'; to: number; partner: string; partnerTo: number };
 
 export default function BoardOverlay() {
   const { state, playerOrder, myPlayer, notifyAnimationEnded } = useGameContext();
@@ -45,60 +49,97 @@ export default function BoardOverlay() {
 
   // Refs de control: no necesitan provocar re-renders adicionales
   const displayPosRef = useRef<Record<string, number>>({});
-  const queues = useRef<Record<string, number[]>>({});
+  const queues = useRef<Record<string, QueuedTransition[]>>({});
   // busy = true mientras haya una animación en curso o haya un delay inicial pendiente
   const busy = useRef<Record<string, boolean>>({});
   const prevRealPos = useRef<Record<string, number>>({});
+  const processedSwapEventId = useRef<number | null>(null);
+
+  const syncDisplayPositions = useCallback((updates: Record<string, number>) => {
+    Object.entries(updates).forEach(([username, position]) => {
+      displayPosRef.current[username] = position;
+    });
+
+    setDisplayPositions(prev => {
+      let changed = false;
+      const next = { ...prev };
+
+      Object.entries(updates).forEach(([username, position]) => {
+        if (next[username] !== position) {
+          next[username] = position;
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, []);
 
   // Función de animación en ref para ser llamada recursivamente sin problemas de cierre
+  const runQueuedTransitionRef = useRef<(username: string, from: number, transition: QueuedTransition) => void>(null!);
   const startAnimRef = useRef<(username: string, from: number, to: number) => void>(null!);
   useLayoutEffect(() => {
-  startAnimRef.current = (username: string, from: number, to: number) => {
-    const onComplete = (finalPos: number) => {
-      if ((queues.current[username]?.length ?? 0) > 0) {
-        // Hay un movimiento forzado encolado: pequeña pausa y luego continuar
-        const nextTarget = queues.current[username].shift()!;
-        setTimeout(() => {
-          startAnimRef.current!(username, finalPos, nextTarget);
-        }, FORCED_MOVE_PAUSE_MS);
-      } else {
-        busy.current[username] = false;
-        // Si acaba de terminar la cadena de animaciones del jugador local,
-        // notificar al contexto para que termine el turno automáticamente.
-        notifyAnimationEnded(username === myPlayer?.username);
-      }
-    };
-
-    if (from === to) {
-      onComplete(from);
-      return;
-    }
-
-    const step = (current: number) => {
-      if (current === to) {
-        onComplete(current);
+    runQueuedTransitionRef.current = (username: string, from: number, transition: QueuedTransition) => {
+      if (transition.kind === 'path') {
+        startAnimRef.current!(username, from, transition.to);
         return;
       }
-      const next = current < to ? current + 1 : current - 1;
-      displayPosRef.current[username] = next;
-      setDisplayPositions(prev => ({ ...prev, [username]: next }));
-      setTimeout(() => step(next), STEP_INTERVAL_MS);
+
+      busy.current[username] = false;
+      busy.current[transition.partner] = false;
+      queues.current[username] = [];
+      queues.current[transition.partner] = [];
+      syncDisplayPositions({
+        [username]: transition.to,
+        [transition.partner]: transition.partnerTo,
+      });
+      notifyAnimationEnded(username === myPlayer?.username);
     };
 
-    step(from);
-  };
-  }, [myPlayer?.username, notifyAnimationEnded]);
+    startAnimRef.current = (username: string, from: number, to: number) => {
+      const onComplete = (finalPos: number) => {
+        if ((queues.current[username]?.length ?? 0) > 0) {
+          const nextTransition = queues.current[username].shift()!;
+          setTimeout(() => {
+            runQueuedTransitionRef.current!(username, finalPos, nextTransition);
+          }, FORCED_MOVE_PAUSE_MS);
+        } else {
+          busy.current[username] = false;
+          // Si acaba de terminar la cadena de animaciones del jugador local,
+          // notificar al contexto para que termine el turno automáticamente.
+          notifyAnimationEnded(username === myPlayer?.username);
+        }
+      };
 
-  const syncPosition = (username: string, position: number) => {
+      if (from === to) {
+        onComplete(from);
+        return;
+      }
+
+      const step = (current: number) => {
+        if (current === to) {
+          onComplete(current);
+          return;
+        }
+        const next = current < to ? current + 1 : current - 1;
+        syncDisplayPositions({ [username]: next });
+        setTimeout(() => step(next), STEP_INTERVAL_MS);
+      };
+
+      step(from);
+    };
+  }, [myPlayer?.username, notifyAnimationEnded, syncDisplayPositions]);
+
+  const syncPosition = useCallback((username: string, position: number) => {
     busy.current[username] = false;
     queues.current[username] = [];
-    displayPosRef.current[username] = position;
-    setDisplayPositions(prev => (
-      prev[username] === position ? prev : { ...prev, [username]: position }
-    ));
-  };
+    syncDisplayPositions({ [username]: position });
+  }, [syncDisplayPositions]);
 
   useEffect(() => {
+    const swapEvent = state.lastSwapEvent;
+    const hasFreshSwapEvent = !!swapEvent && swapEvent.id !== processedSwapEventId.current;
+
     playerOrder.forEach(player => {
       const { username, position } = player;
 
@@ -116,10 +157,39 @@ export default function BoardOverlay() {
       if (position !== prevRealPos.current[username]) {
         prevRealPos.current[username] = position;
 
+        if (hasFreshSwapEvent && swapEvent.otherUser === username) {
+          return;
+        }
+
         // Solo animamos casilla a casilla al jugador que acaba de tirar.
         // Si otro jugador cambia por un efecto colateral del backend, sincronizamos directo.
         if (username !== animatedUser) {
           syncPosition(username, position);
+          return;
+        }
+
+        if (hasFreshSwapEvent && swapEvent.actor === username) {
+          const partnerTo = state.players[swapEvent.otherUser]?.position;
+          if (partnerTo === undefined) {
+            syncPosition(username, position);
+            return;
+          }
+
+          const swapTransition: QueuedTransition = {
+            kind: 'swap',
+            to: position,
+            partner: swapEvent.otherUser,
+            partnerTo,
+          };
+
+          if (!busy.current[username]) {
+            busy.current[username] = true;
+            setTimeout(() => {
+              runQueuedTransitionRef.current!(username, displayPosRef.current[username] ?? 0, swapTransition);
+            }, DICE_SHOW_DELAY_MS);
+          } else {
+            queues.current[username].push(swapTransition);
+          }
           return;
         }
 
@@ -131,11 +201,15 @@ export default function BoardOverlay() {
           }, DICE_SHOW_DELAY_MS);
         } else {
           // Ya hay animación en curso o delay pendiente: encolar el destino
-          queues.current[username].push(position);
+          queues.current[username].push({ kind: 'path', to: position });
         }
       }
     });
-  }, [animatedUser, playerOrder]);
+
+    if (hasFreshSwapEvent && swapEvent) {
+      processedSwapEventId.current = swapEvent.id;
+    }
+  }, [animatedUser, playerOrder, state.lastSwapEvent, state.players, syncPosition]);
 
   // Agrupamiento por casilla usando posiciones ANIMADAS
   const playersByTile: Record<number, string[]> = {};

@@ -52,6 +52,7 @@ export default function BanqueroRoboModal({ targetPlayers, onSelect }: BanqueroR
                                     className="group relative flex flex-col items-center bg-[var(--color-sp-bg-medium)] border-4 border-white p-6 transition-all hover:scale-105"
                                 >
                                     {/* Avatar */}
+                                    {/* TODO: ESTO AUN NO ESTÁ PROBADO PUEDE FALLAR POR IMAGE */}
                                     <div className="relative w-24 h-24 mb-4 border-2 border-white/30 bg-black/40 overflow-hidden">
                                         <Image
                                             src={getCharacterImage(player.character)}

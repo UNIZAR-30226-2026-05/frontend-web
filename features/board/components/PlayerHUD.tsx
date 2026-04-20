@@ -22,7 +22,12 @@ const RoleAvatar = ({ player }: { player: Player }) => {
 
   return (
     <div className={`w-10 h-10 border-2 border-white flex items-center justify-center shadow-[1px_1px_0px_0px_rgba(0,0,0,0.2)] overflow-hidden ${roleColors[player.role]}`}>
-      <Image src={player.avatarUrl} alt={player.role} className="w-full h-full object-cover" width={40} height={40} />
+      <Image 
+      src={player.avatarUrl} 
+      alt={player.role} 
+      className="w-full h-full object-cover" 
+      width={40} 
+      height={40} />
     </div>
   );
 };

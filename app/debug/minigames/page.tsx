@@ -86,6 +86,7 @@ export default function DebugMinigamesPage() {
       purchasedItems: {},
       penaltyTurns: 0,
       isAnyoneAnimating: false,
+      lastSwapEvent: null,
     },
     isMyTurn: true,
     myPlayer: mockPlayer,
