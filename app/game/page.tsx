@@ -53,9 +53,17 @@ function OrderMinigameController() {
 function VideojugadorEleccionController() {
   const { state, myPlayer, sendIniRound } = useGameContext();
 
-  if (!state.showVideojugadorEleccion) return null;
-
   const isVideojugador = myPlayer?.character === 'videojugador';
+  const isWaitingForVideojugadorChoice =
+    !isVideojugador &&
+    !state.showVideojugadorEleccion &&
+    Object.keys(state.players).length > 0 &&
+    state.currentTurnOrder === 0 &&
+    !state.isAnyoneAnimating &&
+    !state.showOrderMinigame &&
+    !state.showDobleNada;
+
+  if (!state.showVideojugadorEleccion && !isWaitingForVideojugadorChoice) return null;
 
   const opciones = state.videojugadorOpciones.map(o => ({
     id: o.nombre,
@@ -75,9 +83,11 @@ function VideojugadorEleccionController() {
       isVideojugador={isVideojugador}
       opciones={opciones}
       onSelect={handleSelect}
-      onTimeout={() => {
-        if (opciones.length > 0) handleSelect(opciones[0].id);
-      }}
+      onTimeout={isVideojugador
+        ? () => {
+            if (opciones.length > 0) handleSelect(opciones[0].id);
+          }
+        : undefined}
     />
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import PixelButton from "@/components/UI/PixelButton";
 import { useGameContext } from "@/features/board/context/GameContext";
 
@@ -35,33 +36,45 @@ export default function Dice({ onOpenShop }: DiceProps) {
   const [currentSpecial, setCurrentSpecial] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
   const [waitingForResponse, setWaitingForResponse] = useState(false);
+  const prevLastDiceRef = useRef<typeof lastDice>(null);
 
-  // Render-phase: detectar nuevo lastDice para arrancar animación
-  const [prevLastDice, setPrevLastDice] = useState<typeof lastDice>(null);
-  if (prevLastDice !== lastDice) {
-    setPrevLastDice(lastDice);
+  useEffect(() => {
+    let frameId = 0;
+
     if (lastDice !== null) {
-      const prev = prevLastDice;
+      const prev = prevLastDiceRef.current;
       const didChange =
         !prev ||
         prev.dado1 !== lastDice.dado1 ||
         prev.dado2 !== lastDice.dado2 ||
         prev.user !== lastDice.user;
       if (didChange) {
-        setIsAnimating(true);
-        setWaitingForResponse(false);
+        frameId = requestAnimationFrame(() => {
+          setIsAnimating(true);
+          setWaitingForResponse(false);
+        });
       }
     }
-  }
+    prevLastDiceRef.current = lastDice;
 
-  // Render-phase: limpiar waitingForResponse al recuperar el turno 
-  const [prevIsMyTurn, setPrevIsMyTurn] = useState(isMyTurn);
-  if (prevIsMyTurn !== isMyTurn) {
-    setPrevIsMyTurn(isMyTurn);
+    return () => {
+      if (frameId !== 0) cancelAnimationFrame(frameId);
+    };
+  }, [lastDice]);
+
+  useEffect(() => {
+    let frameId = 0;
+
     if (isMyTurn && waitingForResponse) {
-      setWaitingForResponse(false);
+      frameId = requestAnimationFrame(() => {
+        setWaitingForResponse(false);
+      });
     }
-  }
+
+    return () => {
+      if (frameId !== 0) cancelAnimationFrame(frameId);
+    };
+  }, [isMyTurn, waitingForResponse]);
 
   // Effect: ciclar los dados aleatoriamente 1 s cuando se activa animación 
   useEffect(() => {
@@ -133,10 +146,12 @@ export default function Dice({ onOpenShop }: DiceProps) {
           {isPlaceholder ? (
             <span className="text-white text-5xl font-pixel">?</span>
           ) : (
-            <img
+            <Image
               src={`/dice/${isSpecial ? type : 'normal'}_${value}.jpg`}
               alt={`Dado ${isSpecial ? type : 'normal'} cara ${value}`}
-              className="w-full h-full object-cover"
+              fill
+              sizes="96px"
+              className="object-cover"
             />
           )}
         </div>

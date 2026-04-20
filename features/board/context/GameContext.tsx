@@ -192,6 +192,10 @@ function gameReducer(state: GameState, action: Action): GameState {
         currentTurnOrder: 1,
         hasMoved: false,
         awaitingEndRound: false,
+        showOrderMinigame: false,
+        showVideojugadorEleccion: false,
+        videojugadorOpciones: [],
+        currentOrderMinijuego: null,
         landedOnBarrera: false,
         showDobleNada: false,
         purchasedItems: {},
@@ -299,13 +303,13 @@ function gameReducer(state: GameState, action: Action): GameState {
       return { ...state, showOrderMinigame: true };
 
     case 'HIDE_ORDER_MINIGAME':
-      return { ...state, showOrderMinigame: false };
+      return { ...state, showOrderMinigame: false, currentOrderMinijuego: null };
 
     case 'SHOW_VIDEOJUGADOR_ELECCION':
       return { ...state, showVideojugadorEleccion: true, videojugadorOpciones: action.opciones };
 
     case 'HIDE_VIDEOJUGADOR_ELECCION':
-      return { ...state, showVideojugadorEleccion: false };
+      return { ...state, showVideojugadorEleccion: false, videojugadorOpciones: [] };
 
     case 'SET_CURRENT_ORDER_MINIJUEGO':
       return { ...state, currentOrderMinijuego: action.minijuego };
@@ -482,10 +486,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           }
 
           case 'ini_minijuego': {
-            const minijuego = data.minijuego as string;
-            dispatch({ type: 'HIDE_VIDEOJUGADOR_ELECCION' });
-            dispatch({ type: 'SET_CURRENT_ORDER_MINIJUEGO', minijuego });
-            dispatch({ type: 'SHOW_ORDER_MINIGAME' });
+            // Los minijuegos de orden llegan con estado_partida/detalles.
+            if ('estado_partida' in data) {
+              const minijuego = data.minijuego as string;
+              dispatch({ type: 'HIDE_VIDEOJUGADOR_ELECCION' });
+              dispatch({ type: 'SET_CURRENT_ORDER_MINIJUEGO', minijuego });
+              dispatch({ type: 'SHOW_ORDER_MINIGAME' });
+            }
             break;
           }
 
@@ -499,7 +506,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
                 if (extra > 0) {
                   dispatch({ type: 'SET_PENALTY_TURNS', turns: extra });
                 }
-              } else if (casilla === 'mov_negativo') {
+              } else if (casilla === 'mov' && extra < 0) {
                 dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'mov_negativo' });
               } else {
                 dispatch({ type: 'SET_CASILLA_TIPO', casilla: 'none' });
@@ -510,7 +517,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
           case 'minijuego_casilla': {
             const myUsername = sessionStorage.getItem('username');
-            if (lastMovedUser === myUsername && data.minijuego === 'Doble_Nada') {
+            if (lastMovedUser === myUsername && data.minijuego === 'Doble o Nada') {
               dispatch({ type: 'SHOW_DOBLE_NADA' });
             }
             break;

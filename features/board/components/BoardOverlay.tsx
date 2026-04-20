@@ -37,7 +37,8 @@ const STEP_INTERVAL_MS = 280;
 const FORCED_MOVE_PAUSE_MS = 400;
 
 export default function BoardOverlay() {
-  const { playerOrder, myPlayer, notifyAnimationEnded } = useGameContext();
+  const { state, playerOrder, myPlayer, notifyAnimationEnded } = useGameContext();
+  const animatedUser = state.lastDice?.user ?? null;
 
   // Posición que se renderiza actualmente (animada, puede ir por detrás de la real)
   const [displayPositions, setDisplayPositions] = useState<Record<string, number>>({});
@@ -86,7 +87,16 @@ export default function BoardOverlay() {
 
     step(from);
   };
-  });
+  }, [myPlayer?.username, notifyAnimationEnded]);
+
+  const syncPosition = (username: string, position: number) => {
+    busy.current[username] = false;
+    queues.current[username] = [];
+    displayPosRef.current[username] = position;
+    setDisplayPositions(prev => (
+      prev[username] === position ? prev : { ...prev, [username]: position }
+    ));
+  };
 
   useEffect(() => {
     playerOrder.forEach(player => {
@@ -106,6 +116,13 @@ export default function BoardOverlay() {
       if (position !== prevRealPos.current[username]) {
         prevRealPos.current[username] = position;
 
+        // Solo animamos casilla a casilla al jugador que acaba de tirar.
+        // Si otro jugador cambia por un efecto colateral del backend, sincronizamos directo.
+        if (username !== animatedUser) {
+          syncPosition(username, position);
+          return;
+        }
+
         if (!busy.current[username]) {
           // Primera animación del movimiento: esperar a que se vea el dado
           busy.current[username] = true;
@@ -118,7 +135,7 @@ export default function BoardOverlay() {
         }
       }
     });
-  }, [playerOrder]);
+  }, [animatedUser, playerOrder]);
 
   // Agrupamiento por casilla usando posiciones ANIMADAS
   const playersByTile: Record<number, string[]> = {};
