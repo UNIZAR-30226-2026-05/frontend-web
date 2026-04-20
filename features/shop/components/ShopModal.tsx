@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, {} from 'react';
 import PixelButton from '@/components/UI/PixelButton';
 import { useGameContext } from '@/features/board/context/GameContext';
 import { getGameSocket } from '@/lib/gameSocket';
@@ -26,7 +26,6 @@ interface ShopModalProps {
 
 export default function ShopModal({ onClose }: ShopModalProps) {
   const { myPlayer, state, markItemPurchased } = useGameContext();
-  const [avanzarCount, setAvanzarCount] = useState(0); // Para UI local si fuera necesario
   
   const penaltyTurns = state.penaltyTurns;
   const isBlocked = penaltyTurns > 0;

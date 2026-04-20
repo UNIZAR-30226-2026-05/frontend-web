@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import PixelButton from "@/components/UI/PixelButton";
 
 interface DilemaPrisioneroUIProps {
@@ -10,18 +11,14 @@ interface DilemaPrisioneroUIProps {
 import Image from "next/image";
 
 export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps) {
+  const pathname = usePathname();
+  const isDebugRoute = pathname.includes("debug");
   const [debugButW, setDebugButW] = useState(256);
   const [debugButH, setDebugButH] = useState(112);
   const [debugButTop, setDebugButTop] = useState(86);
   const [debugSideGap, setDebugSideGap] = useState(23);
-  const [isDebug, setIsDebug] = useState(false);
-
-  useEffect(() => {
-    // Activar debug si estamos en la ruta de debug
-    if (typeof window !== "undefined" && window.location.pathname.includes("debug")) {
-      setIsDebug(true);
-    }
-  }, []);
+  const [showDebug, setShowDebug] = useState(true);
+  const isDebug = isDebugRoute && showDebug;
 
   const handleChoice = (choice: "cooperar" | "traicionar") => {
     const score = choice === "cooperar" ? 1 : 0;
@@ -68,14 +65,14 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
             />
           </div>
           <div className="mt-2 p-2 bg-white/10 rounded font-mono text-[9px]">
-            width: {debugButW},<br/>
-            height: {debugButH},<br/>
-            top: "{debugButTop}%",<br/>
-            sideGap: "{debugSideGap}%"
+            width: {debugButW},<br />
+            height: {debugButH},<br />
+            top: {debugButTop}%,<br />
+            sideGap: {debugSideGap}%
           </div>
           <div className="flex gap-2 mt-2">
             <button 
-              onClick={() => setIsDebug(false)}
+              onClick={() => setShowDebug(false)}
               className="flex-1 text-[10px] bg-red-500/20 hover:bg-red-500/40 py-1 rounded transition-colors"
             >
               HIDE

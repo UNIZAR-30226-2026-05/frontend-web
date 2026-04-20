@@ -41,17 +41,18 @@ export default function VideojugadorEleccionModal({
                     /* MODO ESPECTADOR */
                     <div className="flex flex-col items-center space-y-8 w-full">
                         <h2 className="text-[#ffcc00] font-pixel text-xl md:text-2xl text-center uppercase tracking-wider leading-relaxed">
-                            El Videojugador está eligiendo...
+                            El Videojugador está eligiendo el siguiente minijuego...
                         </h2>
-                        
+                        {/*
                         <p className="text-white/60 font-pixel text-sm uppercase tracking-tighter">
                             Siguiente Minijuego
                         </p>
-
+                        
                         <div className="flex gap-4 w-full justify-center opacity-40 grayscale pointer-events-none">
                             <PixelButton variant="purple" className="min-w-[140px] text-[10px]">MINIJUEGO</PixelButton>
                             <PixelButton variant="purple" className="min-w-[140px] text-[10px]">MINIJUEGO</PixelButton>
                         </div>
+                        */}
 
                         {/* Spinner */}
                         <div className="w-10 h-10 border-4 border-[#ffcc00]/20 border-t-[#ffcc00] rounded-full animate-spin mt-4" />

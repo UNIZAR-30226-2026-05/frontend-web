@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import PixelButton from "@/components/UI/PixelButton";
 
 import Image from "next/image";
@@ -9,12 +10,18 @@ interface CronometroCiegoUIProps {
   onAction: (result: { score: number }) => void;
 }
 
+function getRandomBlindTime(minBlindTime: number, maxBlindTime: number) {
+  const range = Math.max(0, maxBlindTime - minBlindTime);
+  return Math.random() * range + minBlindTime;
+}
+
 export default function CronometroCiegoUI({ onAction }: CronometroCiegoUIProps) {
+  const pathname = usePathname();
+  const isDebugRoute = pathname.includes("debug");
   const [time, setTime] = useState(0); // milisegundos
   const [isRunning, setIsRunning] = useState(true);
   const [isBlinded, setIsBlinded] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
-  const [blindTime, setBlindTime] = useState(3);
 
   const [debugMinBlindTime, setDebugMinBlindTime] = useState(2.5);
   const [debugMaxBlindTime, setDebugMaxBlindTime] = useState(3.0);
@@ -26,26 +33,25 @@ export default function CronometroCiegoUI({ onAction }: CronometroCiegoUIProps) 
   const [debugContH, setDebugContH] = useState(86);
   const [debugContTop, setDebugContTop] = useState(70);
   const [debugContLeft, setDebugContLeft] = useState(50);
-  const [isDebug, setIsDebug] = useState(false);
+  const [blindTime, setBlindTime] = useState(() => getRandomBlindTime(2.5, 3.0));
+  const [showDebug, setShowDebug] = useState(true);
+  const isDebug = isDebugRoute && showDebug;
 
   const startTimeRef = useRef<number>(0);
-  const timerRef = useRef<number>(0);
+  const timerRef = useRef<number | null>(null);
 
-  const blindTimeRef = useRef<number>(0);
+  const updateBlindWindow = (nextMinBlindTime: number, nextMaxBlindTime: number) => {
+    const safeMinBlindTime = Math.min(nextMinBlindTime, nextMaxBlindTime);
+    const safeMaxBlindTime = Math.max(nextMinBlindTime, nextMaxBlindTime);
 
-  useEffect(() => {
-    // Activar debug si estamos en la ruta de debug
-    if (typeof window !== "undefined" && window.location.pathname.includes("debug")) {
-      setIsDebug(true);
-    }
-    
-    // Inicializar blindTime aleatorio una sola vez al montar o si se reinicia
-    const range = debugMaxBlindTime - debugMinBlindTime;
-    blindTimeRef.current = Math.random() * range + debugMinBlindTime;
-    setBlindTime(blindTimeRef.current);
-  }, []);
+    setDebugMinBlindTime(safeMinBlindTime);
+    setDebugMaxBlindTime(safeMaxBlindTime);
+    setBlindTime(getRandomBlindTime(safeMinBlindTime, safeMaxBlindTime));
+  };
 
   useEffect(() => {
+    if (!isRunning) return;
+
     if (startTimeRef.current === 0) {
       startTimeRef.current = performance.now();
     }
@@ -58,7 +64,7 @@ export default function CronometroCiegoUI({ onAction }: CronometroCiegoUIProps) 
       const currentSecs = elapsed / 1000;
       setTime(currentSecs);
 
-      if (currentSecs >= blindTimeRef.current && !isBlinded) {
+      if (currentSecs >= blindTime) {
         setIsBlinded(true);
       }
 
@@ -68,16 +74,20 @@ export default function CronometroCiegoUI({ onAction }: CronometroCiegoUIProps) 
     timerRef.current = requestAnimationFrame(tick);
 
     return () => {
-      cancelAnimationFrame(timerRef.current);
+      if (timerRef.current !== null) {
+        cancelAnimationFrame(timerRef.current);
+      }
     };
-  }, [isRunning, isBlinded]);
+  }, [blindTime, isRunning]);
 
   const handleStop = () => {
     if (!isRunning || isFinished) return;
 
     setIsRunning(false);
     setIsFinished(true);
-    cancelAnimationFrame(timerRef.current);
+    if (timerRef.current !== null) {
+      cancelAnimationFrame(timerRef.current);
+    }
 
     // Score: absolute difference in MS from 10.00s (range 0-9999)
     const diffMs = Math.abs(10.00 - time) * 1000;
@@ -133,7 +143,7 @@ export default function CronometroCiegoUI({ onAction }: CronometroCiegoUIProps) 
             <label>Min Blind Time: {debugMinBlindTime.toFixed(1)}s</label>
             <input
               type="range" min="0.5" max="5.0" step="0.1"
-              value={debugMinBlindTime} onChange={(e) => setDebugMinBlindTime(parseFloat(e.target.value))}
+              value={debugMinBlindTime} onChange={(e) => updateBlindWindow(parseFloat(e.target.value), debugMaxBlindTime)}
               className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
             />
           </div>
@@ -141,7 +151,7 @@ export default function CronometroCiegoUI({ onAction }: CronometroCiegoUIProps) 
             <label>Max Blind Time: {debugMaxBlindTime.toFixed(1)}s</label>
             <input
               type="range" min="1.0" max="8.0" step="0.1"
-              value={debugMaxBlindTime} onChange={(e) => setDebugMaxBlindTime(parseFloat(e.target.value))}
+              value={debugMaxBlindTime} onChange={(e) => updateBlindWindow(debugMinBlindTime, parseFloat(e.target.value))}
               className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
             />
           </div>
@@ -186,7 +196,7 @@ export default function CronometroCiegoUI({ onAction }: CronometroCiegoUIProps) 
           </div>
           <div className="flex gap-2 mt-2">
             <button
-              onClick={() => setIsDebug(false)}
+              onClick={() => setShowDebug(false)}
               className="flex-1 text-[10px] bg-red-500/20 hover:bg-red-500/40 py-1 rounded transition-colors"
             >
               HIDE

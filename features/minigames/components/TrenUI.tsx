@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { type CSSProperties, useState } from "react";
+import { usePathname } from "next/navigation";
 import PixelButton from "@/components/UI/PixelButton";
 import Image from "next/image";
 
@@ -11,6 +12,18 @@ interface TrenUIProps {
 // Pool de 10 vagones con recuentos fijos
 const WAGON_POOL = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, count: i + 1 }));
 
+function buildSelectedWagons(count: number, keepSorted: boolean) {
+  const pool = [...WAGON_POOL];
+
+  if (keepSorted) {
+    pool.sort((a, b) => a.id - b.id);
+  } else {
+    pool.sort(() => Math.random() - 0.5);
+  }
+
+  return pool.slice(0, count);
+}
+
 /**
  * TrenUI: Minijuego de contar pasajeros.
  * 
@@ -20,9 +33,10 @@ const WAGON_POOL = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, count: i +
  * con el dibujo de las vías en cualquier resolución.
  */
 export default function TrenUI({ onAction }: TrenUIProps) {
+  const pathname = usePathname();
+  const isDebugRoute = pathname.includes("debug");
   const [userCount, setUserCount] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
-  const [selectedWagons, setSelectedWagons] = useState<{ id: number; count: number }[]>([]);
 
   const [debugTop, setDebugTop] = useState(76.7);
   const [debugTranslateY, setDebugTranslateY] = useState(-113.5);
@@ -30,32 +44,10 @@ export default function TrenUI({ onAction }: TrenUIProps) {
   const [debugStartX, setDebugStartX] = useState(-234); // Inicio en %
   const [debugTimePerWagon, setDebugTimePerWagon] = useState(4.0); // Tiempo (s) por vagón en escena
   const [debugWagonCount, setDebugWagonCount] = useState(4);
-  const [isPreviewing, setIsPreviewing] = useState(true); // En producción se activa al cargar
-  const [isDebug, setIsDebug] = useState(false);
-
-  useEffect(() => {
-    // Activar debug si estamos en la ruta de debug
-    if (typeof window !== "undefined" && window.location.pathname.includes("debug")) {
-      setIsDebug(true);
-      setIsPreviewing(false); // En debug no queremos que empiece la animación sola
-    }
-  }, []);
-
-  useEffect(() => {
-    // Actualizar vagones según el contador (en debug) o al inicio (producción)
-    const count = isDebug ? debugWagonCount : 4;
-    const pool = [...WAGON_POOL];
-    
-    if (isDebug) {
-      // En debug, ordenado para facilitar pruebas
-      pool.sort((a,b) => a.id - b.id);
-    } else {
-      // En producción, aleatorio para el juego
-      pool.sort(() => Math.random() - 0.5);
-    }
-    
-    setSelectedWagons(pool.slice(0, count));
-  }, [debugWagonCount, isDebug]);
+  const [selectedWagons, setSelectedWagons] = useState(() => buildSelectedWagons(isDebugRoute ? 4 : 4, isDebugRoute));
+  const [isPreviewing, setIsPreviewing] = useState(() => !isDebugRoute); // En debug no empieza sola
+  const [showDebug, setShowDebug] = useState(true);
+  const isDebug = isDebugRoute && showDebug;
 
   const handleSubmit = () => {
     if (isFinished) return;
@@ -116,7 +108,11 @@ export default function TrenUI({ onAction }: TrenUIProps) {
             <label>Wagons (Count): {debugWagonCount}</label>
             <input 
               type="range" min="1" max="10" step="1" 
-              value={debugWagonCount} onChange={(e) => setDebugWagonCount(parseInt(e.target.value))}
+              value={debugWagonCount} onChange={(e) => {
+                const nextWagonCount = parseInt(e.target.value);
+                setDebugWagonCount(nextWagonCount);
+                setSelectedWagons(buildSelectedWagons(nextWagonCount, true));
+              }}
               className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
             />
           </div>
@@ -129,12 +125,12 @@ export default function TrenUI({ onAction }: TrenUIProps) {
             />
           </div>
           <div className="mt-2 p-2 bg-white/10 rounded font-mono text-[9px]">
-            top: "{debugTop.toFixed(1)}%",<br/>
-            translateY: "{debugTranslateY.toFixed(1)}%",<br/>
-            width: "{debugScale.toFixed(1)}%",<br/>
-            startX: "{debugStartX.toFixed(0)}%",<br/>
-            wagons: {debugWagonCount},<br/>
-            wagonSpeed: "{debugTimePerWagon.toFixed(1)}s"
+            top: {debugTop.toFixed(1)}%,<br />
+            translateY: {debugTranslateY.toFixed(1)}%,<br />
+            width: {debugScale.toFixed(1)}%,<br />
+            startX: {debugStartX.toFixed(0)}%,<br />
+            wagons: {debugWagonCount},<br />
+            wagonSpeed: {debugTimePerWagon.toFixed(1)}s
           </div>
           
           <div className="flex gap-2 mt-2">
@@ -145,7 +141,7 @@ export default function TrenUI({ onAction }: TrenUIProps) {
               {isPreviewing ? 'STOP PREVIEW' : 'PREVIEW ANIMATION'}
             </button>
             <button 
-              onClick={() => setIsDebug(false)}
+              onClick={() => setShowDebug(false)}
               className="px-3 text-[10px] bg-red-500/20 hover:bg-red-500/40 py-1 rounded transition-colors"
             >
               HIDE
@@ -183,11 +179,11 @@ export default function TrenUI({ onAction }: TrenUIProps) {
         <div 
             key={isPreviewing ? `preview-${debugWagonCount}-${debugTimePerWagon}` : 'static'}
             className={`absolute left-0 w-full z-10 flex ${isPreviewing ? 'animate-[moveTrain_var(--duration)_linear_forwards]' : ''} items-baseline`}
-            style={{ 
+          style={{ 
                 top: `${debugTop}%`, 
                 transform: `translateY(${debugTranslateY}%) translateX(${debugStartX}%)`,
                 '--duration': `${(debugTimePerWagon * (100 + (debugWagonCount + 1) * debugScale)) / (100 + debugScale)}s`
-            } as any}
+          } as CSSProperties & { "--duration": string }}
         >
             {/* Locomotora */}
             <div className="relative shrink-0" style={{ width: `${debugScale}%`, aspectRatio: '677/369' }}>

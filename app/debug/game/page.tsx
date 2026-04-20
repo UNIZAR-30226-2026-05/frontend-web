@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, {useState } from 'react';
 import { GameProvider, useGameContext } from '@/features/board/context/GameContext';
 import BoardOverlay from '@/features/board/components/BoardOverlay';
 import { BOARD_COORDS } from '@/features/board/constants/board';

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState} from "react";
 import PixelButton from "@/components/UI/PixelButton";
 
 const PREMIOS = [

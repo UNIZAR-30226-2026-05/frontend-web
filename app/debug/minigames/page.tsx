@@ -19,57 +19,90 @@ import VideojugadorEleccionModal from "@/features/board/components/VideojugadorE
 // we would normally need a Provider. Let's create a minimal one for debug.
 
 // Import the real context to provide it with mock data
+import type { Action, GameContextType, GamePlayer } from "@/features/board/context/GameContext";
 import { GameContext } from "@/features/board/context/GameContext";
 
+type DebugMinigameId =
+  | OrderMinigameType
+  | "doblenada"
+  | "ruleta"
+  | "banquero"
+  | "videojugador_elector"
+  | "videojugador_espectador"
+  | "vidente"
+  | "gameover"
+  | "resultado_minijuego"
+  | "poker";
+
+const isOrderMinigameType = (value: DebugMinigameId | null): value is OrderMinigameType => (
+  value === "tren" ||
+  value === "pan" ||
+  value === "crono" ||
+  value === "cartas" ||
+  value === "dilema" ||
+  value === "reflejos"
+);
+
 export default function DebugMinigamesPage() {
-  const [activeMinigame, setActiveMinigame] = useState<
-    | OrderMinigameType
-    | "doblenada"
-    | "ruleta"
-    | "banquero"
-    | "videojugador_elector"
-    | "videojugador_espectador"
-    | "vidente"
-    | "gameover"
-    | "resultado_minijuego"
-    | "poker"
-    | null
-  >(null);
+  const [activeMinigame, setActiveMinigame] = useState<DebugMinigameId | null>(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [mockBalance, setMockBalance] = useState(10);
+  const noopDispatch: React.Dispatch<Action> = () => undefined;
 
   const addLog = (msg: string) => {
     setDebugLog(prev => [msg, ...prev].slice(0, 10));
   };
 
-  const handleAction = (result: any) => {
+  const handleAction = (result: unknown) => {
     addLog(`Action Result: ${JSON.stringify(result)}`);
     setTimeout(() => setActiveMinigame(null), 1500);
   };
 
-  // Mock value for the provider
-  const mockContextValue: any = {
-    state: {
-      myUsername: "debug_user",
-      players: {
-        debug_user: {
-          username: "debug_user",
-          balance: mockBalance,
-          turnOrder: 1,
-        }
-      },
-      showDobleNada: true,
-    },
-    myPlayer: {
-      username: "debug_user",
-      balance: mockBalance,
-      turnOrder: 1,
-    },
-    closeDobleNada: () => setActiveMinigame(null),
-    sendScoreReflejos: (score: number) => handleAction({ score }),
+  const mockPlayer: GamePlayer = {
+    username: "debug_user",
+    character: "videojugador",
+    characterWsName: "Videojugador",
+    position: 0,
+    balance: mockBalance,
+    turnOrder: 1,
+    diceType: "normal",
   };
 
-  const minigames: { id: OrderMinigameType | "doblenada" | "ruleta"; label: string }[] = [
+  const mockContextValue: GameContextType = {
+    state: {
+      myUsername: "debug_user",
+      players: { debug_user: mockPlayer },
+      currentTurnOrder: 1,
+      hasMoved: false,
+      awaitingEndRound: false,
+      lastDice: null,
+      showOrderMinigame: false,
+      showVideojugadorEleccion: false,
+      videojugadorOpciones: [],
+      currentOrderMinijuego: null,
+      showDobleNada: true,
+      landedOnNegativeMove: false,
+      landedOnBarrera: false,
+      purchasedItems: {},
+      penaltyTurns: 0,
+      isAnyoneAnimating: false,
+    },
+    isMyTurn: true,
+    myPlayer: mockPlayer,
+    playerOrder: [mockPlayer],
+    sendMovePlayer: () => undefined,
+    sendEndRound: () => undefined,
+    closeDobleNada: () => setActiveMinigame(null),
+    sendScoreReflejos: (score: number) => handleAction({ score }),
+    sendScoreOrden: (score: number) => handleAction({ score }),
+    sendIniRound: (minijuego: string, descripcion: string) => handleAction({ minijuego, descripcion }),
+    markItemPurchased: () => undefined,
+    notifyAnimationEnded: () => undefined,
+    isAnyoneAnimating: false,
+    dispatch: noopDispatch,
+  };
+
+  const minigames: { id: DebugMinigameId; label: string }[] = [
     { id: "tren", label: "Tren (Pasajeros)" },
     { id: "pan", label: "Cortar Pan" },
     { id: "crono", label: "Cronómetro Ciego" },
@@ -78,13 +111,13 @@ export default function DebugMinigamesPage() {
     { id: "reflejos", label: "Reflejos (Original)" },
     { id: "doblenada", label: "Doble o Nada (Modal)" },
     { id: "ruleta", label: "Ruleta (Interactivo)" },
-    { id: "banquero" as any, label: "Habilidad Banquero" },
-    { id: "videojugador_elector" as any, label: "Videojugador (Elector)" },
-    { id: "videojugador_espectador" as any, label: "Videojugador (Espectador)" },
-    { id: "vidente" as any, label: "Test: Habilidad Vidente" },
-    { id: "gameover" as any, label: "Test: Fin de Partida" },
-    { id: "resultado_minijuego" as any, label: "Test: Resultado Minijuego" },
-    { id: "poker" as any, label: "Póker (Texas Hold'em)" },
+    { id: "banquero", label: "Habilidad Banquero" },
+    { id: "videojugador_elector", label: "Videojugador (Elector)" },
+    { id: "videojugador_espectador", label: "Videojugador (Espectador)" },
+    { id: "vidente", label: "Test: Habilidad Vidente" },
+    { id: "gameover", label: "Test: Fin de Partida" },
+    { id: "resultado_minijuego", label: "Test: Resultado Minijuego" },
+    { id: "poker", label: "Póker (Texas Hold'em)" },
   ];
 
   return (
@@ -132,9 +165,9 @@ export default function DebugMinigamesPage() {
             <PokerUI onAction={handleAction} />
           )}
 
-          {activeMinigame && activeMinigame !== "doblenada" && activeMinigame !== "poker" && (
+          {activeMinigame !== null && isOrderMinigameType(activeMinigame) && (
             <OrderMinigameOverlay
-              minigameType={activeMinigame as OrderMinigameType}
+              minigameType={activeMinigame}
               onAction={handleAction}
               onClose={() => setActiveMinigame(null)}
             />

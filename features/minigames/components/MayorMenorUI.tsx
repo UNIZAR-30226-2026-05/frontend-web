@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 
 interface MayorMenorUIProps {
@@ -13,39 +14,35 @@ interface Card {
   rank: number;
 }
 
+function createRandomCards(): Card[] {
+  const suits = ["hearts", "diamonds", "spades", "clubs"];
+  const pickedCards: Card[] = [];
+
+  while (pickedCards.length < 4) {
+    const rank = Math.floor(Math.random() * 13) + 1;
+    const suit = suits[Math.floor(Math.random() * 4)];
+
+    const isDuplicate = pickedCards.some(card => card.rank === rank && card.suit === suit);
+    if (!isDuplicate) {
+      pickedCards.push({ rank, suit });
+    }
+  }
+
+  return pickedCards;
+}
+
 export default function MayorMenorUI({ onAction, character }: MayorMenorUIProps) {
+  const pathname = usePathname();
+  const isDebugRoute = pathname.includes("debug");
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
-  const [cardValues, setCardValues] = useState<Card[]>([]);
+  const [cardValues] = useState<Card[]>(() => createRandomCards());
 
   const [debugCardWidth, setDebugCardWidth] = useState(180);
   const [debugCardGap, setDebugCardGap] = useState(64);
   const [debugFlipDuration, setDebugFlipDuration] = useState(800);
   const [debugBackIndex, setDebugBackIndex] = useState(1);
-  const [isDebug, setIsDebug] = useState(false);
-
-  useEffect(() => {
-    // Activar debug si estamos en la ruta de debug
-    if (typeof window !== "undefined" && window.location.pathname.includes("debug")) {
-      setIsDebug(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Generar 4 cartas aleatorias únicas
-    const suits = ["hearts", "diamonds", "spades", "clubs"];
-    const pickedCards: Card[] = [];
-    
-    while (pickedCards.length < 4) {
-      const rank = Math.floor(Math.random() * 13) + 1;
-      const suit = suits[Math.floor(Math.random() * 4)];
-      
-      const isDuplicate = pickedCards.some(c => c.rank === rank && c.suit === suit);
-      if (!isDuplicate) {
-        pickedCards.push({ rank, suit });
-      }
-    }
-    setCardValues(pickedCards);
-  }, []);
+  const [showDebug, setShowDebug] = useState(true);
+  const isDebug = isDebugRoute && showDebug;
 
   const tableBg = character || (isDebug ? "videojugador" : "banquero"); // Default a banquero or similar if not specified
 
@@ -109,7 +106,7 @@ export default function MayorMenorUI({ onAction, character }: MayorMenorUIProps)
           </div>
           <div className="flex gap-2 mt-2">
             <button 
-              onClick={() => setIsDebug(false)}
+              onClick={() => setShowDebug(false)}
               className="flex-1 text-[10px] bg-red-500/20 hover:bg-red-500/40 py-1 rounded transition-colors"
             >
               HIDE
@@ -152,24 +149,26 @@ export default function MayorMenorUI({ onAction, character }: MayorMenorUIProps)
             >
               {/* Parte Trasera (Dorso) */}
               <div className="absolute inset-0 backface-hidden flex items-center justify-center overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
+                <Image
                     src="/minijuegos/carta_alta/reverso_carta.png" 
                     alt="Dorso de carta" 
                     className="w-full h-full object-contain"
                     style={{ imageRendering: 'pixelated' }}
+                    width={debugCardWidth}
+                    height={debugCardWidth * 4.5 / 3}
                 />
               </div>
 
               {/* Parte Delantera (Valor) */}
               <div className="absolute inset-0 backface-hidden rotate-y-180 flex flex-col items-center justify-center overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 {cardValues.length > 0 && (
-                  <img 
+                  <Image 
                       src={`/minijuegos/carta_alta/cards/card_${cardValues[i]?.suit}_${cardValues[i]?.rank}.png`} 
                       alt={`Carta ${cardValues[i]?.rank} de ${cardValues[i]?.suit}`} 
                       className="w-full h-full object-contain"
                       style={{ imageRendering: 'pixelated' }}
+                      width={debugCardWidth}
+                      height={debugCardWidth * 4.5 / 3}
                   />
                 )}
               </div>

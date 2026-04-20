@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React from "react";
 import { useGameContext, type GamePlayer } from "@/features/board/context/GameContext";
 
@@ -21,7 +22,7 @@ const RoleAvatar = ({ player }: { player: Player }) => {
 
   return (
     <div className={`w-10 h-10 border-2 border-white flex items-center justify-center shadow-[1px_1px_0px_0px_rgba(0,0,0,0.2)] overflow-hidden ${roleColors[player.role]}`}>
-      <img src={player.avatarUrl} alt={player.role} className="w-full h-full object-cover" />
+      <Image src={player.avatarUrl} alt={player.role} className="w-full h-full object-cover" width={40} height={40} />
     </div>
   );
 };

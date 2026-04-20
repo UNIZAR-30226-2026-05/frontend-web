@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useEffect } from 'react';
 
 interface PlayerResult {
@@ -72,10 +73,12 @@ export default function MinigameResultOverlay({
                                         w-10 h-10 rounded-lg border flex items-center justify-center bg-black/40 p-1
                                         ${index === 0 ? 'border-[#ffcc00]/50 shadow-[0_0_10px_rgba(255,204,0,0.2)]' : 'border-white/10'}
                                     `}>
-                                        <img
+                                        <Image
                                             src={CHARACTER_IMAGES[player.character.toLowerCase()] || '/personajes_profile/vidente_profile.png'}
                                             alt={player.character}
                                             className="w-full h-full object-contain pixelated"
+                                            width={40}
+                                            height={40}
                                         />
                                     </div>
                                     <span className={`

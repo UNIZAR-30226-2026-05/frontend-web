@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useEffect, useMemo } from "react";
 import PixelButton from "@/components/UI/PixelButton";
 import { useGameContext } from "@/features/board/context/GameContext";
@@ -127,10 +128,12 @@ export default function ActionPanel() {
     return (
       <div className="flex flex-col items-center gap-2">
         <div className={`w-28 h-28 rounded-2xl overflow-hidden border-4 border-black/20 shadow-xl transition-all duration-300 ${visualState === "ROLLING" ? 'animate-pulse scale-105 rotate-3' : 'scale-100'}`}>
-           <img 
-            src={spritePath} 
-            alt="Dice" 
-            className="w-full h-full object-cover pixelated"
+           <Image
+            src={spritePath}
+            alt="Dice"
+            fill
+            sizes="112px"
+            className="object-cover pixelated"
           />
         </div>
       </div>

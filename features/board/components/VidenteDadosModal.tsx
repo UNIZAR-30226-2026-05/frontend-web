@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React from 'react';
 import PixelButton from '@/components/UI/PixelButton';
 
@@ -73,20 +74,24 @@ export default function VidenteDadosModal({
                                     <div className="flex gap-3 flex-1 justify-center">
                                         {/* Dado 1 (Normal) - Siempre visible */}
                                         <div className="relative group">
-                                            <img
+                                            <Image
                                                 src={`/dice/normal_${tirada.dado1}.jpg`}
                                                 alt={`Dado normal ${tirada.dado1}`}
                                                 className="w-12 h-12 rounded-lg border-2 object-cover bg-white border-white shadow-md transition-transform group-hover:scale-110"
+                                                width={48}
+                                                height={48}
                                             />
                                         </div>
 
                                         {/* Dado 2 (Especial/Normal) - Oculto en el 4º puesto */}
                                         {!isFourth && (
                                             <div className="relative group">
-                                                <img
+                                                <Image
                                                     src={`/dice/${tirada.diceType}_${tirada.dado2}.jpg`}
                                                     alt={`Dado ${tirada.diceType} ${tirada.dado2}`}
                                                     className={`w-12 h-12 rounded-lg border-2 object-cover bg-white transition-transform group-hover:scale-110 ${typeStyles[tirada.diceType]}`}
+                                                    width={48}
+                                                    height={48}
                                                 />
                                             </div>
                                         )}

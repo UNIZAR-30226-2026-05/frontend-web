@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
 import PixelButton from "@/components/UI/PixelButton";
 
@@ -23,7 +23,7 @@ interface Rival {
 }
 
 interface PokerUIProps {
-  onAction: (result: any) => void;
+  onAction: (result: { type: "fold"; phase: GamePhase }) => void;
   character?: CharacterRole;
 }
 
@@ -37,81 +37,106 @@ const RIVAL_POSITIONS: Record<CharacterRole, { left: CharacterRole, top: Charact
   escapista: { left: "vidente", top: "videojugador", right: "banquero" },
 };
 
+const DEFAULT_BALANCE = 10;
+
+interface PokerSetup {
+  myCards: Card[];
+  communityCards: Card[];
+  rivals: Rival[];
+  myBalance: number;
+  myCurrentBet: number;
+  pot: number;
+  gamePhase: GamePhase;
+  currentTurnId: number;
+  winnerId: number | null;
+  raiseAmountSlider: number;
+}
+
+function createRivals(role: CharacterRole, balance: number): Rival[] {
+  const roles = RIVAL_POSITIONS[role];
+
+  return [
+    { id: 1, name: roles.left.charAt(0).toUpperCase() + roles.left.slice(1), role: roles.left, balance, currentBet: 0, folded: false, position: "left", cards: [] },
+    { id: 2, name: roles.top.charAt(0).toUpperCase() + roles.top.slice(1), role: roles.top, balance, currentBet: 0, folded: false, position: "top", cards: [] },
+    { id: 3, name: roles.right.charAt(0).toUpperCase() + roles.right.slice(1), role: roles.right, balance, currentBet: 0, folded: false, position: "right", cards: [] },
+  ];
+}
+
+function createGameSetup(role: CharacterRole, balance: number): PokerSetup {
+  const suits = ["hearts", "diamonds", "spades", "clubs"];
+  const fullDeck: Card[] = [];
+
+  for (const suit of suits) {
+    for (let rank = 1; rank <= 13; rank++) {
+      fullDeck.push({ suit, rank });
+    }
+  }
+
+  const shuffled = [...fullDeck].sort(() => Math.random() - 0.5);
+  const rivals = createRivals(role, balance).map((rival, index) => ({
+    ...rival,
+    cards: shuffled.slice(7 + index * 2, 9 + index * 2),
+  }));
+
+  return {
+    myCards: shuffled.slice(0, 2),
+    communityCards: shuffled.slice(2, 7),
+    rivals,
+    myBalance: balance,
+    myCurrentBet: 0,
+    pot: 0,
+    gamePhase: "Pre-Flop",
+    currentTurnId: 0,
+    winnerId: null,
+    raiseAmountSlider: 10,
+  };
+}
+
 export default function PokerUI({ onAction, character }: PokerUIProps) {
+  const initialRole = character || "videojugador";
+  const initialSetup = useMemo(() => createGameSetup(initialRole, DEFAULT_BALANCE), [initialRole]);
   // --- Debug States ---
   const [isDebug, setIsDebug] = useState(true);
   const [isDebugShowCards, setIsDebugShowCards] = useState(false);
-  const [myRole, setMyRole] = useState<CharacterRole>(character || "videojugador");
-  const [initialBalance, setInitialBalance] = useState(10);
-  const [gamePhase, setGamePhase] = useState<GamePhase>("Pre-Flop");
+  const [myRole, setMyRole] = useState<CharacterRole>(initialRole);
+  const [gamePhase, setGamePhase] = useState<GamePhase>(initialSetup.gamePhase);
   const [flopCardsCount, setFlopCardsCount] = useState(3);
-  const [currentTurnId, setCurrentTurnId] = useState<number>(0); // 0: Me, 1: Left, 2: Top, 3: Right
-  const [winnerId, setWinnerId] = useState<number | null>(null);
+  const [currentTurnId, setCurrentTurnId] = useState<number>(initialSetup.currentTurnId); // 0: Me, 1: Left, 2: Top, 3: Right
+  const [winnerId, setWinnerId] = useState<number | null>(initialSetup.winnerId);
 
   // --- Game Data ---
-  const [myCards, setMyCards] = useState<Card[]>([]);
-  const [communityCards, setCommunityCards] = useState<Card[]>([]);
-  const [myCurrentBet, setMyCurrentBet] = useState(0);
-  const [myBalance, setMyBalance] = useState(10);
-  const [pot, setPot] = useState(40);
+  const [myCards, setMyCards] = useState<Card[]>(initialSetup.myCards);
+  const [communityCards, setCommunityCards] = useState<Card[]>(initialSetup.communityCards);
+  const [myCurrentBet, setMyCurrentBet] = useState(initialSetup.myCurrentBet);
+  const [myBalance, setMyBalance] = useState(initialSetup.myBalance);
+  const [pot, setPot] = useState(initialSetup.pot);
   
   // Rivals state depends on myRole
-  const [rivals, setRivals] = useState<Rival[]>([]);
+  const [rivals, setRivals] = useState<Rival[]>(initialSetup.rivals);
   
   // Betting state
-  const [raiseAmountSlider, setRaiseAmountSlider] = useState(10);
-
-  // Initialize rivals based on myRole
-  useEffect(() => {
-    const roles = RIVAL_POSITIONS[myRole];
-    setRivals([
-      { id: 1, name: roles.left.charAt(0).toUpperCase() + roles.left.slice(1), role: roles.left, balance: initialBalance, currentBet: 0, folded: false, position: "left", cards: [] },
-      { id: 2, name: roles.top.charAt(0).toUpperCase() + roles.top.slice(1), role: roles.top, balance: initialBalance, currentBet: 0, folded: false, position: "top", cards: [] },
-      { id: 3, name: roles.right.charAt(0).toUpperCase() + roles.right.slice(1), role: roles.right, balance: initialBalance, currentBet: 0, folded: false, position: "right", cards: [] },
-    ]);
-  }, [myRole, initialBalance]);
+  const [raiseAmountSlider, setRaiseAmountSlider] = useState(initialSetup.raiseAmountSlider);
 
   // Derived: highest bet on the table
   const highestBet = useMemo(() => {
     return Math.max(myCurrentBet, ...rivals.map(r => r.currentBet));
   }, [myCurrentBet, rivals]);
 
-  // Generate deck and initial hands
-  const initGame = () => {
-    const suits = ["hearts", "diamonds", "spades", "clubs"];
-    const fullDeck: Card[] = [];
-    for (const suit of suits) {
-      for (let rank = 1; rank <= 13; rank++) {
-        fullDeck.push({ suit, rank });
-      }
-    }
-    const shuffled = [...fullDeck].sort(() => Math.random() - 0.5);
-    
-    setMyCards(shuffled.slice(0, 2));
-    setCommunityCards(shuffled.slice(2, 7));
-    
-    // Deal to rivals
-    setRivals(prev => prev.map((r, i) => ({
-        ...r,
-        balance: initialBalance,
-        currentBet: 0,
-        folded: false,
-        cards: shuffled.slice(7 + i * 2, 9 + i * 2)
-    })));
+  const initGame = useCallback((role: CharacterRole = myRole, balance: number = DEFAULT_BALANCE) => {
+    const nextSetup = createGameSetup(role, balance);
 
-    setMyBalance(initialBalance);
-    setMyCurrentBet(0);
-    setPot(0);
-    setGamePhase("Pre-Flop");
-    setWinnerId(null);
-    setCurrentTurnId(0);
-    setRaiseAmountSlider(10);
+    setMyCards(nextSetup.myCards);
+    setCommunityCards(nextSetup.communityCards);
+    setRivals(nextSetup.rivals);
+    setMyBalance(nextSetup.myBalance);
+    setMyCurrentBet(nextSetup.myCurrentBet);
+    setPot(nextSetup.pot);
+    setGamePhase(nextSetup.gamePhase);
+    setWinnerId(nextSetup.winnerId);
+    setCurrentTurnId(nextSetup.currentTurnId);
+    setRaiseAmountSlider(nextSetup.raiseAmountSlider);
     setIsDebugShowCards(false);
-  };
-
-  useEffect(() => {
-    initGame();
-  }, [initialBalance]);
+  }, [myRole]);
 
   const visibleCommunityCount = useMemo(() => {
     switch (gamePhase) {
@@ -162,7 +187,7 @@ export default function PokerUI({ onAction, character }: PokerUIProps) {
     }));
   };
 
-  const nextTurn = () => setCurrentTurnId(prev => (prev + 1) % 4);
+  //const nextTurn = () => setCurrentTurnId(prev => (prev + 1) % 4);
 
   const getRivalContainerStyle = (pos: "left" | "top" | "right") => {
     switch (pos) {
@@ -206,7 +231,11 @@ export default function PokerUI({ onAction, character }: PokerUIProps) {
               <label className="text-gray-400">MI PERSONAJE (Afecta posiciones)</label>
               <select 
                 value={myRole} 
-                onChange={(e) => setMyRole(e.target.value as any)}
+                onChange={(e) => {
+                  const nextRole = e.target.value as CharacterRole;
+                  setMyRole(nextRole);
+                  initGame(nextRole);
+                }}
                 className="bg-slate-800 border border-purple-500/50 rounded px-2 py-1 outline-none text-xs"
               >
                 <option value="banquero">Banquero</option>
@@ -294,7 +323,7 @@ export default function PokerUI({ onAction, character }: PokerUIProps) {
                 {isDebugShowCards ? 'ESCONDER CARTAS' : 'MOSTRAR CARTAS'}
             </button>
 
-            <button onClick={initGame} className="w-full bg-red-600/80 hover:bg-red-500 py-1.5 rounded mt-1 font-bold uppercase tracking-widest text-[9px]">REINICIAR MESA</button>
+            <button onClick={() => initGame(myRole)} className="w-full bg-red-600/80 hover:bg-red-500 py-1.5 rounded mt-1 font-bold uppercase tracking-widest text-[9px]">REINICIAR MESA</button>
           </div>
         </div>
       )}
@@ -328,10 +357,21 @@ export default function PokerUI({ onAction, character }: PokerUIProps) {
               <div key={i} className="relative w-24 h-36 perspective-1000 group">
                 <div className={`relative w-full h-full transition-transform duration-700 preserve-3d ${isVisible ? "rotate-y-180" : ""}`}>
                   <div className="absolute inset-0 backface-hidden rounded-lg overflow-hidden border border-white/5 bg-black/40">
-                    <img src="/minijuegos/carta_alta/reverso_carta.png" alt="Card back" className="w-full h-full object-contain pixelated" />
+                    <Image 
+                    src="/minijuegos/carta_alta/reverso_carta.png" 
+                    alt="Card back" 
+                    className="w-full h-full object-contain pixelated"
+                    width={96}
+                    height={144}
+                     />
                   </div>
                   <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-lg overflow-hidden shadow-2xl">
-                    <img src={`/minijuegos/carta_alta/cards/card_${card.suit}_${card.rank}.png`} alt="Card front" className="w-full h-full object-contain pixelated" />
+                    <Image 
+                    src={`/minijuegos/carta_alta/cards/card_${card.suit}_${card.rank}.png`} 
+                    alt="Card front" 
+                    className="w-full h-full object-contain pixelated" 
+                    width={96} 
+                    height={144} />
                     <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
@@ -372,10 +412,20 @@ export default function PokerUI({ onAction, character }: PokerUIProps) {
                     <div key={i} className={`relative w-14 h-20 rotate-[${i === 0 ? '-12deg' : '12deg'}] shadow-lg group perspective-1000`}>
                         <div className={`relative w-full h-full transition-transform duration-700 preserve-3d ${isRevealed ? 'rotate-y-180' : ''}`}>
                             <div className="absolute inset-0 backface-hidden">
-                                <img src="/minijuegos/carta_alta/reverso_carta.png" alt="Card back" className="w-full h-full object-contain pixelated" />
+                                <Image 
+                                src="/minijuegos/carta_alta/reverso_carta.png" 
+                                alt="Card back" 
+                                className="w-full h-full object-contain pixelated"
+                                width={96} 
+                                height={144} />
                             </div>
                             <div className="absolute inset-0 backface-hidden rotate-y-180">
-                                <img src={`/minijuegos/carta_alta/cards/card_${card.suit}_${card.rank}.png`} alt="Card front" className="w-full h-full object-contain pixelated" />
+                                <Image 
+                                src={`/minijuegos/carta_alta/cards/card_${card.suit}_${card.rank}.png`} 
+                                alt="Card front" 
+                                className="w-full h-full object-contain pixelated" 
+                                width={96} 
+                                height={144} />
                             </div>
                         </div>
                     </div>
@@ -388,7 +438,10 @@ export default function PokerUI({ onAction, character }: PokerUIProps) {
                     <div className="absolute -inset-4 bg-blue-500/40 blur-2xl rounded-full animate-pulse-slow" />
                 )}
                 <div className={`w-20 h-20 border-2 rounded-full overflow-hidden bg-slate-900 shadow-2xl relative transition-colors ${isTurn ? 'border-blue-400 ring-4 ring-blue-500/30' : 'border-white/20'}`}>
-                   <Image src={`/personajes_profile/${rival.role}_profile.png`} alt={rival.name} fill className="object-cover" />
+                   <Image src={`/personajes_profile/${rival.role}_profile.png`} 
+                   alt={rival.name} fill 
+                   className="object-cover"
+                    />
                 </div>
                 {rival.folded && (
                     <div className="absolute inset-0 bg-red-900/70 flex items-center justify-center rounded-full">
@@ -431,7 +484,13 @@ export default function PokerUI({ onAction, character }: PokerUIProps) {
                    {myCards.map((card, i) => (
                        <div key={i} className={`w-32 h-44 rotate-[${i === 0 ? '-12deg' : '12deg'}] shadow-2xl transition-transform hover:-translate-y-6 hover:scale-105 group relative`}>
                            <div className="absolute inset-0 bg-blue-400/10 opacity-0 group-hover:opacity-100 rounded-lg blur-md transition-opacity" />
-                           <img src={`/minijuegos/carta_alta/cards/card_${card.suit}_${card.rank}.png`} alt="Your card" className="w-full h-full object-contain pixelated relative z-10" />
+                           <Image 
+                           src={`/minijuegos/carta_alta/cards/card_${card.suit}_${card.rank}.png`} 
+                           alt="Your card" 
+                           className="w-full h-full object-contain pixelated relative z-10"
+                           height={176}
+                           width={128}
+                            />
                        </div>
                    ))}
                 </div>
@@ -442,7 +501,9 @@ export default function PokerUI({ onAction, character }: PokerUIProps) {
                     )}
                     <div className="flex items-center gap-5">
                         <div className={`relative w-24 h-24 border-4 rounded-full overflow-hidden bg-slate-900 shadow-2xl transition-all ${currentTurnId === 0 ? 'border-amber-400 scale-105 shadow-amber-500/20' : 'border-white/10 opacity-70'}`}>
-                             <Image src={`/personajes_profile/${myRole}_profile.png`} alt="Tú" fill className="object-cover" />
+                             <Image src={`/personajes_profile/${myRole}_profile.png`} 
+                             alt="Tú" fill 
+                             className="object-cover" />
                         </div>
                         <div className="flex flex-col">
                             <span className="text-amber-500 text-[10px] uppercase font-pixel tracking-widest opacity-80">TU</span>
@@ -531,7 +592,7 @@ export default function PokerUI({ onAction, character }: PokerUIProps) {
                   <PixelButton 
                     variant="green" 
                     className="mt-12 w-64 text-sm"
-                    onClick={initGame}
+                    onClick={() => initGame(myRole)}
                   >
                      NUEVA PARTIDA
                   </PixelButton>

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import PixelButton from "@/components/UI/PixelButton";
 
@@ -9,22 +10,18 @@ interface CortarPanUIProps {
 }
 
 export default function CortarPanUI({ onAction }: CortarPanUIProps) {
+  const pathname = usePathname();
+  const isDebugRoute = pathname.includes("debug");
   const [isFinished, setIsFinished] = useState(false);
   const [knifePosition, setKnifePosition] = useState(0); // 0 to 100
   
   const [debugTraversalDuration, setDebugTraversalDuration] = useState(400);
   const [debugPanScale, setDebugPanScale] = useState(56.0);
   const [debugPanTop, setDebugPanTop] = useState(69.0);
-  const [isDebug, setIsDebug] = useState(false);
+  const [showDebug, setShowDebug] = useState(true);
+  const isDebug = isDebugRoute && showDebug;
 
   const animationRef = useRef<number>(0);
-
-  useEffect(() => {
-    // Activar debug si estamos en la ruta de debug
-    if (typeof window !== "undefined" && window.location.pathname.includes("debug")) {
-      setIsDebug(true);
-    }
-  }, []);
 
   useEffect(() => {
     const startTime = performance.now();
@@ -49,7 +46,7 @@ export default function CortarPanUI({ onAction }: CortarPanUIProps) {
     return () => {
         cancelAnimationFrame(animationRef.current);
     };
-  }, [isFinished]);
+  }, [debugTraversalDuration, isFinished]);
 
   const handleCut = () => {
     if (isFinished) return;
@@ -96,13 +93,13 @@ export default function CortarPanUI({ onAction }: CortarPanUIProps) {
             />
           </div>
           <div className="mt-2 p-2 bg-white/10 rounded font-mono text-[9px]">
-            traversalDuration: {debugTraversalDuration},<br/>
-            panScale: "{debugPanScale.toFixed(1)}%",<br/>
-            panTop: "{debugPanTop.toFixed(1)}%"
+            traversalDuration: {debugTraversalDuration},<br />
+            panScale: {debugPanScale.toFixed(1)}%,<br />
+            panTop: {debugPanTop.toFixed(1)}%
           </div>
           <div className="flex gap-2 mt-2">
             <button 
-              onClick={() => setIsDebug(false)}
+              onClick={() => setShowDebug(false)}
               className="flex-1 text-[10px] bg-red-500/20 hover:bg-red-500/40 py-1 rounded transition-colors"
             >
               HIDE

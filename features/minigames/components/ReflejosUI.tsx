@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 
 interface ReflejosUIProps {
@@ -8,6 +9,8 @@ interface ReflejosUIProps {
 }
 
 export default function ReflejosUI({ onAction }: ReflejosUIProps) {
+  const pathname = usePathname();
+  const isDebugRoute = pathname.includes("debug");
   const [gameState, setGameState] = useState<"waiting" | "ready" | "clicked">("waiting");
   const [startTime, setStartTime] = useState<number>(0);
   const [showInstructions, setShowInstructions] = useState(true);
@@ -19,16 +22,10 @@ export default function ReflejosUI({ onAction }: ReflejosUIProps) {
   const [debugButTop, setDebugButTop] = useState(27.5);
   const [debugButLeft, setDebugButLeft] = useState(50.0);
   const [debugCharTop, setDebugCharTop] = useState(31);
-  const [isDebug, setIsDebug] = useState(false);
+  const [showDebug, setShowDebug] = useState(true);
+  const isDebug = isDebugRoute && showDebug;
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    // Activar debug si estamos en la ruta de debug
-    if (typeof window !== "undefined" && window.location.pathname.includes("debug")) {
-      setIsDebug(true);
-    }
-  }, []);
 
   useEffect(() => {
     // Generar un delay aleatorio entre debugMin y debugMax
@@ -123,13 +120,13 @@ export default function ReflejosUI({ onAction }: ReflejosUIProps) {
             />
           </div>
           <div className="mt-2 p-2 bg-white/10 rounded font-mono text-[9px]">
-            minDelay: {debugMinDelay},<br/>
-            maxDelay: {debugMaxDelay},<br/>
-            width: {debugButW},<br/>
-            height: {debugButH},<br/>
-            top: "{debugButTop.toFixed(1)}%",<br/>
-            left: "{debugButLeft.toFixed(1)}%",<br/>
-            charTop: "{debugCharTop}%"
+            minDelay: {debugMinDelay},<br />
+            maxDelay: {debugMaxDelay},<br />
+            width: {debugButW},<br />
+            height: {debugButH},<br />
+            top: {debugButTop.toFixed(1)}%,<br />
+            left: {debugButLeft.toFixed(1)}%,<br />
+            charTop: {debugCharTop}%
           </div>
           <div className="flex flex-col">
             <label>Chars Top: {debugCharTop}%</label>
@@ -141,7 +138,7 @@ export default function ReflejosUI({ onAction }: ReflejosUIProps) {
           </div>
           <div className="flex gap-2 mt-2">
             <button 
-              onClick={() => setIsDebug(false)}
+              onClick={() => setShowDebug(false)}
               className="flex-1 text-[10px] bg-red-500/20 hover:bg-red-500/40 py-1 rounded transition-colors"
             >
               HIDE
