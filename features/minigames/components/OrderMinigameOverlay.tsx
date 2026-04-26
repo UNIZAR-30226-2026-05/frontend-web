@@ -14,11 +14,15 @@ interface OrderMinigameOverlayProps {
   minigameType: OrderMinigameType;
   onAction: (result: { score: number }) => void;
   onClose: () => void;
+  backendCardIndexes?: number[];
+  assignedCardSlot?: number;
 }
 
 export default function OrderMinigameOverlay({
   minigameType,
   onAction,
+  backendCardIndexes,
+  assignedCardSlot,
 }: OrderMinigameOverlayProps) {
   const [showInstructions, setShowInstructions] = useState(true);
 
@@ -40,7 +44,13 @@ export default function OrderMinigameOverlay({
       case "crono":
         return <CronometroCiegoUI onAction={onAction} />;
       case "cartas":
-        return <MayorMenorUI onAction={onAction} />;
+        return (
+          <MayorMenorUI
+            onAction={onAction}
+            backendCardIndexes={backendCardIndexes}
+            assignedCardSlot={assignedCardSlot}
+          />
+        );
       case "dilema":
         return <DilemaPrisioneroUI onAction={onAction} />;
       default:

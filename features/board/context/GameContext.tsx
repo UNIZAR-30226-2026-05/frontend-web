@@ -47,6 +47,11 @@ interface DobleNadaResult {
   delta: number;
 }
 
+interface OrderMinijuegoDetails {
+  objetivo?: number;
+  cartas?: number[];
+}
+
 interface GameState {
   players: Record<string, GamePlayer>;
   /** Qué posición del orden está jugando ahora (1–4). 0 = entre rondas. */
@@ -66,6 +71,8 @@ interface GameState {
   videojugadorOpciones: { nombre: string; descripcion: string | null }[];
   /** Nombre del minijuego de orden actualmente en curso (de ini_minijuego) */
   currentOrderMinijuego: string | null;
+  /** Detalles enviados por backend para el minijuego de orden actual */
+  currentOrderMinijuegoDetails: OrderMinijuegoDetails | null;
   /** Mostrar overlay de Doble o Nada */
   showDobleNada: boolean;
   /** El jugador local cayó en una casilla de movimiento negativo este turno */
@@ -107,7 +114,7 @@ export type Action =
   | { type: 'HIDE_ORDER_MINIGAME' }
   | { type: 'SHOW_VIDEOJUGADOR_ELECCION'; opciones: { nombre: string; descripcion: string | null }[] }
   | { type: 'HIDE_VIDEOJUGADOR_ELECCION' }
-  | { type: 'SET_CURRENT_ORDER_MINIJUEGO'; minijuego: string }
+  | { type: 'SET_CURRENT_ORDER_MINIJUEGO'; minijuego: string; details: OrderMinijuegoDetails | null }
   | { type: 'SHOW_DOBLE_NADA'; user: string }
   | { type: 'OPEN_DOBLE_NADA' }
   | { type: 'SUBMIT_DOBLE_NADA'; score: number }
@@ -261,6 +268,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         showVideojugadorEleccion: false,
         videojugadorOpciones: [],
         currentOrderMinijuego: null,
+        currentOrderMinijuegoDetails: null,
         landedOnBarrera: false,
         showDobleNada: false,
         pendingBoardMinigame: null,
@@ -376,7 +384,12 @@ function gameReducer(state: GameState, action: Action): GameState {
       return { ...state, showOrderMinigame: true };
 
     case 'HIDE_ORDER_MINIGAME':
-      return { ...state, showOrderMinigame: false, currentOrderMinijuego: null };
+      return {
+        ...state,
+        showOrderMinigame: false,
+        currentOrderMinijuego: null,
+        currentOrderMinijuegoDetails: null,
+      };
 
     case 'SHOW_VIDEOJUGADOR_ELECCION':
       return { ...state, showVideojugadorEleccion: true, videojugadorOpciones: action.opciones };
@@ -385,7 +398,11 @@ function gameReducer(state: GameState, action: Action): GameState {
       return { ...state, showVideojugadorEleccion: false, videojugadorOpciones: [] };
 
     case 'SET_CURRENT_ORDER_MINIJUEGO':
-      return { ...state, currentOrderMinijuego: action.minijuego };
+      return {
+        ...state,
+        currentOrderMinijuego: action.minijuego,
+        currentOrderMinijuegoDetails: action.details,
+      };
 
     case 'SHOW_DOBLE_NADA':
       return {
@@ -458,6 +475,7 @@ const initialState: GameState = {
   showVideojugadorEleccion: false,
   videojugadorOpciones: [],
   currentOrderMinijuego: null,
+  currentOrderMinijuegoDetails: null,
   showDobleNada: false,
   landedOnNegativeMove: false,
   landedOnBarrera: false,
@@ -738,8 +756,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             // Los minijuegos de orden llegan con estado_partida/detalles.
             if ('estado_partida' in data) {
               const minijuego = data.minijuego as string;
+              const details = typeof data.detalles === 'object' && data.detalles !== null
+                ? data.detalles as OrderMinijuegoDetails
+                : null;
               dispatch({ type: 'HIDE_VIDEOJUGADOR_ELECCION' });
-              dispatch({ type: 'SET_CURRENT_ORDER_MINIJUEGO', minijuego });
+              dispatch({ type: 'SET_CURRENT_ORDER_MINIJUEGO', minijuego, details });
               dispatch({ type: 'SHOW_ORDER_MINIGAME' });
             }
             break;

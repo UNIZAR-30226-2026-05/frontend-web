@@ -32,7 +32,7 @@ const MINIJUEGO_NAME_TO_TYPE: Record<string, OrderMinigameType> = {
 
 /** Muestra el overlay del minijuego de orden elegido por el videojugador. */
 function OrderMinigameController() {
-  const { state, sendScoreOrden } = useGameContext();
+  const { state, myPlayer, sendScoreOrden } = useGameContext();
 
   if (!state.showOrderMinigame) return null;
 
@@ -43,6 +43,8 @@ function OrderMinigameController() {
   return (
     <OrderMinigameOverlay
       minigameType={minijuegoType}
+      backendCardIndexes={state.currentOrderMinijuegoDetails?.cartas}
+      assignedCardSlot={myPlayer ? myPlayer.turnOrder - 1 : undefined}
       onAction={(result: { score: number }) => sendScoreOrden(result.score)}
       onClose={() => {/* no se puede cerrar manualmente */}}
     />

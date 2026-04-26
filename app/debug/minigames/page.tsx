@@ -80,6 +80,7 @@ export default function DebugMinigamesPage() {
       showVideojugadorEleccion: false,
       videojugadorOpciones: [],
       currentOrderMinijuego: null,
+      currentOrderMinijuegoDetails: null,
       showDobleNada: true,
       landedOnNegativeMove: false,
       landedOnBarrera: false,
