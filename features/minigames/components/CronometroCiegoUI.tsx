@@ -8,6 +8,8 @@ import Image from "next/image";
 
 interface CronometroCiegoUIProps {
   onAction: (result: { score: number }) => void;
+  /** Tiempo objetivo en segundos enviado por el backend (detalles.objetivo). Default 10. */
+  objetivo?: number;
 }
 
 function getRandomBlindTime(minBlindTime: number, maxBlindTime: number) {
@@ -15,16 +17,20 @@ function getRandomBlindTime(minBlindTime: number, maxBlindTime: number) {
   return Math.random() * range + minBlindTime;
 }
 
-export default function CronometroCiegoUI({ onAction }: CronometroCiegoUIProps) {
+export default function CronometroCiegoUI({ onAction, objetivo = 10 }: CronometroCiegoUIProps) {
   const pathname = usePathname();
   const isDebugRoute = pathname.includes("debug");
-  const [time, setTime] = useState(0); // milisegundos
+  const [time, setTime] = useState(0); // segundos (float)
   const [isRunning, setIsRunning] = useState(true);
   const [isBlinded, setIsBlinded] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
 
-  const [debugMinBlindTime, setDebugMinBlindTime] = useState(2.5);
-  const [debugMaxBlindTime, setDebugMaxBlindTime] = useState(3.0);
+  // El blind range se deriva del objetivo: la puerta cae entre el 30 % y el 50 % del tiempo objetivo.
+  const defaultMinBlind = objetivo * 0.3;
+  const defaultMaxBlind = objetivo * 0.5;
+
+  const [debugMinBlindTime, setDebugMinBlindTime] = useState(defaultMinBlind);
+  const [debugMaxBlindTime, setDebugMaxBlindTime] = useState(defaultMaxBlind);
   const [debugDoorTransitionMs, setDebugDoorTransitionMs] = useState(500);
   const [debugDoorW, setDebugDoorW] = useState(100);
   const [debugDoorH, setDebugDoorH] = useState(100);
@@ -33,7 +39,7 @@ export default function CronometroCiegoUI({ onAction }: CronometroCiegoUIProps) 
   const [debugContH, setDebugContH] = useState(86);
   const [debugContTop, setDebugContTop] = useState(70);
   const [debugContLeft, setDebugContLeft] = useState(50);
-  const [blindTime, setBlindTime] = useState(() => getRandomBlindTime(2.5, 3.0));
+  const [blindTime, setBlindTime] = useState(() => getRandomBlindTime(defaultMinBlind, defaultMaxBlind));
   const [showDebug, setShowDebug] = useState(true);
   const isDebug = isDebugRoute && showDebug;
 
@@ -89,10 +95,11 @@ export default function CronometroCiegoUI({ onAction }: CronometroCiegoUIProps) 
       cancelAnimationFrame(timerRef.current);
     }
 
-    // Score: absolute difference in MS from 10.00s (range 0-9999)
-    const diffMs = Math.abs(10.00 - time) * 1000;
-    const score = Math.max(0, Math.min(9999, Math.floor(diffMs)));
-    
+    // El backend almacena objetivo como randint(7,10) en segundos y clasifica
+    // con abs(score - objetivo). El score debe estar en la misma unidad: segundos (float).
+    // Ejemplo: time=7.35 → abs(7.35 - 7) = 0.35, ranking correcto.
+    const score = Math.round(time * 100) / 100; // segundos con 2 decimales
+
     onAction({ score });
   };
 
@@ -220,7 +227,7 @@ export default function CronometroCiegoUI({ onAction }: CronometroCiegoUIProps) 
       {/* Texto de Objetivo Dorado (Top) */}
       <div className="absolute top-24 z-20 text-center">
         <h3 className="text-amber-400 text-4xl md:text-6xl font-bold tracking-[0.2em] drop-shadow-[0_4px_15px_rgba(251,191,36,0.6)] uppercase">
-          TIEMPO OBJETIVO: 10:00
+          TIEMPO OBJETIVO: {String(Math.floor(objetivo)).padStart(2, "0")}.00
         </h3>
       </div>
 

@@ -16,6 +16,8 @@ interface OrderMinigameOverlayProps {
   onClose: () => void;
   backendCardIndexes?: number[];
   assignedCardSlot?: number;
+  /** Tiempo objetivo en segundos para el Cronómetro Ciego (de detalles.objetivo). */
+  objetivo?: number;
 }
 
 export default function OrderMinigameOverlay({
@@ -23,6 +25,7 @@ export default function OrderMinigameOverlay({
   onAction,
   backendCardIndexes,
   assignedCardSlot,
+  objetivo,
 }: OrderMinigameOverlayProps) {
   const [showInstructions, setShowInstructions] = useState(true);
 
@@ -42,7 +45,7 @@ export default function OrderMinigameOverlay({
       case "pan":
         return <CortarPanUI onAction={onAction} />;
       case "crono":
-        return <CronometroCiegoUI onAction={onAction} />;
+        return <CronometroCiegoUI onAction={onAction} objetivo={objetivo} />;
       case "cartas":
         return (
           <MayorMenorUI

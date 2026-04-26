@@ -45,6 +45,7 @@ function OrderMinigameController() {
       minigameType={minijuegoType}
       backendCardIndexes={state.currentOrderMinijuegoDetails?.cartas}
       assignedCardSlot={myPlayer ? myPlayer.turnOrder - 1 : undefined}
+      objetivo={state.currentOrderMinijuegoDetails?.objetivo}
       onAction={(result: { score: number }) => sendScoreOrden(result.score)}
       onClose={() => {/* no se puede cerrar manualmente */}}
     />
