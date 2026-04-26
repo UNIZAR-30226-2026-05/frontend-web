@@ -41,7 +41,7 @@ export default function OrderMinigameOverlay({
       case "tren":
         return <TrenUI onAction={onAction} />;
       case "reflejos":
-        return <ReflejosUI onAction={onAction} />;
+        return <ReflejosUI onAction={onAction} objetivo={objetivo} />;
       case "pan":
         return <CortarPanUI onAction={onAction} />;
       case "crono":

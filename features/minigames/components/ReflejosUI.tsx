@@ -6,9 +6,11 @@ import Image from "next/image";
 
 interface ReflejosUIProps {
   onAction: (result: { score: number }) => void;
+  /** Delay en ms antes de que la pantalla cambie a verde. Viene de detalles.objetivo del backend. */
+  objetivo?: number;
 }
 
-export default function ReflejosUI({ onAction }: ReflejosUIProps) {
+export default function ReflejosUI({ onAction, objetivo }: ReflejosUIProps) {
   const pathname = usePathname();
   const isDebugRoute = pathname.includes("debug");
   const [gameState, setGameState] = useState<"waiting" | "ready" | "clicked">("waiting");
@@ -17,6 +19,8 @@ export default function ReflejosUI({ onAction }: ReflejosUIProps) {
   
   const [debugMinDelay, setDebugMinDelay] = useState(2000);
   const [debugMaxDelay, setDebugMaxDelay] = useState(5000);
+  // En partida real se usa objetivo del backend; en debug se genera un delay aleatorio local.
+  const hasBackendObjetivo = objetivo !== undefined;
   const [debugButW, setDebugButW] = useState(1185);
   const [debugButH, setDebugButH] = useState(650);
   const [debugButTop, setDebugButTop] = useState(27.5);
@@ -28,14 +32,16 @@ export default function ReflejosUI({ onAction }: ReflejosUIProps) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Generar un delay aleatorio entre debugMin y debugMax
-    const range = debugMaxDelay - debugMinDelay;
-    const randomDelay = Math.floor(Math.random() * range) + debugMinDelay;
+    // En partida real se usa el objetivo del backend (mismo delay para todos = equitativo).
+    // En debug se genera un delay aleatorio local con los sliders.
+    const delay = hasBackendObjetivo
+      ? objetivo!
+      : Math.floor(Math.random() * (debugMaxDelay - debugMinDelay)) + debugMinDelay;
     
     timerRef.current = setTimeout(() => {
       setGameState("ready");
       setStartTime(performance.now());
-    }, randomDelay);
+    }, delay);
 
     // Timer para instrucciones (1 segundo)
     const instrTimer = setTimeout(() => {
@@ -46,7 +52,7 @@ export default function ReflejosUI({ onAction }: ReflejosUIProps) {
       if (timerRef.current) clearTimeout(timerRef.current);
       clearTimeout(instrTimer);
     };
-  }, [debugMinDelay, debugMaxDelay]);
+  }, [debugMinDelay, debugMaxDelay, hasBackendObjetivo, objetivo]);
 
   const handleClick = () => {
     if (gameState === "waiting") {
