@@ -54,9 +54,10 @@ export default function CortarPanUI({ onAction }: CortarPanUIProps) {
     setIsFinished(true);
     cancelAnimationFrame(animationRef.current);
     
-    // Score: absolute difference from center (50) scaled by 100 (range 0-5000)
-    const diff = Math.abs(50 - knifePosition);
-    const score = Math.max(0, Math.min(9999, Math.floor(diff * 100)));
+    // Score: porcentaje de la parte más grande cortada (50-100).
+    // Backend usa abs(score - 50) para el ranking: más cerca de 50 gana.
+    // Ejemplo: cuchillo al 40% → partes [40, 60] → score = 60.
+    const score = Math.round(Math.max(knifePosition, 100 - knifePosition));
     
     onAction({ score });
   };
