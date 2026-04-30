@@ -9,11 +9,11 @@ export type DiceType = "oro" | "plata" | "bronce" | "normal";
 
 const DICE_MAX: Record<DiceType, number> = { oro: 6, plata: 4, bronce: 2, normal: 6 };
 
-const typeStyles: Record<DiceType, string> = {
-  oro: "border-yellow-400/50 shadow-[0_0_15px_rgba(255,215,0,0.5)]",
-  plata: "border-slate-300/50 shadow-[0_0_15px_rgba(203,213,225,0.4)]",
-  bronce: "border-orange-700/50 shadow-[0_0_15px_rgba(194,65,12,0.4)]",
-  normal: "border-white shadow-lg",
+const filterStyles: Record<DiceType, string> = {
+  oro: "brightness(1.1) sepia(1) hue-rotate(-15deg) saturate(4)",
+  plata: "grayscale(1) brightness(1.2) contrast(1.1)",
+  bronce: "sepia(1) hue-rotate(-30deg) saturate(2) brightness(0.7)",
+  normal: "none",
 };
 
 const diceLabels: Record<DiceType, string> = {
@@ -158,19 +158,19 @@ export default function Dice({ onOpenShop }: DiceProps) {
 
     return (
       <div className="flex flex-col items-center gap-3">
-        <div className={`relative w-24 h-24 rounded-xl border-4 overflow-hidden transition-all duration-300 bg-slate-800 flex items-center justify-center
-          ${isSpecial ? typeStyles[type] : "border-white shadow-lg"}
+        <div className={`relative w-44 h-44 transition-all duration-300 flex items-center justify-center
           ${isRolling ? "animate-pulse scale-110 rotate-12" : "scale-100 rotate-0"}
         `}>
           {isPlaceholder ? (
             <span className="text-white text-5xl font-pixel">?</span>
           ) : (
             <Image
-              src={`/dice/${isSpecial ? type : 'normal'}_${value}.jpg`}
+              src={`/dice/${value}.png`}
               alt={`Dado ${isSpecial ? type : 'normal'} cara ${value}`}
               fill
-              sizes="96px"
-              className="object-cover"
+              sizes="176px"
+              className="object-contain p-2"
+              style={{ filter: isSpecial ? filterStyles[type] : 'none' }}
             />
           )}
         </div>
@@ -184,7 +184,7 @@ export default function Dice({ onOpenShop }: DiceProps) {
   };
 
   return (
-    <div className="bg-slate-900/40 border-4 border-amber-500/50 rounded-[40px] p-8 backdrop-blur-sm shadow-2xl flex flex-col items-center gap-6 min-w-[320px] animate-in fade-in zoom-in duration-300">
+    <div className="bg-slate-900/40 border-4 border-amber-500/50 rounded-[40px] p-8 backdrop-blur-sm shadow-2xl flex flex-col items-center gap-6 min-w-[480px] animate-in fade-in zoom-in duration-300">
       {/* Título */}
       <h3 className="text-amber-400 font-pixel text-xl uppercase tracking-[0.2em] mb-2 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">
         {getTitle()}
@@ -198,7 +198,7 @@ export default function Dice({ onOpenShop }: DiceProps) {
 
       {/* Resultado Numérico Total (solo al terminar de rodar) */}
       {isAnimating && !isRollingVisual && lastDice && (
-        <div className="text-amber-400 font-pixel text-5xl animate-in zoom-in duration-300 drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] -mt-2 mb-2">
+        <div className="text-amber-400 font-pixel text-8xl animate-in zoom-in duration-300 drop-shadow-[0_0_25px_rgba(251,191,36,0.9)] -mt-2 mb-2">
           {lastDice.dado1 + lastDice.dado2}
         </div>
       )}
