@@ -81,7 +81,19 @@ export async function CrearPartidaService(token: string | null): Promise<number>
 
         const data = await response.json();
 
-        return data;
+        if (typeof data === 'number') {
+            return data;
+        }
+
+        if (typeof data === 'object' && data !== null) {
+            const res = data as Record<string, unknown>;
+            const id = res.id ?? res.id_partida ?? res.codigo_partida ?? res.partida_id;
+            if (typeof id === 'number') {
+                return id;
+            }
+        }
+
+        return data; // Fallback original
 
     } catch (error) {
         console.error('Error creating game:', error);

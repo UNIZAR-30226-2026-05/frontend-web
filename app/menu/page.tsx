@@ -45,32 +45,33 @@ export default function MenuPage() {
     useEffect(() => { routerRef.current = router; }, [router]);
     const hasInitialized = useRef(false);
 
+    const extractUsernames = useCallback((players: unknown[]): string[] => {
+        return players
+            .map((player) => {
+                if (typeof player === 'string') return player;
+                if (typeof player === 'object' && player !== null) {
+                    const p = player as Record<string, unknown>;
+                    const name = p.username || p.user || p.name;
+                    if (typeof name === 'string') return name;
+                }
+                return null;
+            })
+            .filter((name): name is string => !!name);
+    }, []);
+
     const updateJugadoresEnLobby = useCallback(
         (players: unknown[]) => {
-            const otrosJugadores = players
-                .map((player) => {
-                    if (typeof player === 'string') {
-                        return player;
-                    }
+            const usernames = extractUsernames(players);
+            const myName = usernameRef.current?.trim().toLowerCase();
 
-                    if (
-                        typeof player === 'object' &&
-                        player !== null &&
-                        'username' in player &&
-                        typeof (player as { username: unknown }).username === 'string'
-                    ) {
-                        return (player as { username: string }).username;
-                    }
-
-                    return null;
-                })
-                .filter((usernameJugador): usernameJugador is string => (
-                    !!usernameJugador && usernameJugador !== usernameRef.current
-                ));
+            const otrosJugadores = usernames.filter((u) => {
+                const normalized = u.trim().toLowerCase();
+                return normalized !== myName;
+            });
 
             setJugadoresEnLobby(otrosJugadores);
         },
-        []
+        [extractUsernames]
     );
 
     const bindSocketListeners = useCallback((ws: WebSocket, roomId: number) => {
@@ -79,30 +80,48 @@ export default function MenuPage() {
         };
 
         const onMessage = (event: MessageEvent) => {
+            console.log("WS RAW MESSAGE:", event.data);
             if (typeof event.data !== 'string') {
                 return;
             }
-
-            console.log('Mensaje WebSocket recibido:', event.data);
 
             try {
                 const message = JSON.parse(event.data) as {
                     type?: string;
                     players_connected?: number | unknown[];
                     numJugadores?: number;
+                    error?: string;
                 };
 
+                if (message.error) {
+                    setJoinError(message.error);
+                    console.error("WS Error recibido:", message.error);
+                    return;
+                }
+
                 if (message.type === 'lobby_update') {
-                    if (Array.isArray(message.players_connected)) {
-                        setLobbyPlayers(message.players_connected);
-                        setPlayersConnected(message.players_connected.length);
-                        updateJugadoresEnLobby(message.players_connected);
-                    } 
+                    const playersList = (Array.isArray(message.players_connected) ? message.players_connected : null) || 
+                                       (message as any).players || 
+                                       (message as any).jugadores;
+
+                    if (Array.isArray(playersList)) {
+                        const usernames = extractUsernames(playersList);
+                        setLobbyPlayers(usernames);
+                        setPlayersConnected(usernames.length);
+                        updateJugadoresEnLobby(usernames);
+                    } else if (typeof message.players_connected === 'number') {
+                        setPlayersConnected(message.players_connected);
+                    }
                 }
 
                 if (message.type === 'game_start') {
-                    if (Array.isArray(message.players_connected)) {
-                        setLobbyPlayers(message.players_connected);
+                    const playersList = (Array.isArray(message.players_connected) ? message.players_connected : null) || 
+                                       (message as any).players || 
+                                       (message as any).jugadores;
+
+                    if (Array.isArray(playersList)) {
+                        const usernames = extractUsernames(playersList);
+                        setLobbyPlayers(usernames);
                     }
 
                     console.log('La partida ha comenzado, redirigiendo a /game');
@@ -149,9 +168,16 @@ export default function MenuPage() {
             console.log('Socket ya activo para esta sala, omitiendo reconexión');
             return;
         }
-        const backendHost = process.env.NEXT_PUBLIC_API_URL || window.location.host;
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-        const normalizedHost = backendHost.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '');
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
+        let wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+
+        if (backendUrl.startsWith('https://')) {
+            wsProtocol = 'wss';
+        } else if (backendUrl.startsWith('http://')) {
+            wsProtocol = 'ws';
+        }
+
+        const normalizedHost = backendUrl.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '');
         const encodedToken = encodeURIComponent(token ?? '');
         const url = `${wsProtocol}://${normalizedHost}/ws/partida/${roomId}?token=${encodedToken}`;
 
@@ -181,11 +207,17 @@ export default function MenuPage() {
         }
 
         try {
+            console.log('Intentando unir a partida:', parsedCode);
             const joinedRoomId = await UnirsePartidaService(parsedCode, authToken);
+            console.log('Unido con éxito a ID:', joinedRoomId);
             SetIdPartida(joinedRoomId);
+            
+            // Limpiamos errores antes de conectar el socket
+            setJoinError(null); 
             connectToRoom(joinedRoomId, authToken);
             setJoinSuccess(`Te has unido a la partida ${joinedRoomId}`);
         } catch (error) {
+            console.error('Error al unirse:', error);
             const message = error instanceof Error ? error.message : 'No se pudo unir a la partida';
             setJoinError(message);
         }
