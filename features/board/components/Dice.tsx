@@ -207,13 +207,25 @@ export default function Dice({ onOpenShop }: DiceProps) {
       {isMyTurn && (
         <div className="flex gap-4 w-full">
           {!hasMoved && (
-            <PixelButton
-              variant="purple"
-              onClick={onOpenShop}
-              className="flex-1 text-sm py-4 uppercase"
-            >
-              Tienda
-            </PixelButton>
+            <>
+              {myPlayer?.character === 'banquero' && (
+                <PixelButton
+                  variant={state.hasUsedAbility ? "red" : "green"}
+                  onClick={() => dispatch({ type: 'SET_SHOW_BANQUERO_MODAL', value: true })}
+                  disabled={state.hasUsedAbility}
+                  className="flex-1 text-sm py-4 uppercase disabled:opacity-50"
+                >
+                  {state.hasUsedAbility ? "Robado" : "Robar"}
+                </PixelButton>
+              )}
+              <PixelButton
+                variant="purple"
+                onClick={onOpenShop}
+                className="flex-1 text-sm py-4 uppercase"
+              >
+                Tienda
+              </PixelButton>
+            </>
           )}
 
           {awaitingEndRound ? (

@@ -12,6 +12,7 @@ import { getGameSocket, getLobbyPlayers } from "@/lib/gameSocket";
 import { useEffect, useState } from "react";
 import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/components/OrderMinigameOverlay";
 import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
+import BanqueroRoboModal from "@/features/board/components/BanqueroRoboModal";
 
 // Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
 const WS_NAME_TO_ID: Record<string, string> = {
@@ -102,6 +103,28 @@ function DobleNadaController() {
   if (!state.showDobleNada && !state.dobleNadaResult) return null;
 
   return <DobleNadaOverlay />;
+}
+
+/** Muestra el modal de robo del banquero. */
+function BanqueroRoboController() {
+  const { state, playerOrder, sendRoboBanquero } = useGameContext();
+
+  if (!state.showBanqueroModal) return null;
+
+  // Filtrar víctimas: todos los jugadores menos yo mismo
+  const targetPlayers = playerOrder
+    .filter(p => p.username !== state.myUsername)
+    .map(p => ({
+      username: p.username,
+      character: p.character ?? 'banquero', // fallback
+    }));
+
+  return (
+    <BanqueroRoboModal
+      targetPlayers={targetPlayers}
+      onSelect={(targetUser) => sendRoboBanquero(targetUser)}
+    />
+  );
 }
 
 export default function GamePage() {
@@ -225,6 +248,9 @@ export default function GamePage() {
 
       {/* Overlay de Doble o Nada */}
       <DobleNadaController />
+
+      {/* Modal de Robo del Banquero */}
+      <BanqueroRoboController />
 
       {/* Overlay de Minijuegos de Orden */}
       {activeMinigame && (

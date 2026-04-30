@@ -93,8 +93,12 @@ interface GameState {
   isSubmittingDobleNada: boolean;
   /** Apuesta enviada por el jugador local para reutilizarla al mostrar el resultado */
   submittedDobleNadaBet: number | null;
-  /** Resultado más reciente de Doble o Nada visible para todos los jugadores */
+  /** Mostrar el resultado de Doble o Nada visible para todos los jugadores */
   dobleNadaResult: DobleNadaResult | null;
+  /** El jugador local es el banquero y ya ha usado su habilidad este turno */
+  hasUsedAbility: boolean;
+  /** Mostrar el modal de robo del banquero */
+  showBanqueroModal: boolean;
 }
 
 // -------------------------------------------------------------------
@@ -129,6 +133,8 @@ export type Action =
   /** Otro jugador saltó su turno bloqueado (el backend hizo broadcast de penalizacion_actualizada) */
   | { type: 'REMOTE_SKIPPED'; user: string }
   | { type: 'CLEAR_LAST_DICE' }
+  | { type: 'SET_SHOW_BANQUERO_MODAL'; value: boolean }
+  | { type: 'MARK_ABILITY_USED' }
   | { type: 'DEBUG_SET_TURN_ORDER'; order: number };
 
 
@@ -160,6 +166,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         isSubmittingDobleNada: false,
         submittedDobleNadaBet: null,
         dobleNadaResult: null,
+        hasUsedAbility: false,
+        showBanqueroModal: false,
       };
     }
 
@@ -276,8 +284,9 @@ function gameReducer(state: GameState, action: Action): GameState {
         isSubmittingDobleNada: false,
         submittedDobleNadaBet: null,
         dobleNadaResult: null,
-        purchasedItems: {},
         isAnyoneAnimating: false,
+        hasUsedAbility: false,
+        showBanqueroModal: false,
       };
     }
 
@@ -338,6 +347,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         // Si el jugador pasó sin moverse (bloqueado), ninguna animación está pendiente.
         // Garantizamos isAnyoneAnimating = false para que el siguiente pueda tirar de inmediato.
         isAnyoneAnimating: state.hasMoved ? state.isAnyoneAnimating : false,
+        hasUsedAbility: false,
       };
     }
 
@@ -461,7 +471,14 @@ function gameReducer(state: GameState, action: Action): GameState {
         isSubmittingDobleNada: false,
         submittedDobleNadaBet: null,
         dobleNadaResult: null,
+        hasUsedAbility: false,
       };
+
+    case 'SET_SHOW_BANQUERO_MODAL':
+      return { ...state, showBanqueroModal: action.value };
+
+    case 'MARK_ABILITY_USED':
+      return { ...state, hasUsedAbility: true };
 
     default:
       return state;
@@ -491,6 +508,8 @@ const initialState: GameState = {
   isSubmittingDobleNada: false,
   submittedDobleNadaBet: null,
   dobleNadaResult: null,
+  hasUsedAbility: false,
+  showBanqueroModal: false,
 };
 
 // -------------------------------------------------------------------
@@ -524,6 +543,8 @@ export interface GameContextType {
   /** Dispatcher para depuración y casos avanzados */
   dispatch: React.Dispatch<Action>;
 
+  /** Enviar acción de robo del banquero al backend */
+  sendRoboBanquero: (targetUser: string) => void;
 }
 
 export const GameContext = createContext<GameContextType | null>(null);
@@ -885,6 +906,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     ws.send(JSON.stringify({ action: 'ini_round', payload: { minijuego, descripcion } }));
     dispatch({ type: 'HIDE_VIDEOJUGADOR_ELECCION' });
   }, []);
+  
+  const sendRoboBanquero = useCallback((targetUser: string) => {
+    const ws = getGameSocket();
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ 
+      action: 'banquero', 
+      payload: { robar_a: targetUser } 
+    }));
+    dispatch({ type: 'MARK_ABILITY_USED' });
+    dispatch({ type: 'SET_SHOW_BANQUERO_MODAL', value: false });
+  }, []);
 
   // Datos derivados
   const myPlayer = state.myUsername ? (state.players[state.myUsername] ?? null) : null;
@@ -895,7 +927,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
-        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendScoreDobleNada, sendIniRound, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch }}>
+        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendScoreDobleNada, sendIniRound, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch, sendRoboBanquero }}>
 
 
 
