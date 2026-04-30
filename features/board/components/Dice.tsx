@@ -118,8 +118,14 @@ export default function Dice({ onOpenShop }: DiceProps) {
   const canRoll = isMyTurn && !hasMoved && !waitingForResponse && !awaitingEndRound && !isBlocked && !isAnyoneAnimating;
   const isRolling = isAnimating || waitingForResponse;
 
-  // Visibilidad: solo si es mi turno, o hay animación, o hay un resultado visible
-  if (!isMyTurn && !lastDice && !isAnimating) return null;
+  // Ocultar mientras cualquier ficha se mueve para no tapar la acción
+  if (isAnyoneAnimating) return null;
+
+  // Visibilidad: solo si es mi turno, o hay animación, o hay un resultado visible, o alguien está esperando
+  const isSpectating = !isMyTurn && !lastDice && !isAnimating;
+  
+  // Si estamos esperando a otro jugador al inicio de la ronda, mostramos el panel con estado "esperando"
+  if (isSpectating && !currentTurnPlayer) return null;
 
   const handleRollDice = () => {
     if (!canRoll) return;
@@ -131,6 +137,7 @@ export default function Dice({ onOpenShop }: DiceProps) {
     if (isAnimating) return "TIRANDO...";
     if (lastDice) return "RESULTADO";
     if (isMyTurn) return "ES TU TURNO";
+    if (currentTurnPlayer) return `TURNO DE ${currentTurnPlayer.username.toUpperCase()}`;
     return "";
   };
 
@@ -165,7 +172,7 @@ export default function Dice({ onOpenShop }: DiceProps) {
   };
 
   return (
-    <div className="bg-slate-900/95 border-4 border-amber-500/50 rounded-[40px] p-8 backdrop-blur-xl shadow-2xl flex flex-col items-center gap-6 min-w-[320px] animate-in fade-in zoom-in duration-300">
+    <div className="bg-slate-900/40 border-4 border-amber-500/50 rounded-[40px] p-8 backdrop-blur-xl shadow-2xl flex flex-col items-center gap-6 min-w-[320px] animate-in fade-in zoom-in duration-300">
       {/* Título */}
       <h3 className="text-amber-400 font-pixel text-xl uppercase tracking-[0.2em] mb-2 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">
         {getTitle()}
