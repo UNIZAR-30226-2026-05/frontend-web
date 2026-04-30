@@ -7,6 +7,7 @@ interface PlayerResult {
     username: string;
     score: number;
     character: string;
+    posicion: number;
 }
 
 interface MinigameResultOverlayProps {
@@ -38,8 +39,8 @@ export default function MinigameResultOverlay({
         return () => clearTimeout(timer);
     }, [onClose]);
 
-    // Ordenar por score ascendente (según la foto, los scores bajos parecen ser los mejores o al menos están arriba)
-    const sortedResults = [...results].sort((a, b) => a.score - b.score);
+    // Ordenar por posición (el backend ya calculó quién va primero)
+    const sortedResults = [...results].sort((a, b) => a.posicion - b.posicion);
 
     return (
         <div className="fixed inset-0 z-[600] flex flex-col items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-500">

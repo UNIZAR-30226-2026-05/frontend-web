@@ -103,6 +103,12 @@ interface GameState {
   videnteTiradas: any[] | null; // Usamos any[] temporalmente para evitar circular dependency si no movemos el tipo
   /** Mostrar el modal del vidente */
   showVidenteModal: boolean;
+  /** Resultados pendientes de mostrar en el scoreboard antes de volver al tablero */
+  pendingMinigameResults: {
+    resultados: Record<string, { posicion: number; score: number }>;
+    nuevo_orden: Record<string, number>;
+    minigameName: string;
+  } | null;
 }
 
 // -------------------------------------------------------------------
@@ -115,7 +121,8 @@ export type Action =
   | { type: 'PLAYER_MOVED_FORCED'; user: string; newPos: number }
   | { type: 'PLAYERS_SWAPPED'; actor: string; actorPos: number; otherUser: string; otherPos: number; swapEventId: number }
   | { type: 'BALANCES_CHANGED'; balances: Record<string, number> }
-  | { type: 'MINIJUEGO_RESULTADOS'; nuevo_orden: Record<string, number> }
+  | { type: 'SHOW_MINIGAME_RESULTS'; resultados: Record<string, { posicion: number; score: number }>; nuevo_orden: Record<string, number> }
+  | { type: 'MINIJUEGO_RESULTADOS'; nuevo_orden?: Record<string, number> }
   | { type: 'RECONNECT_SUCCESS'; boardState: { positions?: Record<string, number>; balances?: Record<string, number>; characters?: Record<string, string>; order?: Record<string, number> } }
   | { type: 'LOCAL_END_ROUND' }
   | { type: 'SHOW_ORDER_MINIGAME' }
@@ -176,6 +183,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         showBanqueroModal: false,
         videnteTiradas: null,
         showVidenteModal: false,
+        pendingMinigameResults: null,
       };
     }
 
@@ -264,9 +272,26 @@ function gameReducer(state: GameState, action: Action): GameState {
       return { ...state, players: updatedPlayers };
     }
 
+    case 'SHOW_MINIGAME_RESULTS': {
+      return {
+        ...state,
+        showOrderMinigame: false,
+        currentOrderMinijuego: null,
+        currentOrderMinijuegoDetails: null,
+        pendingMinigameResults: {
+          resultados: action.resultados,
+          nuevo_orden: action.nuevo_orden,
+          minigameName: state.currentOrderMinijuego ?? 'Minijuego',
+        },
+      };
+    }
+
     case 'MINIJUEGO_RESULTADOS': {
+      const nuevoOrden = action.nuevo_orden ?? state.pendingMinigameResults?.nuevo_orden;
+      if (!nuevoOrden) return state;
+
       const updatedPlayers = { ...state.players };
-      for (const [username, order] of Object.entries(action.nuevo_orden)) {
+      for (const [username, order] of Object.entries(nuevoOrden)) {
         if (updatedPlayers[username]) {
           const diceType: DiceType =
             order === 1 ? 'oro' :
@@ -297,6 +322,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         showBanqueroModal: false,
         videnteTiradas: null,
         showVidenteModal: false,
+        pendingMinigameResults: null,
       };
     }
 
@@ -409,8 +435,6 @@ function gameReducer(state: GameState, action: Action): GameState {
       return {
         ...state,
         showOrderMinigame: false,
-        currentOrderMinijuego: null,
-        currentOrderMinijuegoDetails: null,
       };
 
     case 'SHOW_VIDEOJUGADOR_ELECCION':
@@ -529,6 +553,7 @@ const initialState: GameState = {
   showBanqueroModal: false,
   videnteTiradas: null,
   showVidenteModal: false,
+  pendingMinigameResults: null,
 };
 
 // -------------------------------------------------------------------
@@ -784,7 +809,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
           case 'minijuego_resultados': {
             dispatch({
-              type: 'MINIJUEGO_RESULTADOS',
+              type: 'SHOW_MINIGAME_RESULTS',
+              resultados: data.resultados as Record<string, { posicion: number; score: number }>,
               nuevo_orden: data.nuevo_orden as Record<string, number>,
             });
             break;

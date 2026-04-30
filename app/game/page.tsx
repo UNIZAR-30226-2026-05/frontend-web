@@ -14,6 +14,7 @@ import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/co
 import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
 import BanqueroRoboModal from "@/features/board/components/BanqueroRoboModal";
 import VidenteDadosModal from "@/features/board/components/VidenteDadosModal";
+import MinigameResultOverlay from "@/features/board/components/MinigameResultOverlay";
 
 // Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
 const WS_NAME_TO_ID: Record<string, string> = {
@@ -138,6 +139,35 @@ function VidenteController() {
     <VidenteDadosModal
       tiradas={state.videnteTiradas}
       onClose={() => dispatch({ type: 'HIDE_VIDENTE_MODAL' })}
+    />
+  );
+}
+
+/** Muestra el scoreboard con los resultados del minijuego de orden. */
+function MinigameResultController() {
+  const { state, dispatch } = useGameContext();
+
+  if (!state.pendingMinigameResults) return null;
+
+  const { resultados, minigameName } = state.pendingMinigameResults;
+
+  // Transformar Record<username, {posicion, score}> en array PlayerResult[]
+  const resultsArray = Object.entries(resultados).map(([username, data]) => {
+    const player = state.players[username];
+    return {
+      username,
+      score: data.score,
+      character: player?.character ?? 'banquero', // fallback
+      posicion: data.posicion,
+    };
+  });
+
+  return (
+    <MinigameResultOverlay
+      minigameName={minigameName}
+      subtitle={`Clasificación: ${minigameName}`}
+      results={resultsArray}
+      onClose={() => dispatch({ type: 'MINIJUEGO_RESULTADOS' })}
     />
   );
 }
@@ -269,6 +299,9 @@ export default function GamePage() {
 
       {/* Modal del Vidente */}
       <VidenteController />
+
+      {/* Scoreboard de resultados del minijuego */}
+      <MinigameResultController />
 
       {/* Overlay de Minijuegos de Orden */}
       {activeMinigame && (
