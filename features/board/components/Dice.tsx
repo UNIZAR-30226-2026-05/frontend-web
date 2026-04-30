@@ -196,6 +196,13 @@ export default function Dice({ onOpenShop }: DiceProps) {
         {showSecondDice && renderDie(currentSpecial, displayType, true)}
       </div>
 
+      {/* Resultado Numérico Total (solo al terminar de rodar) */}
+      {isAnimating && !isRollingVisual && lastDice && (
+        <div className="text-amber-400 font-pixel text-5xl animate-in zoom-in duration-300 drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] -mt-2 mb-2">
+          {lastDice.dado1 + lastDice.dado2}
+        </div>
+      )}
+
       {/* Botones de acción */}
       {isMyTurn && (
         <div className="flex gap-4 w-full">
