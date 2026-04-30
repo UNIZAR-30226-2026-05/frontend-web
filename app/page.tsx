@@ -8,7 +8,7 @@ export default function Home() {
     <main
       className="flex min-h-screen flex-col items-center justify-center relative overflow-hidden"
       style={{
-        backgroundImage: "url('/bg_inicio.png')",
+        backgroundImage: "url('/fondo_menu.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
