@@ -30,7 +30,7 @@ const FALLBACK_ASSETS = [
 ];
 
 /** ms a esperar desde que llega player_moved hasta que empieza el movimiento (da tiempo a ver el dado) */
-const DICE_SHOW_DELAY_MS = 1200;
+const DICE_SHOW_DELAY_MS = 2000;
 /** ms entre cada avance de una casilla */
 const STEP_INTERVAL_MS = 280;
 /** pausa antes de aplicar el movimiento forzado o el intercambio */

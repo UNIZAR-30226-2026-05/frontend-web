@@ -128,6 +128,7 @@ export type Action =
   | { type: 'SET_ANYONE_ANIMATING'; value: boolean }
   /** Otro jugador saltó su turno bloqueado (el backend hizo broadcast de penalizacion_actualizada) */
   | { type: 'REMOTE_SKIPPED'; user: string }
+  | { type: 'CLEAR_LAST_DICE' }
   | { type: 'DEBUG_SET_TURN_ORDER'; order: number };
 
 
@@ -446,6 +447,9 @@ function gameReducer(state: GameState, action: Action): GameState {
         dobleNadaResult: null,
         isAnyoneAnimating: false,
       };
+
+    case 'CLEAR_LAST_DICE':
+      return { ...state, lastDice: null };
 
     case 'DEBUG_SET_TURN_ORDER':
       return {

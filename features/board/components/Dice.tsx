@@ -28,13 +28,14 @@ interface DiceProps {
 }
 
 export default function Dice({ onOpenShop }: DiceProps) {
-  const { state, isMyTurn, myPlayer, sendMovePlayer, sendEndRound, isAnyoneAnimating } = useGameContext();
+  const { state, isMyTurn, myPlayer, sendMovePlayer, sendEndRound, isAnyoneAnimating, dispatch } = useGameContext();
   const { hasMoved, awaitingEndRound, lastDice } = state;
   const penaltyTurns = state.penaltyTurns;
 
   const [currentNormal, setCurrentNormal] = useState(1);
   const [currentSpecial, setCurrentSpecial] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isRollingVisual, setIsRollingVisual] = useState(false);
   const [waitingForResponse, setWaitingForResponse] = useState(false);
   const prevLastDiceRef = useRef<typeof lastDice>(null);
 
@@ -76,10 +77,11 @@ export default function Dice({ onOpenShop }: DiceProps) {
     };
   }, [isMyTurn, waitingForResponse]);
 
-  // Effect: ciclar los dados aleatoriamente 1 s cuando se activa animación 
+  // Effect: ciclar los dados aleatoriamente y manejar la duración de la visibilidad
   useEffect(() => {
     if (!lastDice || !isAnimating) return;
 
+    setIsRollingVisual(true);
     const maxSpecial = DICE_MAX[lastDice.diceType];
     const showSpecial = lastDice.diceType !== 'normal' && lastDice.dado2 > 0;
 
@@ -90,16 +92,25 @@ export default function Dice({ onOpenShop }: DiceProps) {
       }
     }, 100);
 
-    const timeout = setTimeout(() => {
+    // Fase 1: Parar el rodado visual a los 1000ms
+    const rollTimeout = setTimeout(() => {
       clearInterval(rollInterval);
+      setIsRollingVisual(false);
       setCurrentNormal(lastDice.dado1);
       if (lastDice.dado2 > 0) setCurrentSpecial(lastDice.dado2);
-      setIsAnimating(false);
     }, 1000);
+
+    // Fase 2: Ocultar el panel completo a los 1800ms
+    // (Dando 800ms de tiempo estático para ver el resultado)
+    const hideTimeout = setTimeout(() => {
+      setIsAnimating(false);
+      dispatch({ type: 'CLEAR_LAST_DICE' });
+    }, 1800);
 
     return () => {
       clearInterval(rollInterval);
-      clearTimeout(timeout);
+      clearTimeout(rollTimeout);
+      clearTimeout(hideTimeout);
     };
   }, [lastDice, isAnimating]);
 
@@ -116,10 +127,11 @@ export default function Dice({ onOpenShop }: DiceProps) {
 
   const isBlocked = penaltyTurns > 0;
   const canRoll = isMyTurn && !hasMoved && !waitingForResponse && !awaitingEndRound && !isBlocked && !isAnyoneAnimating;
-  const isRolling = isAnimating || waitingForResponse;
+  const isRolling = isRollingVisual || waitingForResponse;
 
-  // Ocultar mientras cualquier ficha se mueve para no tapar la acción
-  if (isAnyoneAnimating) return null;
+  // Ocultar mientras cualquier ficha se mueve para no tapar la acción, 
+  // pero solo si ya hemos terminado de ver el dado.
+  if (isAnyoneAnimating && !isAnimating && !waitingForResponse) return null;
 
   // Visibilidad: solo si es mi turno, o hay animación, o hay un resultado visible, o alguien está esperando
   const isSpectating = !isMyTurn && !lastDice && !isAnimating;
