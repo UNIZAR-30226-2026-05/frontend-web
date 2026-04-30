@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/components/OrderMinigameOverlay";
 import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
 import BanqueroRoboModal from "@/features/board/components/BanqueroRoboModal";
+import VidenteDadosModal from "@/features/board/components/VidenteDadosModal";
 
 // Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
 const WS_NAME_TO_ID: Record<string, string> = {
@@ -123,6 +124,20 @@ function BanqueroRoboController() {
     <BanqueroRoboModal
       targetPlayers={targetPlayers}
       onSelect={(targetUser) => sendRoboBanquero(targetUser)}
+    />
+  );
+}
+
+/** Muestra el modal de las tiradas futuras para el vidente. */
+function VidenteController() {
+  const { state, dispatch } = useGameContext();
+
+  if (!state.showVidenteModal || !state.videnteTiradas) return null;
+
+  return (
+    <VidenteDadosModal
+      tiradas={state.videnteTiradas}
+      onClose={() => dispatch({ type: 'HIDE_VIDENTE_MODAL' })}
     />
   );
 }
@@ -251,6 +266,9 @@ export default function GamePage() {
 
       {/* Modal de Robo del Banquero */}
       <BanqueroRoboController />
+
+      {/* Modal del Vidente */}
+      <VidenteController />
 
       {/* Overlay de Minijuegos de Orden */}
       {activeMinigame && (

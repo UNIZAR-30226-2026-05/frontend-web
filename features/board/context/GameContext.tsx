@@ -99,6 +99,10 @@ interface GameState {
   hasUsedAbility: boolean;
   /** Mostrar el modal de robo del banquero */
   showBanqueroModal: boolean;
+  /** Tiradas futuras vistas por el vidente */
+  videnteTiradas: any[] | null; // Usamos any[] temporalmente para evitar circular dependency si no movemos el tipo
+  /** Mostrar el modal del vidente */
+  showVidenteModal: boolean;
 }
 
 // -------------------------------------------------------------------
@@ -135,6 +139,8 @@ export type Action =
   | { type: 'CLEAR_LAST_DICE' }
   | { type: 'SET_SHOW_BANQUERO_MODAL'; value: boolean }
   | { type: 'MARK_ABILITY_USED' }
+  | { type: 'SHOW_VIDENTE_MODAL'; tiradas: any[] }
+  | { type: 'HIDE_VIDENTE_MODAL' }
   | { type: 'DEBUG_SET_TURN_ORDER'; order: number };
 
 
@@ -168,6 +174,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         dobleNadaResult: null,
         hasUsedAbility: false,
         showBanqueroModal: false,
+        videnteTiradas: null,
+        showVidenteModal: false,
       };
     }
 
@@ -287,6 +295,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         isAnyoneAnimating: false,
         hasUsedAbility: false,
         showBanqueroModal: false,
+        videnteTiradas: null,
+        showVidenteModal: false,
       };
     }
 
@@ -348,6 +358,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         // Garantizamos isAnyoneAnimating = false para que el siguiente pueda tirar de inmediato.
         isAnyoneAnimating: state.hasMoved ? state.isAnyoneAnimating : false,
         hasUsedAbility: false,
+        showVidenteModal: false,
       };
     }
 
@@ -480,6 +491,12 @@ function gameReducer(state: GameState, action: Action): GameState {
     case 'MARK_ABILITY_USED':
       return { ...state, hasUsedAbility: true };
 
+    case 'SHOW_VIDENTE_MODAL':
+      return { ...state, showVidenteModal: true, videnteTiradas: action.tiradas };
+
+    case 'HIDE_VIDENTE_MODAL':
+      return { ...state, showVidenteModal: false };
+
     default:
       return state;
   }
@@ -510,6 +527,8 @@ const initialState: GameState = {
   dobleNadaResult: null,
   hasUsedAbility: false,
   showBanqueroModal: false,
+  videnteTiradas: null,
+  showVidenteModal: false,
 };
 
 // -------------------------------------------------------------------
@@ -835,6 +854,29 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             const myUsername = sessionStorage.getItem('username');
             if ((data.user as string) === myUsername) {
               dispatch({ type: 'CLEAR_PENALTY_TURNS' });
+            }
+            break;
+          }
+
+          case 'dice_shown': {
+            const punt = data.punt as number[];
+            if (Array.isArray(punt)) {
+              const diceTypes: DiceType[] = ['oro', 'plata', 'bronce', 'normal'];
+              const maxSpecials = [6, 4, 2];
+
+              const transformed = punt.map((total, index) => {
+                const isFourth = index === 3;
+                if (isFourth) {
+                  return { dado1: total, dado2: 0, diceType: 'normal' };
+                } else {
+                  const maxSpecial = maxSpecials[index];
+                  const d2 = Math.min(maxSpecial, total - 1);
+                  const d1 = total - d2;
+                  return { dado1: d1, dado2: d2, diceType: diceTypes[index] };
+                }
+              });
+
+              dispatch({ type: 'SHOW_VIDENTE_MODAL', tiradas: transformed });
             }
             break;
           }

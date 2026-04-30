@@ -24,6 +24,13 @@ const typeStyles: Record<DiceType, string> = {
     normal: "border-white shadow-lg",
 };
 
+const filterStyles: Record<DiceType, string> = {
+    oro: "brightness(1.1) sepia(1) hue-rotate(-15deg) saturate(4)",
+    plata: "grayscale(1) brightness(1.2) contrast(1.1)",
+    bronce: "sepia(1) hue-rotate(-30deg) saturate(2) brightness(0.7)",
+    normal: "none",
+};
+
 export default function VidenteDadosModal({ 
     tiradas, 
     onClose 
@@ -75,7 +82,7 @@ export default function VidenteDadosModal({
                                         {/* Dado 1 (Normal) - Siempre visible */}
                                         <div className="relative group">
                                             <Image
-                                                src={`/dice/normal_${tirada.dado1}.jpg`}
+                                                src={`/dice/${tirada.dado1}.png`}
                                                 alt={`Dado normal ${tirada.dado1}`}
                                                 className="w-12 h-12 rounded-lg border-2 object-cover bg-white border-white shadow-md transition-transform group-hover:scale-110"
                                                 width={48}
@@ -87,9 +94,10 @@ export default function VidenteDadosModal({
                                         {!isFourth && (
                                             <div className="relative group">
                                                 <Image
-                                                    src={`/dice/${tirada.diceType}_${tirada.dado2}.jpg`}
+                                                    src={`/dice/${tirada.dado2}.png`}
                                                     alt={`Dado ${tirada.diceType} ${tirada.dado2}`}
                                                     className={`w-12 h-12 rounded-lg border-2 object-cover bg-white transition-transform group-hover:scale-110 ${typeStyles[tirada.diceType]}`}
+                                                    style={{ filter: filterStyles[tirada.diceType] }}
                                                     width={48}
                                                     height={48}
                                                 />
