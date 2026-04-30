@@ -83,9 +83,13 @@ const PlayerHUD = () => {
   const { playerOrder, state, myPlayer } = useGameContext();
   const { currentTurnOrder, awaitingEndRound } = state;
 
-  const visualTurnOrder = (awaitingEndRound && myPlayer)
-    ? myPlayer.turnOrder
-    : currentTurnOrder;
+  // Sincronización visual: si alguien se está moviendo, resaltamos a ese jugador en todos los clientes.
+  // Si no hay animación, seguimos la lógica habitual de turno actual o espera de fin de ronda.
+  const visualTurnOrder = (state.isAnyoneAnimating && state.lastDice)
+    ? (state.players[state.lastDice.user]?.turnOrder ?? currentTurnOrder)
+    : (awaitingEndRound && myPlayer)
+      ? myPlayer.turnOrder
+      : currentTurnOrder;
 
   return (
     <aside className="flex flex-col gap-2 p-6 pointer-events-auto">
