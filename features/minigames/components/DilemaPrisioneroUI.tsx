@@ -6,7 +6,7 @@ import { useGameContext } from "@/features/board/context/GameContext";
 import PixelButton from "@/components/UI/PixelButton";
 
 interface DilemaPrisioneroUIProps {
-  onAction: (result: { score: number }) => void;
+  onAction: (result: { score: "cooperar" | "traicionar" }) => void;
 }
 
 import Image from "next/image";
@@ -40,8 +40,7 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
   const isDebug = isDebugRoute && showDebug;
 
   const handleChoice = (choice: "cooperar" | "traicionar") => {
-    const score = choice === "cooperar" ? 1 : 0;
-    onAction({ score });
+    onAction({ score: choice });
   };
 
   return (

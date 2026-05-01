@@ -8,7 +8,7 @@ type CharacterRole = "banquero" | "escapista" | "vidente" | "videojugador";
 type CardSuit = "hearts" | "diamonds" | "spades" | "clubs";
 
 interface MayorMenorUIProps {
-  onAction: (result: { score: number }) => void;
+  onAction: (result: { score: number; objetivo?: number }) => void;
   character?: CharacterRole;
   backendCardIndexes?: number[];
   assignedCardSlot?: number;

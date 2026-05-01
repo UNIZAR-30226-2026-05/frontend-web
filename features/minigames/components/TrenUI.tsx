@@ -6,7 +6,7 @@ import PixelButton from "@/components/UI/PixelButton";
 import Image from "next/image";
 
 interface TrenUIProps {
-  onAction: (result: { score: number }) => void;
+  onAction: (result: { score: number; objetivo?: number }) => void;
 }
 
 // Pool de 10 vagones con recuentos fijos
@@ -54,10 +54,8 @@ export default function TrenUI({ onAction }: TrenUIProps) {
     setIsFinished(true);
     
     const trueTotal = selectedWagons.reduce((sum, w) => sum + w.count, 0);
-    const diff = Math.abs(trueTotal - userCount);
-    const score = Math.max(0, Math.min(9999, Math.floor(diff)));
     
-    onAction({ score });
+    onAction({ score: userCount, objetivo: trueTotal });
   };
 
   const adjustCount = (val: number) => {

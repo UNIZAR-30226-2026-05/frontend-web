@@ -12,7 +12,7 @@ export type OrderMinigameType = "tren" | "reflejos" | "pan" | "crono" | "cartas"
 
 interface OrderMinigameOverlayProps {
   minigameType: OrderMinigameType;
-  onAction: (result: { score: number }) => void;
+  onAction: (result: { score: number | string; objetivo?: number }) => void;
   onClose: () => void;
   backendCardIndexes?: number[];
   assignedCardSlot?: number;

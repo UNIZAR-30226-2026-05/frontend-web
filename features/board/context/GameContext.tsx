@@ -623,7 +623,7 @@ export interface GameContextType {
   /** Enviar puntuación del minijuego de reflejos al backend y cerrar el overlay */
   sendScoreReflejos: (reactionTimeMs: number) => void;
   /** Enviar puntuación del minijuego de orden elegido por el videojugador */
-  sendScoreOrden: (score: number) => void;
+  sendScoreOrden: (score: number, objetivo?: number) => void;
   /** Enviar apuesta de Doble o Nada; `0` equivale a pasar */
   sendScoreDobleNada: (score: number) => void;
   /** El videojugador envía ini_round con el minijuego elegido */
@@ -641,8 +641,8 @@ export interface GameContextType {
 
   /** Enviar acción de robo del banquero al backend */
   sendRoboBanquero: (targetUser: string) => void;
-  /** Enviar decisión del dilema del prisionero (1=cooperar, 0=traicionar) */
-  sendScoreDilema: (score: number) => void;
+  /** Enviar decisión del dilema del prisionero (cooperar o traicionar) */
+  sendScoreDilema: (decision: "cooperar" | "traicionar") => void;
 }
 
 export const GameContext = createContext<GameContextType | null>(null);
@@ -1044,14 +1044,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'HIDE_ORDER_MINIGAME' });
   }, []);
 
-  const sendScoreOrden = useCallback((score: number) => {
+  const sendScoreOrden = useCallback((score: number, objetivo?: number) => {
     const ws = getGameSocket();
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     // Reflejos: el backend espera ms*1000. El resto de minijuegos usan el score directo.
     const minijuego = state.currentOrderMinijuego;
-    const payload = minijuego === 'Reflejos'
+    const payload: any = minijuego === 'Reflejos'
       ? { score: score * 1000 }
       : { score };
+    
+    if (objetivo !== undefined) {
+      payload.objetivo = objetivo;
+    }
+
     ws.send(JSON.stringify({ action: 'score_minijuego', payload }));
     dispatch({ type: 'HIDE_ORDER_MINIGAME' });
   }, [state.currentOrderMinijuego]);
@@ -1084,12 +1089,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_SHOW_BANQUERO_MODAL', value: false });
   }, []);
 
-  const sendScoreDilema = useCallback((score: number) => {
+  const sendScoreDilema = useCallback((decision: "cooperar" | "traicionar") => {
     const ws = getGameSocket();
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({
       action: 'score_minijuego',
-      payload: { score },
+      payload: { score: decision },
     }));
     dispatch({ type: 'HIDE_DILEMA' });
     

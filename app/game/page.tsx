@@ -50,7 +50,7 @@ function OrderMinigameController() {
       backendCardIndexes={state.currentOrderMinijuegoDetails?.cartas}
       assignedCardSlot={myPlayer ? myPlayer.turnOrder - 1 : undefined}
       objetivo={state.currentOrderMinijuegoDetails?.objetivo}
-      onAction={(result: { score: number }) => sendScoreOrden(result.score)}
+      onAction={(result) => sendScoreOrden(result.score as number, result.objetivo)}
       onClose={() => {/* no se puede cerrar manualmente */}}
     />
   );
@@ -213,7 +213,7 @@ function DilemaController() {
   return (
     <OrderMinigameOverlay
       minigameType="dilema"
-      onAction={(result: { score: number }) => sendScoreDilema(result.score)}
+      onAction={(result) => sendScoreDilema(result.score as "cooperar" | "traicionar")}
       onClose={() => dispatch({ type: 'HIDE_DILEMA' })}
     />
   );

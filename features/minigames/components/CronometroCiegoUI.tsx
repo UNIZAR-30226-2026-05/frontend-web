@@ -7,7 +7,7 @@ import PixelButton from "@/components/UI/PixelButton";
 import Image from "next/image";
 
 interface CronometroCiegoUIProps {
-  onAction: (result: { score: number }) => void;
+  onAction: (result: { score: number; objetivo?: number }) => void;
   /** Tiempo objetivo en segundos enviado por el backend (detalles.objetivo). Default 10. */
   objetivo?: number;
 }
@@ -96,11 +96,11 @@ export default function CronometroCiegoUI({ onAction, objetivo = 10 }: Cronometr
     }
 
     // El backend almacena objetivo como randint(7,10) en segundos y clasifica
-    // con abs(score - objetivo). El score debe estar en la misma unidad: segundos (float).
-    // Ejemplo: time=7.35 → abs(7.35 - 7) = 0.35, ranking correcto.
-    const score = Math.round(time * 100) / 100; // segundos con 2 decimales
+    // con abs(score - objetivo). El score debe estar en la misma unidad: ms (int).
+    const scoreMs = Math.round(time * 1000);
+    const objetivoMs = Math.round(objetivo * 1000);
 
-    onAction({ score });
+    onAction({ score: scoreMs, objetivo: objetivoMs });
   };
 
   const formatTime = (t: number) => {

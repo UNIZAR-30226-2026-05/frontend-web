@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 
 interface ReflejosUIProps {
-  onAction: (result: { score: number }) => void;
+  onAction: (result: { score: number; objetivo?: number }) => void;
   /** Delay en ms antes de que la pantalla cambie a verde. Viene de detalles.objetivo del backend. */
   objetivo?: number;
 }
@@ -58,7 +58,7 @@ export default function ReflejosUI({ onAction, objetivo }: ReflejosUIProps) {
     if (gameState === "waiting") {
       if (timerRef.current) clearTimeout(timerRef.current);
       setGameState("clicked");
-      onAction({ score: 9999 });
+      onAction({ score: 9999, objetivo: hasBackendObjetivo ? objetivo : undefined });
       return;
     }
 
@@ -66,7 +66,7 @@ export default function ReflejosUI({ onAction, objetivo }: ReflejosUIProps) {
       const endTime = performance.now();
       const timeTaken = Math.max(0, Math.min(9999, Math.floor(endTime - startTime)));
       setGameState("clicked");
-      onAction({ score: timeTaken });
+      onAction({ score: timeTaken, objetivo: hasBackendObjetivo ? objetivo : undefined });
     }
   };
 

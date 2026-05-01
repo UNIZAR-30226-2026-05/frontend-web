@@ -6,7 +6,7 @@ import Image from "next/image";
 import PixelButton from "@/components/UI/PixelButton";
 
 interface CortarPanUIProps {
-  onAction: (result: { score: number }) => void;
+  onAction: (result: { score: number; objetivo?: number }) => void;
 }
 
 export default function CortarPanUI({ onAction }: CortarPanUIProps) {
@@ -54,12 +54,9 @@ export default function CortarPanUI({ onAction }: CortarPanUIProps) {
     setIsFinished(true);
     cancelAnimationFrame(animationRef.current);
     
-    // Score: porcentaje de la parte más grande cortada (50-100).
-    // Backend usa abs(score - 50) para el ranking: más cerca de 50 gana.
-    // Ejemplo: cuchillo al 40% → partes [40, 60] → score = 60.
-    const score = Math.round(Math.max(knifePosition, 100 - knifePosition));
-    
-    onAction({ score });
+    // Score: posición del cuchillo (0-100).
+    // Objetivo: 50 (el centro exacto).
+    onAction({ score: Math.round(knifePosition), objetivo: 50 });
   };
 
   return (
