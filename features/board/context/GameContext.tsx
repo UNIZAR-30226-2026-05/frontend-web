@@ -36,7 +36,7 @@ interface SwapAnimationEvent {
 }
 
 interface PendingBoardMinigame {
-  type: 'Doble o Nada';
+  type: 'Doble o Nada' | 'Dilema del Prisionero';
   user: string;
 }
 
@@ -113,6 +113,8 @@ interface GameState {
   pendingObjetoRuleta: { user: string; objeto: string; descripcion: string } | null;
   /** Mostrar la UI de la ruleta */
   showRuleta: boolean;
+  /** Mostrar la UI del Dilema del Prisionero */
+  showDilema: boolean;
 }
 
 // -------------------------------------------------------------------
@@ -155,7 +157,10 @@ export type Action =
   | { type: 'DEBUG_SET_TURN_ORDER'; order: number }
   | { type: 'SET_PENDING_OBJETO_RULETA'; data: { user: string; objeto: string; descripcion: string } | null }
   | { type: 'SHOW_RULETA' }
-  | { type: 'HIDE_RULETA' };
+  | { type: 'HIDE_RULETA' }
+  | { type: 'SHOW_DILEMA_PENDING'; user: string }
+  | { type: 'OPEN_DILEMA' }
+  | { type: 'HIDE_DILEMA' };
 
 
 // -------------------------------------------------------------------
@@ -193,6 +198,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         pendingMinigameResults: null,
         pendingObjetoRuleta: null,
         showRuleta: false,
+        showDilema: false,
       };
     }
 
@@ -334,6 +340,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         pendingMinigameResults: null,
         pendingObjetoRuleta: null,
         showRuleta: false,
+        showDilema: false,
       };
     }
 
@@ -398,6 +405,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         showVidenteModal: false,
         pendingObjetoRuleta: null,
         showRuleta: false,
+        showDilema: false,
       };
     }
 
@@ -543,6 +551,25 @@ function gameReducer(state: GameState, action: Action): GameState {
     case 'HIDE_RULETA':
       return { ...state, showRuleta: false };
 
+    case 'SHOW_DILEMA_PENDING':
+      return {
+        ...state,
+        showDilema: false,
+        pendingBoardMinigame: { type: 'Dilema del Prisionero', user: action.user },
+        isAnyoneAnimating: true,
+      };
+
+    case 'OPEN_DILEMA':
+      return { ...state, showDilema: true };
+
+    case 'HIDE_DILEMA':
+      return {
+        ...state,
+        showDilema: false,
+        pendingBoardMinigame: null,
+        isAnyoneAnimating: false,
+      };
+
     default:
       return state;
   }
@@ -578,6 +605,7 @@ const initialState: GameState = {
   pendingMinigameResults: null,
   pendingObjetoRuleta: null,
   showRuleta: false,
+  showDilema: false,
 };
 
 // -------------------------------------------------------------------
@@ -613,6 +641,8 @@ export interface GameContextType {
 
   /** Enviar acción de robo del banquero al backend */
   sendRoboBanquero: (targetUser: string) => void;
+  /** Enviar decisión del dilema del prisionero (1=cooperar, 0=traicionar) */
+  sendScoreDilema: (score: number) => void;
 }
 
 export const GameContext = createContext<GameContextType | null>(null);
@@ -852,9 +882,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           }
 
           case 'ini_minijuego': {
+            const minijuego = data.minijuego as string;
+            // Dilema del prisionero (casilla VS)
+            if (minijuego === 'Dilema del Prisionero') {
+              const myUsername = sessionStorage.getItem('username');
+              dispatch({ type: 'SHOW_DILEMA_PENDING', user: myUsername ?? '' });
+            } 
             // Los minijuegos de orden llegan con estado_partida/detalles.
-            if ('estado_partida' in data) {
-              const minijuego = data.minijuego as string;
+            else if ('estado_partida' in data) {
               const details = typeof data.detalles === 'object' && data.detalles !== null
                 ? data.detalles as OrderMinijuegoDetails
                 : null;
@@ -969,6 +1004,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    if (pendingBoardMinigame?.type === 'Dilema del Prisionero') {
+      if (isLocalPlayer && pendingBoardMinigame.user === state.myUsername) {
+        dispatch({ type: 'OPEN_DILEMA' });
+      }
+      return;
+    }
+
     // Si hay una ruleta pendiente para este jugador
     const pendingRuleta = pendingObjetoRuletaRef.current;
     if (pendingRuleta && pendingRuleta.user === username) {
@@ -1042,6 +1084,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_SHOW_BANQUERO_MODAL', value: false });
   }, []);
 
+  const sendScoreDilema = useCallback((score: number) => {
+    const ws = getGameSocket();
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({
+      action: 'score_minijuego',
+      payload: { score },
+    }));
+    dispatch({ type: 'HIDE_DILEMA' });
+    
+    // Si soy el jugador activo que movió, cierro el turno definitivamente
+    if (awaitingEndRoundRef.current) {
+      sendEndRound();
+    }
+  }, [sendEndRound]);
+
   // Datos derivados
   const myPlayer = state.myUsername ? (state.players[state.myUsername] ?? null) : null;
   const isMyTurn =
@@ -1051,7 +1108,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
-        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendScoreDobleNada, sendIniRound, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch, sendRoboBanquero }}>
+        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendScoreDobleNada, sendIniRound, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch, sendRoboBanquero, sendScoreDilema }}>
 
 
 

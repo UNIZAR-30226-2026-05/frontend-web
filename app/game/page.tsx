@@ -209,6 +209,21 @@ function RuletaController() {
   );
 }
 
+/** Muestra el Dilema del Prisionero cuando dos jugadores coinciden. */
+function DilemaController() {
+  const { state, sendScoreDilema, dispatch } = useGameContext();
+
+  if (!state.showDilema) return null;
+
+  return (
+    <OrderMinigameOverlay
+      minigameType="dilema"
+      onAction={(result: { score: number }) => sendScoreDilema(result.score)}
+      onClose={() => dispatch({ type: 'HIDE_DILEMA' })}
+    />
+  );
+}
+
 export default function GamePage() {
   const [lobbyPlayers] = useState<unknown[]>(() => getLobbyPlayers());
   const [unavailableRoles, setUnavailableRoles] = useState<string[]>([]);
@@ -342,6 +357,9 @@ export default function GamePage() {
 
       {/* Ruleta de objetos */}
       <RuletaController />
+
+      {/* Dilema del Prisionero */}
+      <DilemaController />
 
       {/* Overlay de Minijuegos de Orden */}
       {activeMinigame && (
