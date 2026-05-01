@@ -92,6 +92,25 @@ export default function DebugMinigamesPage() {
       isSubmittingDobleNada: false,
       submittedDobleNadaBet: null,
       dobleNadaResult: null,
+      hasUsedAbility: false,
+      showBanqueroModal: false,
+      videnteTiradas: null,
+      showVidenteModal: false,
+      pendingMinigameResults: null,
+      pendingObjetoRuleta: null,
+      showRuleta: false,
+      showDilema: false,
+      showPoker: false,
+      pokerState: {
+        fase: '',
+        misCartas: [],
+        mesaVisible: [],
+        bote: 0,
+        apuestaObjetivo: 0,
+        jugadoresActivos: [],
+        hasActedThisPhase: false,
+        resultados: null,
+      },
     },
     isMyTurn: true,
     myPlayer: mockPlayer,
@@ -109,6 +128,9 @@ export default function DebugMinigamesPage() {
     notifyAnimationEnded: () => undefined,
     isAnyoneAnimating: false,
     dispatch: noopDispatch,
+    sendRoboBanquero: () => undefined,
+    sendScoreDilema: () => undefined,
+    sendPokerAction: () => undefined,
   };
 
   const minigames: { id: DebugMinigameId; label: string }[] = [
@@ -171,7 +193,7 @@ export default function DebugMinigamesPage() {
           </div>
 
           {activeMinigame === "poker" && (
-            <PokerUI onAction={handleAction} />
+            <PokerUI onClose={() => setActiveMinigame(null)} />
           )}
 
           {activeMinigame !== null && isOrderMinigameType(activeMinigame) && (
@@ -248,10 +270,10 @@ export default function DebugMinigamesPage() {
               minigameName="REFLEJOS"
               subtitle="¿Ser rápido es tu virtud?"
               results={[
-                { username: "lorien2", score: 515, character: "vidente" },
-                { username: "Jugador 2", score: 2744, character: "banquero" },
-                { username: "Jugador 4", score: 3730, character: "escapista" },
-                { username: "Jugador 3", score: 4340, character: "videojugador" },
+                { username: "lorien2", score: 515, character: "vidente", posicion: 1 },
+                { username: "Jugador 2", score: 2744, character: "banquero", posicion: 2 },
+                { username: "Jugador 4", score: 3730, character: "escapista", posicion: 3 },
+                { username: "Jugador 3", score: 4340, character: "videojugador", posicion: 4 },
               ]}
               onClose={() => setActiveMinigame(null)}
             />

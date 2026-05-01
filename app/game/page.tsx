@@ -16,6 +16,7 @@ import BanqueroRoboModal from "@/features/board/components/BanqueroRoboModal";
 import VidenteDadosModal from "@/features/board/components/VidenteDadosModal";
 import MinigameResultOverlay from "@/features/board/components/MinigameResultOverlay";
 import RuletaUI from "@/features/board/components/RuletaUI";
+import PokerUI from "@/features/minigames/components/PokerUI";
 
 // Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
 const WS_NAME_TO_ID: Record<string, string> = {
@@ -219,6 +220,24 @@ function DilemaController() {
   );
 }
 
+/** Muestra el Poker cuando el jugador cae en la casilla correspondiente. */
+function PokerController() {
+  const { state, sendEndRound, dispatch } = useGameContext();
+
+  if (!state.showPoker) return null;
+
+  return (
+    <PokerUI
+      onClose={() => {
+        dispatch({ type: 'HIDE_POKER' });
+        if (state.awaitingEndRound) {
+          sendEndRound();
+        }
+      }}
+    />
+  );
+}
+
 export default function GamePage() {
   const [lobbyPlayers] = useState<unknown[]>(() => getLobbyPlayers());
   const [unavailableRoles, setUnavailableRoles] = useState<string[]>([]);
@@ -355,6 +374,9 @@ export default function GamePage() {
 
       {/* Dilema del Prisionero */}
       <DilemaController />
+
+      {/* Mano de Poker */}
+      <PokerController />
 
       {/* Overlay de Minijuegos de Orden */}
       {activeMinigame && (

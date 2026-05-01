@@ -36,8 +36,59 @@ interface SwapAnimationEvent {
 }
 
 interface PendingBoardMinigame {
-  type: 'Doble o Nada' | 'Dilema del Prisionero';
+  type: 'Doble o Nada' | 'Dilema del Prisionero' | 'Mano de Poker';
   user: string;
+}
+
+// -------------------------------------------------------------------
+// Poker: tipos y conversión de cartas backend → frontend
+// -------------------------------------------------------------------
+export interface PokerCard {
+  suit: string;   // "hearts" | "diamonds" | "spades" | "clubs"
+  rank: number;   // 1–13
+}
+
+interface BackendCard {
+  valor: string;  // "2".."10", "jota", "reina", "rey", "as"
+  palo: string;   // "picas", "corazones", "treboles", "diamantes"
+}
+
+const PALO_MAP: Record<string, string> = {
+  picas: 'spades',
+  corazones: 'hearts',
+  treboles: 'clubs',
+  diamantes: 'diamonds',
+};
+
+const VALOR_MAP: Record<string, number> = {
+  as: 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7,
+  '8': 8, '9': 9, '10': 10, jota: 11, reina: 12, rey: 13,
+};
+
+/** Convierte una carta del formato backend {valor,palo} al formato UI {suit,rank}. */
+function mapBackendCard(c: BackendCard): PokerCard {
+  return {
+    suit: PALO_MAP[c.palo] ?? c.palo,
+    rank: VALOR_MAP[c.valor] ?? (parseInt(c.valor) || 1),
+  };
+}
+
+export interface PokerResultado {
+  idGanadores: string[];
+  boteGanado: number;
+  resultadosOrdenados: { user: string; mano: string; cartas: PokerCard[] }[];
+  mesaCompleta: PokerCard[];
+}
+
+export interface PokerState {
+  fase: string;                    // "Pre-Flop", "Flop", "Turn", "River", "Resultados"
+  misCartas: PokerCard[];          // las 2 cartas del jugador local
+  mesaVisible: PokerCard[];        // cartas comunitarias reveladas
+  bote: number;                    // bote acumulado
+  apuestaObjetivo: number;         // apuesta mínima a igualar
+  jugadoresActivos: string[];      // usernames que no se han retirado
+  hasActedThisPhase: boolean;      // true tras enviar acción → bloquea botones
+  resultados: PokerResultado | null;
 }
 
 interface DobleNadaResult {
@@ -115,6 +166,10 @@ interface GameState {
   showRuleta: boolean;
   /** Mostrar la UI del Dilema del Prisionero */
   showDilema: boolean;
+  /** Mostrar la UI de la Mano de Poker */
+  showPoker: boolean;
+  /** Estado completo del minijuego de poker (llenado por WS) */
+  pokerState: PokerState;
 }
 
 // -------------------------------------------------------------------
@@ -160,7 +215,15 @@ export type Action =
   | { type: 'HIDE_RULETA' }
   | { type: 'SHOW_DILEMA_PENDING'; user: string }
   | { type: 'OPEN_DILEMA' }
-  | { type: 'HIDE_DILEMA' };
+  | { type: 'HIDE_DILEMA' }
+  | { type: 'SHOW_POKER_PENDING' }
+  | { type: 'OPEN_POKER' }
+  | { type: 'HIDE_POKER' }
+  | { type: 'POKER_INICIO_RONDA'; fase: string; misCartas: PokerCard[] }
+  | { type: 'POKER_NUEVA_FASE'; fase: string; bote: number; mesaVisible: PokerCard[]; jugadoresActivos: string[] }
+  | { type: 'POKER_APUESTA_ACTUALIZADA'; user: string; apuestaObjetivo: number }
+  | { type: 'POKER_RESULTADOS'; resultados: PokerResultado }
+  | { type: 'POKER_MARK_ACTED' };
 
 
 // -------------------------------------------------------------------
@@ -199,6 +262,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         pendingObjetoRuleta: null,
         showRuleta: false,
         showDilema: false,
+        showPoker: false,
+        pokerState: { ...initialPokerState },
       };
     }
 
@@ -341,6 +406,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         pendingObjetoRuleta: null,
         showRuleta: false,
         showDilema: false,
+        showPoker: false,
+        pokerState: { ...initialPokerState },
       };
     }
 
@@ -406,6 +473,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         pendingObjetoRuleta: null,
         showRuleta: false,
         showDilema: false,
+        showPoker: false,
       };
     }
 
@@ -570,10 +638,108 @@ function gameReducer(state: GameState, action: Action): GameState {
         isAnyoneAnimating: false,
       };
 
+    case 'SHOW_POKER_PENDING':
+      return {
+        ...state,
+        showPoker: false,
+        pendingBoardMinigame: { type: 'Mano de Poker', user: '' },
+        isAnyoneAnimating: true,
+      };
+
+    case 'OPEN_POKER':
+      return { ...state, showPoker: true };
+
+    case 'HIDE_POKER':
+      return {
+        ...state,
+        showPoker: false,
+        pendingBoardMinigame: null,
+        isAnyoneAnimating: false,
+        pokerState: { ...initialPokerState },
+      };
+
+    case 'POKER_INICIO_RONDA':
+      return {
+        ...state,
+        pokerState: {
+          ...state.pokerState,
+          fase: action.fase,
+          misCartas: action.misCartas,
+          mesaVisible: [],
+          bote: 0,
+          apuestaObjetivo: 0,
+          jugadoresActivos: Object.keys(state.players),
+          hasActedThisPhase: false,
+          resultados: null,
+        },
+      };
+
+    case 'POKER_NUEVA_FASE':
+      return {
+        ...state,
+        pokerState: {
+          ...state.pokerState,
+          fase: action.fase,
+          bote: action.bote,
+          mesaVisible: action.mesaVisible,
+          jugadoresActivos: action.jugadoresActivos,
+          hasActedThisPhase: state.myUsername
+            ? !action.jugadoresActivos.includes(state.myUsername)
+            : true,
+          resultados: null,
+        },
+      };
+
+    case 'POKER_APUESTA_ACTUALIZADA':
+      return {
+        ...state,
+        pokerState: {
+          ...state.pokerState,
+          apuestaObjetivo: action.apuestaObjetivo,
+          // Quien subó sigue bloqueado; los demás activos se desbloquean
+          hasActedThisPhase: action.user === state.myUsername
+            ? state.pokerState.hasActedThisPhase
+            : state.myUsername
+              ? !state.pokerState.jugadoresActivos.includes(state.myUsername)
+              : true,
+        },
+      };
+
+    case 'POKER_RESULTADOS':
+      return {
+        ...state,
+        pokerState: {
+          ...state.pokerState,
+          fase: 'Resultados',
+          resultados: action.resultados,
+          hasActedThisPhase: true,
+        },
+      };
+
+    case 'POKER_MARK_ACTED':
+      return {
+        ...state,
+        pokerState: {
+          ...state.pokerState,
+          hasActedThisPhase: true,
+        },
+      };
+
     default:
       return state;
   }
 }
+
+const initialPokerState: PokerState = {
+  fase: '',
+  misCartas: [],
+  mesaVisible: [],
+  bote: 0,
+  apuestaObjetivo: 0,
+  jugadoresActivos: [],
+  hasActedThisPhase: false,
+  resultados: null,
+};
 
 const initialState: GameState = {
   players: {},
@@ -606,6 +772,8 @@ const initialState: GameState = {
   pendingObjetoRuleta: null,
   showRuleta: false,
   showDilema: false,
+  showPoker: false,
+  pokerState: { ...initialPokerState },
 };
 
 // -------------------------------------------------------------------
@@ -643,6 +811,8 @@ export interface GameContextType {
   sendRoboBanquero: (targetUser: string) => void;
   /** Enviar decisión del dilema del prisionero (cooperar o traicionar) */
   sendScoreDilema: (decision: "cooperar" | "traicionar") => void;
+  /** Enviar acción de poker (apostar/retirarse) */
+  sendPokerAction: (decision: 'apostar' | 'retirarse', cantidad: number) => void;
 }
 
 export const GameContext = createContext<GameContextType | null>(null);
@@ -888,6 +1058,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
               const myUsername = sessionStorage.getItem('username');
               dispatch({ type: 'SHOW_DILEMA_PENDING', user: myUsername ?? '' });
             } 
+            else if (minijuego === 'Mano de Poker') {
+              dispatch({ type: 'SHOW_POKER_PENDING' });
+            }
             // Los minijuegos de orden llegan con estado_partida/detalles.
             else if ('estado_partida' in data) {
               const details = typeof data.detalles === 'object' && data.detalles !== null
@@ -982,6 +1155,62 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             });
             break;
           }
+
+          case 'poker_inicio_ronda': {
+            const misCartas = (data.mis_cartas as BackendCard[]).map(mapBackendCard);
+            dispatch({
+              type: 'POKER_INICIO_RONDA',
+              fase: data.fase as string,
+              misCartas,
+            });
+            break;
+          }
+
+          case 'poker_nueva_fase': {
+            const mesaVisible = (data.mesa_visible as BackendCard[]).map(mapBackendCard);
+            dispatch({
+              type: 'POKER_NUEVA_FASE',
+              fase: data.fase as string,
+              bote: data.bote_actual as number,
+              mesaVisible,
+              jugadoresActivos: data.jugadores_activos as string[],
+            });
+            break;
+          }
+
+          case 'poker_apuesta_actualizada': {
+            dispatch({
+              type: 'POKER_APUESTA_ACTUALIZADA',
+              user: data.user as string,
+              apuestaObjetivo: data.nueva_apuesta_objetivo as number,
+            });
+            break;
+          }
+
+          case 'poker_resultados': {
+            const mesaCompleta = Array.isArray(data.mesa_completa)
+              ? (data.mesa_completa as BackendCard[]).map(mapBackendCard)
+              : [];
+            const resultadosOrdenados = Array.isArray(data.resultados_ordenados)
+              ? (data.resultados_ordenados as any[]).map((r: any) => ({
+                  user: r.user as string,
+                  mano: r.mano as string,
+                  cartas: Array.isArray(r.cartas)
+                    ? (r.cartas as BackendCard[]).map(mapBackendCard)
+                    : [],
+                }))
+              : [];
+            dispatch({
+              type: 'POKER_RESULTADOS',
+              resultados: {
+                idGanadores: data.id_ganadores as string[],
+                boteGanado: data.bote_ganado as number,
+                resultadosOrdenados,
+                mesaCompleta,
+              },
+            });
+            break;
+          }
         }
       } catch {
         // Mensaje no-JSON u otros errores → ignorar
@@ -1008,6 +1237,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (isLocalPlayer && pendingBoardMinigame.user === state.myUsername) {
         dispatch({ type: 'OPEN_DILEMA' });
       }
+      return;
+    }
+
+    if (pendingBoardMinigame?.type === 'Mano de Poker') {
+      // El póker se abre para TODOS cuando la ficha que se movía termina.
+      // Asumimos que la animación que termina y lanza el minijuego es la del jugador en turno.
+      dispatch({ type: 'OPEN_POKER' });
       return;
     }
 
@@ -1104,6 +1340,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   }, [sendEndRound]);
 
+  const sendPokerAction = useCallback((decision: 'apostar' | 'retirarse', cantidad: number) => {
+    const ws = getGameSocket();
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({
+      action: 'poker_accion',
+      payload: { decision, cantidad },
+    }));
+    dispatch({ type: 'POKER_MARK_ACTED' });
+  }, []);
+
   // Datos derivados
   const myPlayer = state.myUsername ? (state.players[state.myUsername] ?? null) : null;
   const isMyTurn =
@@ -1113,7 +1359,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
-        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendScoreDobleNada, sendIniRound, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch, sendRoboBanquero, sendScoreDilema }}>
+        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendScoreDobleNada, sendIniRound, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch, sendRoboBanquero, sendScoreDilema, sendPokerAction }}>
 
 
 
