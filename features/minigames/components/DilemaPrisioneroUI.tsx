@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { useGameContext } from "@/features/board/context/GameContext";
 import PixelButton from "@/components/UI/PixelButton";
 
 interface DilemaPrisioneroUIProps {
@@ -11,12 +12,30 @@ interface DilemaPrisioneroUIProps {
 import Image from "next/image";
 
 export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps) {
+  const { state, myPlayer } = useGameContext();
+
+  // Calcular rival: mismo sitio, distinto nombre
+  const rivalPlayer = Object.values(state.players).find(
+    (p) => p.username !== myPlayer?.username && p.position === myPlayer?.position
+  );
+
+  const miPersonaje = myPlayer?.character || 'banquero';
+  const personajeRival = rivalPlayer?.character || 'banquero';
+
   const pathname = usePathname();
   const isDebugRoute = pathname.includes("debug");
-  const [debugButW, setDebugButW] = useState(256);
-  const [debugButH, setDebugButH] = useState(112);
-  const [debugButTop, setDebugButTop] = useState(86);
-  const [debugSideGap, setDebugSideGap] = useState(23);
+  const [debugButW, setDebugButW] = useState(352);
+  const [debugButH, setDebugButH] = useState(82);
+  const [debugButTop, setDebugButTop] = useState(89);
+  const [debugButSideGap, setDebugButSideGap] = useState(24);
+  
+  // Avatar Debug
+  const [debugAvSize, setDebugAvSize] = useState(325);
+  const [debugAvTop, setDebugAvTop] = useState(63);
+  const [debugAvSideGap, setDebugAvSideGap] = useState(18);
+  const [debugAvTintColor, setDebugAvTintColor] = useState("#fbbf24");
+  const [debugAvTintOpacity, setDebugAvTintOpacity] = useState(0.25);
+
   const [showDebug, setShowDebug] = useState(true);
   const isDebug = isDebugRoute && showDebug;
 
@@ -57,18 +76,60 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
             />
           </div>
           <div className="flex flex-col">
-            <label>Side Gap: {debugSideGap}%</label>
+            <label>Buttons Side Gap: {debugButSideGap}%</label>
             <input 
               type="range" min="0" max="40" step="1" 
-              value={debugSideGap} onChange={(e) => setDebugSideGap(parseInt(e.target.value))}
+              value={debugButSideGap} onChange={(e) => setDebugButSideGap(parseInt(e.target.value))}
               className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
             />
           </div>
+
+          <div className="h-px bg-amber-500/30 my-1" />
+
+          {/* AVATAR DEBUG */}
+          <div className="flex flex-col">
+            <label>Avatar Size: {debugAvSize}px</label>
+            <input 
+              type="range" min="50" max="500" step="5" 
+              value={debugAvSize} onChange={(e) => setDebugAvSize(parseInt(e.target.value))}
+              className="w-48 appearance-none bg-blue-900/40 h-1 rounded-full cursor-pointer mt-1"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label>Avatar Top: {debugAvTop}%</label>
+            <input 
+              type="range" min="0" max="100" step="1" 
+              value={debugAvTop} onChange={(e) => setDebugAvTop(parseInt(e.target.value))}
+              className="w-48 appearance-none bg-blue-900/40 h-1 rounded-full cursor-pointer mt-1"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label>Avatar Side Gap: {debugAvSideGap}%</label>
+            <input 
+              type="range" min="0" max="50" step="1" 
+              value={debugAvSideGap} onChange={(e) => setDebugAvSideGap(parseInt(e.target.value))}
+              className="w-48 appearance-none bg-blue-900/40 h-1 rounded-full cursor-pointer mt-1"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label>Tint Opacity: {debugAvTintOpacity}</label>
+            <input 
+              type="range" min="0" max="1" step="0.05" 
+              value={debugAvTintOpacity} onChange={(e) => setDebugAvTintOpacity(parseFloat(e.target.value))}
+              className="w-48 appearance-none bg-yellow-900/40 h-1 rounded-full cursor-pointer mt-1"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label>Tint Color: {debugAvTintColor}</label>
+            <input 
+              type="color" 
+              value={debugAvTintColor} onChange={(e) => setDebugAvTintColor(e.target.value)}
+              className="w-48 h-6 bg-transparent border-none cursor-pointer mt-1"
+            />
+          </div>
           <div className="mt-2 p-2 bg-white/10 rounded font-mono text-[9px]">
-            width: {debugButW},<br />
-            height: {debugButH},<br />
-            top: {debugButTop}%,<br />
-            sideGap: {debugSideGap}%
+            BUT: w: {debugButW}, h: {debugButH}, top: {debugButTop}%, gap: {debugButSideGap}%<br/>
+            AV: size: {debugAvSize}, top: {debugAvTop}%, gap: {debugAvSideGap}%, tint: "{debugAvTintColor}", op: {debugAvTintOpacity}
           </div>
           <div className="flex gap-2 mt-2">
             <button 
@@ -104,13 +165,80 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
         </p>
       </div>
 
+      {/* Capa de Personajes */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        {/* Local (Izquierda) */}
+        <div 
+          className="absolute -translate-y-1/2"
+          style={{ left: `${debugAvSideGap}%`, top: `${debugAvTop}%` }}
+        >
+          <div className="relative" style={{ width: `${debugAvSize}px`, height: `${debugAvSize}px` }}>
+            <Image 
+              src={`/personajes_general/${miPersonaje}_frente_der.png`}
+              alt="Mi personaje"
+              fill
+              className="pixelated object-contain"
+              unoptimized
+            />
+            <div 
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundColor: debugAvTintColor,
+                opacity: debugAvTintOpacity,
+                mixBlendMode: "hard-light",
+                WebkitMaskImage: `url(/personajes_general/${miPersonaje}_frente_der.png)`,
+                maskImage: `url(/personajes_general/${miPersonaje}_frente_der.png)`,
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                maskPosition: "center"
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Rival (Derecha) */}
+        <div 
+          className="absolute -translate-y-1/2"
+          style={{ right: `${debugAvSideGap}%`, top: `${debugAvTop}%` }}
+        >
+          <div className="relative" style={{ width: `${debugAvSize}px`, height: `${debugAvSize}px` }}>
+            <Image 
+              src={`/personajes_general/${personajeRival}_frente_izq.png`}
+              alt="Rival"
+              fill
+              className="pixelated object-contain"
+              unoptimized
+            />
+            <div 
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundColor: debugAvTintColor,
+                opacity: debugAvTintOpacity,
+                mixBlendMode: "hard-light",
+                WebkitMaskImage: `url(/personajes_general/${personajeRival}_frente_izq.png)`,
+                maskImage: `url(/personajes_general/${personajeRival}_frente_izq.png)`,
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                maskPosition: "center"
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Botones de Decisión (Posicionados sobre las "mesas") */}
-      <div className="relative z-10 w-full h-full pointer-events-none">
+      <div className="relative z-20 w-full h-full pointer-events-none">
         
         {/* Traicionar (Izquierda) */}
         <div 
           className="absolute -translate-y-1/2 pointer-events-auto"
-          style={{ left: `${debugSideGap}%`, top: `${debugButTop}%` }}
+          style={{ left: `${debugButSideGap}%`, top: `${debugButTop}%` }}
         >
           <div className="flex flex-col items-center gap-6">
             <PixelButton 
@@ -130,7 +258,7 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
         {/* Cooperar (Derecha) */}
         <div 
           className="absolute -translate-y-1/2 pointer-events-auto"
-          style={{ right: `${debugSideGap}%`, top: `${debugButTop}%` }}
+          style={{ right: `${debugButSideGap}%`, top: `${debugButTop}%` }}
         >
           <div className="flex flex-col items-center gap-6">
             <PixelButton 
