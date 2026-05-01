@@ -93,7 +93,7 @@ export default function BoardOverlay() {
         [username]: transition.to,
         [transition.partner]: transition.partnerTo,
       });
-      notifyAnimationEnded(username === myPlayer?.username);
+      notifyAnimationEnded(username);
     };
 
     startAnimRef.current = (username: string, from: number, to: number) => {
@@ -107,7 +107,7 @@ export default function BoardOverlay() {
           busy.current[username] = false;
           // Si acaba de terminar la cadena de animaciones del jugador local,
           // notificar al contexto para que termine el turno automáticamente.
-          notifyAnimationEnded(username === myPlayer?.username);
+          notifyAnimationEnded(username);
         }
       };
 

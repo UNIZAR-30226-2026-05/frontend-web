@@ -109,6 +109,10 @@ interface GameState {
     nuevo_orden: Record<string, number>;
     minigameName: string;
   } | null;
+  /** Objeto que el backend ya ha decidido para la ruleta */
+  pendingObjetoRuleta: { user: string; objeto: string; descripcion: string } | null;
+  /** Mostrar la UI de la ruleta */
+  showRuleta: boolean;
 }
 
 // -------------------------------------------------------------------
@@ -148,7 +152,10 @@ export type Action =
   | { type: 'MARK_ABILITY_USED' }
   | { type: 'SHOW_VIDENTE_MODAL'; tiradas: any[] }
   | { type: 'HIDE_VIDENTE_MODAL' }
-  | { type: 'DEBUG_SET_TURN_ORDER'; order: number };
+  | { type: 'DEBUG_SET_TURN_ORDER'; order: number }
+  | { type: 'SET_PENDING_OBJETO_RULETA'; data: { user: string; objeto: string; descripcion: string } | null }
+  | { type: 'SHOW_RULETA' }
+  | { type: 'HIDE_RULETA' };
 
 
 // -------------------------------------------------------------------
@@ -184,6 +191,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         videnteTiradas: null,
         showVidenteModal: false,
         pendingMinigameResults: null,
+        pendingObjetoRuleta: null,
+        showRuleta: false,
       };
     }
 
@@ -323,6 +332,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         videnteTiradas: null,
         showVidenteModal: false,
         pendingMinigameResults: null,
+        pendingObjetoRuleta: null,
+        showRuleta: false,
       };
     }
 
@@ -385,6 +396,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         isAnyoneAnimating: state.hasMoved ? state.isAnyoneAnimating : false,
         hasUsedAbility: false,
         showVidenteModal: false,
+        pendingObjetoRuleta: null,
+        showRuleta: false,
       };
     }
 
@@ -521,6 +534,15 @@ function gameReducer(state: GameState, action: Action): GameState {
     case 'HIDE_VIDENTE_MODAL':
       return { ...state, showVidenteModal: false };
 
+    case 'SET_PENDING_OBJETO_RULETA':
+      return { ...state, pendingObjetoRuleta: action.data };
+
+    case 'SHOW_RULETA':
+      return { ...state, showRuleta: true };
+
+    case 'HIDE_RULETA':
+      return { ...state, showRuleta: false };
+
     default:
       return state;
   }
@@ -554,6 +576,8 @@ const initialState: GameState = {
   videnteTiradas: null,
   showVidenteModal: false,
   pendingMinigameResults: null,
+  pendingObjetoRuleta: null,
+  showRuleta: false,
 };
 
 // -------------------------------------------------------------------
@@ -580,7 +604,7 @@ export interface GameContextType {
   markItemPurchased: (item: string) => void;
   /** BoardOverlay llama a esto cuando termina la cadena de animación de un jugador.
    *  isLocalPlayer=true → si procede, se envía end_round automáticamente. */
-  notifyAnimationEnded: (isLocalPlayer: boolean) => void;
+  notifyAnimationEnded: (username: string) => void;
   /** true mientras cualquier ficha esté animándose en el tablero */
   isAnyoneAnimating: boolean;
 
@@ -613,6 +637,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const submittedDobleNadaBetRef = useRef<number | null>(null);
   const playersRef = useRef<GameState['players']>({});
   const dobleNadaResultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingObjetoRuletaRef = useRef<GameState['pendingObjetoRuleta']>(null);
 
   useEffect(() => {
     awaitingEndRoundRef.current = state.awaitingEndRound;
@@ -633,6 +658,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     playersRef.current = state.players;
   }, [state.players]);
+
+  useEffect(() => {
+    pendingObjetoRuletaRef.current = state.pendingObjetoRuleta;
+  }, [state.pendingObjetoRuleta]);
 
   const sendMovePlayer = useCallback(() => {
     const ws = getGameSocket();
@@ -906,6 +935,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             }
             break;
           }
+
+          case 'obtener_objeto': {
+            dispatch({ 
+              type: 'SET_PENDING_OBJETO_RULETA', 
+              data: { 
+                user: data.user as string, 
+                objeto: data.objeto as string, 
+                descripcion: data.descripcion as string 
+              } 
+            });
+            break;
+          }
         }
       } catch {
         // Mensaje no-JSON u otros errores → ignorar
@@ -918,11 +959,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   /** Llamado por BoardOverlay al finalizar la cadena de animación de un jugador.
    *  Si es el jugador local y está esperando end_round, lo envía automáticamente. */
-  const notifyAnimationEnded = useCallback((isLocalPlayer: boolean) => {
+  const notifyAnimationEnded = useCallback((username: string) => {
+    const isLocalPlayer = username === state.myUsername;
     const pendingBoardMinigame = pendingBoardMinigameRef.current;
     if (pendingBoardMinigame?.type === 'Doble o Nada') {
       if (isLocalPlayer && pendingBoardMinigame.user === state.myUsername) {
         dispatch({ type: 'OPEN_DOBLE_NADA' });
+      }
+      return;
+    }
+
+    // Si hay una ruleta pendiente para este jugador
+    const pendingRuleta = pendingObjetoRuletaRef.current;
+    if (pendingRuleta && pendingRuleta.user === username) {
+      if (isLocalPlayer) {
+        dispatch({ type: 'SHOW_RULETA' });
+      } else {
+        // Espectador: esperar 2 segundos antes de mostrar la ruleta
+        setTimeout(() => {
+          dispatch({ type: 'SHOW_RULETA' });
+        }, 2000);
       }
       return;
     }
@@ -934,7 +990,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => {
       dispatch({ type: 'SET_ANYONE_ANIMATING', value: false });
     }, POST_ANIMATION_DELAY_MS);
-  }, [sendEndRound, state.myUsername]);
+  }, [sendEndRound, state.myUsername, state.pendingObjetoRuleta]);
 
   const sendScoreReflejos = useCallback((reactionTimeMs: number) => {
     const ws = getGameSocket();

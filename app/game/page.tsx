@@ -15,6 +15,7 @@ import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
 import BanqueroRoboModal from "@/features/board/components/BanqueroRoboModal";
 import VidenteDadosModal from "@/features/board/components/VidenteDadosModal";
 import MinigameResultOverlay from "@/features/board/components/MinigameResultOverlay";
+import RuletaUI from "@/features/board/components/RuletaUI";
 
 // Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
 const WS_NAME_TO_ID: Record<string, string> = {
@@ -172,6 +173,42 @@ function MinigameResultController() {
   );
 }
 
+/** Muestra la ruleta de objetos cuando el jugador cae en la casilla correspondiente. */
+function RuletaController() {
+  const { state, myPlayer, sendEndRound, dispatch } = useGameContext();
+
+  if (!state.showRuleta || !state.pendingObjetoRuleta) return null;
+
+  const isSpectator = state.pendingObjetoRuleta.user !== myPlayer?.username;
+
+  const handleAction = (result: { name: string; emoji: string }) => {
+    if (!isSpectator) {
+      const ws = getGameSocket();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ 
+          action: "anyadir_objeto", 
+          payload: { objeto: result.name } 
+        }));
+      }
+      // Limpiar estado y terminar turno
+      dispatch({ type: 'SET_PENDING_OBJETO_RULETA', data: null });
+      dispatch({ type: 'HIDE_RULETA' });
+      sendEndRound();
+    } else {
+      // Espectador solo limpia la UI
+      dispatch({ type: 'HIDE_RULETA' });
+    }
+  };
+
+  return (
+    <RuletaUI 
+      targetPrize={state.pendingObjetoRuleta.objeto}
+      isSpectator={isSpectator}
+      onAction={handleAction}
+    />
+  );
+}
+
 export default function GamePage() {
   const [lobbyPlayers] = useState<unknown[]>(() => getLobbyPlayers());
   const [unavailableRoles, setUnavailableRoles] = useState<string[]>([]);
@@ -302,6 +339,9 @@ export default function GamePage() {
 
       {/* Scoreboard de resultados del minijuego */}
       <MinigameResultController />
+
+      {/* Ruleta de objetos */}
+      <RuletaController />
 
       {/* Overlay de Minijuegos de Orden */}
       {activeMinigame && (

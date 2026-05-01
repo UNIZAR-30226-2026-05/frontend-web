@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState} from "react";
+import React, { useState, useEffect } from "react";
 import PixelButton from "@/components/UI/PixelButton";
 
 const PREMIOS = [
@@ -11,11 +11,13 @@ const PREMIOS = [
 ];
 
 interface RuletaUIProps {
+  targetPrize?: string;
+  isSpectator?: boolean;
   onAction?: (result: { name: string; emoji: string }) => void;
   onClose?: () => void;
 }
 
-export default function RuletaUI({ onAction, onClose }: RuletaUIProps) {
+export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }: RuletaUIProps) {
   const numPremios = PREMIOS.length;
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -28,28 +30,56 @@ export default function RuletaUI({ onAction, onClose }: RuletaUIProps) {
     setIsSpinning(true);
     setShowResult(false);
     
-    // Multiple full spins (5-8) + random extra angle
-    const extraDegrees = Math.floor(Math.random() * 360);
-    const totalNewRotation = rotation + (360 * (6 + Math.floor(Math.random() * 4))) + extraDegrees;
+    // Deterministic spin based on targetPrize
+    let targetIndex = 0;
+    if (targetPrize) {
+      const foundIndex = PREMIOS.findIndex(p => p.name === targetPrize);
+      if (foundIndex !== -1) targetIndex = foundIndex;
+    }
+
+    const step = 360 / numPremios;
+    // We want the wheel to land such that targetIndex is at the top (angle 0)
+    // beta is the angle on the wheel that will be at the top.
+    // beta = (targetIndex * step) + (step / 2) for the center of the segment.
+    const beta = targetIndex * step + step / 2;
+    const extraDegrees = (360 - beta) % 360;
+    
+    // 6 full spins + exactly extraDegrees
+    const totalNewRotation = rotation + (360 * 6) + extraDegrees;
     
     setRotation(totalNewRotation);
     
     const transitionDuration = 5000; // Longer for dramatic effect
     setTimeout(() => {
       const finalRotationNormalized = totalNewRotation % 360;
-      const beta = (360 - (finalRotationNormalized % 360)) % 360;
-      const step = 360 / numPremios;
-      const index = Math.floor(beta / step);
+      const betaFinal = (360 - (finalRotationNormalized % 360)) % 360;
+      const index = Math.floor(betaFinal / step);
       
       setWinningIndex(index);
       setIsSpinning(false);
       setShowResult(true);
+
+      // Spectator auto-dismiss
+      if (isSpectator && onAction) {
+        setTimeout(() => {
+          onAction({ 
+            name: PREMIOS[index].name, 
+            emoji: PREMIOS[index].emoji 
+          });
+        }, 3000); // 3 seconds of showing where it stopped
+      }
       
       console.log(`[Ruleta Debug] 
         Selection: ${PREMIOS[index].name}
-        Pointer at: ${beta.toFixed(2)}deg`);
+        Pointer at: ${betaFinal.toFixed(2)}deg`);
     }, transitionDuration + 100); 
   };
+
+  useEffect(() => {
+    if (isSpectator && !isSpinning && !showResult) {
+      spin();
+    }
+  }, [isSpectator]);
 
   const handleAccept = () => {
     if (winningIndex !== null && onAction) {
@@ -123,16 +153,18 @@ export default function RuletaUI({ onAction, onClose }: RuletaUIProps) {
         </div>
 
         <div className="flex flex-col items-center gap-6 w-full">
-            <PixelButton 
-                variant="purple" 
-                onClick={spin}
-                disabled={isSpinning}
-                className={`min-w-[240px] h-16 text-2xl transition-all ${isSpinning ? 'opacity-50 brightness-50' : 'hover:scale-105 active:scale-95'}`}
-            >
-                {isSpinning ? "GIRANDO..." : "¡GIRAR!"}
-            </PixelButton>
+            {!isSpectator && (
+              <PixelButton 
+                  variant="purple" 
+                  onClick={spin}
+                  disabled={isSpinning}
+                  className={`min-w-[240px] h-16 text-2xl transition-all ${isSpinning ? 'opacity-50 brightness-50' : 'hover:scale-105 active:scale-95'}`}
+              >
+                  {isSpinning ? "GIRANDO..." : "¡GIRAR!"}
+              </PixelButton>
+            )}
             
-            {!isSpinning && !showResult && (
+            {!isSpinning && !showResult && !isSpectator && (
                 <button 
                     onClick={onClose}
                     className="text-white/30 hover:text-white text-xs uppercase tracking-widest border-b border-transparent hover:border-white transition-all shadow-sm"
@@ -143,7 +175,7 @@ export default function RuletaUI({ onAction, onClose }: RuletaUIProps) {
         </div>
 
         {/* Result Overlay */}
-        {showResult && (
+        {showResult && !isSpectator && (
             <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-3xl animate-in zoom-in duration-300">
                 <div className="bg-[#1e293b] border-4 border-[#fbbf24] p-10 flex flex-col items-center gap-6 shadow-[0_0_50px_rgba(251,191,36,0.5)]">
                     <p className="text-white/60 text-xs uppercase tracking-[0.3em]">Has obtenido un objeto:</p>
