@@ -400,7 +400,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         penaltyTurns: newPenaltyTurns,
         // Si el jugador pasó sin moverse (bloqueado), ninguna animación está pendiente.
         // Garantizamos isAnyoneAnimating = false para que el siguiente pueda tirar de inmediato.
-        isAnyoneAnimating: state.hasMoved ? state.isAnyoneAnimating : false,
+        isAnyoneAnimating: false,
         hasUsedAbility: false,
         showVidenteModal: false,
         pendingObjetoRuleta: null,

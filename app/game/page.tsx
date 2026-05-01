@@ -186,10 +186,12 @@ function RuletaController() {
       // Limpiar estado y terminar turno (el backend aplica el efecto automáticamente)
       dispatch({ type: 'SET_PENDING_OBJETO_RULETA', data: null });
       dispatch({ type: 'HIDE_RULETA' });
+      dispatch({ type: 'SET_ANYONE_ANIMATING', value: false });
       sendEndRound();
     } else {
       // Espectador solo limpia la UI
       dispatch({ type: 'HIDE_RULETA' });
+      dispatch({ type: 'SET_ANYONE_ANIMATING', value: false });
     }
   };
 
