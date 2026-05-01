@@ -4,10 +4,10 @@ import React, { useState, useEffect } from "react";
 import PixelButton from "@/components/UI/PixelButton";
 
 const PREMIOS = [
-  { id: 1, name: "Avanzar Casillas", emoji: "👞", color: "#FF4D4D" }, // Rojo
-  { id: 2, name: "Mejorar Dados",     emoji: "🎲", color: "#4DFF4D" }, // Verde
-  { id: 3, name: "Barrera",           emoji: "🚧", color: "#4D4DFF" }, // Azul
-  { id: 4, name: "Salvavidas bloqueo", emoji: "🔒", color: "#FFFF4D" }, // Amarillo
+  { id: 1, name: "+3 Casillas", emoji: "⏩", color: "#10b981" }, // Esmeralda
+  { id: 2, name: "-3 Casillas", emoji: "⏪", color: "#f43f5e" }, // Rosa/Rojo
+  { id: 3, name: "+3 Monedas",  emoji: "💰", color: "#f59e0b" }, // Ambar
+  { id: 4, name: "-3 Monedas",  emoji: "💸", color: "#6366f1" }, // Indigo
 ];
 
 interface RuletaUIProps {
@@ -96,10 +96,10 @@ export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }
         
         <div className="text-center">
             <h3 className="text-[#fbbf24] text-4xl tracking-[0.2em] uppercase drop-shadow-[0_4px_0_rgba(0,0,0,0.8)]">
-                RUTA DE OBJETOS
+                RULETA DE LA SUERTE
             </h3>
             <p className="text-white/40 text-[10px] uppercase tracking-widest mt-2">
-                Gira para conseguir un item de la tienda
+                ¡Consigue efectos directos para tu partida!
             </p>
         </div>
 
@@ -178,7 +178,7 @@ export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }
         {showResult && !isSpectator && (
             <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-3xl animate-in zoom-in duration-300">
                 <div className="bg-[#1e293b] border-4 border-[#fbbf24] p-10 flex flex-col items-center gap-6 shadow-[0_0_50px_rgba(251,191,36,0.5)]">
-                    <p className="text-white/60 text-xs uppercase tracking-[0.3em]">Has obtenido un objeto:</p>
+                    <p className="text-white/60 text-xs uppercase tracking-[0.3em]">Has obtenido un efecto:</p>
                     <div className="flex flex-col items-center gap-4">
                         <span className="text-8xl animate-bounce">{PREMIOS[winningIndex!].emoji}</span>
                         <h4 className="text-white text-2xl uppercase tracking-widest text-center max-w-[250px]">

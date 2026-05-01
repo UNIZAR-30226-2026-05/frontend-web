@@ -183,14 +183,7 @@ function RuletaController() {
 
   const handleAction = (result: { name: string; emoji: string }) => {
     if (!isSpectator) {
-      const ws = getGameSocket();
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ 
-          action: "anyadir_objeto", 
-          payload: { objeto: result.name } 
-        }));
-      }
-      // Limpiar estado y terminar turno
+      // Limpiar estado y terminar turno (el backend aplica el efecto automáticamente)
       dispatch({ type: 'SET_PENDING_OBJETO_RULETA', data: null });
       dispatch({ type: 'HIDE_RULETA' });
       sendEndRound();
