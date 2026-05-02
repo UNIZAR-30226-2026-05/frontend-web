@@ -1232,7 +1232,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           case 'dilema_resultados': {
             dispatch({
               type: 'DILEMA_RESULTADOS',
-              resultados: data.resultados as Record<string, 'cooperar' | 'traicionar'>,
+              resultados: data.decisiones as Record<string, 'cooperar' | 'traicionar'>,
             });
             break;
           }
