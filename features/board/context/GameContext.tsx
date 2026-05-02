@@ -229,7 +229,8 @@ export type Action =
   | { type: 'POKER_RESULTADOS'; resultados: PokerResultado }
   | { type: 'POKER_MARK_ACTED' }
   | { type: 'SET_SHOW_BARRERA_MODAL', value: boolean }
-  | { type: 'DILEMA_RESULTADOS'; resultados: Record<string, 'cooperar' | 'traicionar'> };
+  | { type: 'DILEMA_RESULTADOS'; resultados: Record<string, 'cooperar' | 'traicionar'> }
+  | { type: 'ADD_PENALTY_TURN'; user: string; amount: number };
 
 
 // -------------------------------------------------------------------
@@ -506,6 +507,12 @@ function gameReducer(state: GameState, action: Action): GameState {
 
     case 'SET_PENALTY_TURNS':
       return { ...state, penaltyTurns: action.turns };
+
+    case 'ADD_PENALTY_TURN':
+      if (action.user === state.myUsername) {
+        return { ...state, penaltyTurns: state.penaltyTurns + action.amount };
+      }
+      return state;
 
     case 'CLEAR_PENALTY_TURNS':
       return { ...state, penaltyTurns: 0, landedOnBarrera: false };
@@ -1138,6 +1145,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             break;
           }
 
+          case 'penalizacion_anyadida': {
+            const myUsername = sessionStorage.getItem('username');
+            const affectedUser = data.user as string;
+            const amount = (data.cantidad as number) || 1;
+            if (affectedUser === myUsername) {
+              dispatch({ type: 'ADD_PENALTY_TURN', user: affectedUser, amount });
+            }
+            break;
+          }
+
           case 'turn_skipped': {
             dispatch({ type: 'REMOTE_SKIPPED', user: data.user as string });
             break;
@@ -1386,7 +1403,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     
     const payload: any = { objeto };
-    if (objeto === 'Barrera' && targetUser) {
+    if (targetUser) {
       payload.penalizar_a = targetUser;
     }
     
