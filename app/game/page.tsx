@@ -17,6 +17,7 @@ import VidenteDadosModal from "@/features/board/components/VidenteDadosModal";
 import MinigameResultOverlay from "@/features/board/components/MinigameResultOverlay";
 import RuletaUI from "@/features/board/components/RuletaUI";
 import PokerUI from "@/features/minigames/components/PokerUI";
+import BarreraModal from "@/features/board/components/BarreraModal";
 
 // Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
 const WS_NAME_TO_ID: Record<string, string> = {
@@ -238,6 +239,32 @@ function PokerController() {
   );
 }
 
+/** Muestra el modal de la barrera para elegir objetivo. */
+function BarreraController() {
+  const { state, playerOrder, sendUsarObjeto, dispatch } = useGameContext();
+
+  if (!state.showBarreraModal) return null;
+
+  // Filtrar: todos menos yo y menos el escapista (el backend lo bloquea)
+  const targetPlayers = playerOrder
+    .filter(p => p.username !== state.myUsername && p.character !== 'escapista')
+    .map(p => ({
+      username: p.username,
+      character: p.character ?? 'banquero',
+    }));
+
+  return (
+    <BarreraModal
+      targetPlayers={targetPlayers}
+      onSelect={(targetUser) => {
+        sendUsarObjeto('Barrera', targetUser);
+        dispatch({ type: 'SET_SHOW_BARRERA_MODAL', value: false });
+      }}
+      onClose={() => dispatch({ type: 'SET_SHOW_BARRERA_MODAL', value: false })}
+    />
+  );
+}
+
 export default function GamePage() {
   const [lobbyPlayers] = useState<unknown[]>(() => getLobbyPlayers());
   const [unavailableRoles, setUnavailableRoles] = useState<string[]>([]);
@@ -377,6 +404,9 @@ export default function GamePage() {
 
       {/* Mano de Poker */}
       <PokerController />
+
+      {/* Modal de Barrera */}
+      <BarreraController />
 
       {/* Overlay de Minijuegos de Orden */}
       {activeMinigame && (

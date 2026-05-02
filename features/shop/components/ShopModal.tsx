@@ -26,7 +26,7 @@ interface ShopModalProps {
 }
 
 export default function ShopModal({ onClose }: ShopModalProps) {
-  const { myPlayer, state, markItemPurchased } = useGameContext();
+  const { myPlayer, state, markItemPurchased, dispatch } = useGameContext();
 
   const penaltyTurns = state.penaltyTurns;
   const isBlocked = penaltyTurns > 0;
@@ -43,9 +43,16 @@ export default function ShopModal({ onClose }: ShopModalProps) {
     if (!myPlayer || myPlayer.balance < item.price) return;
 
     const isSalvavidas = item.name === 'Salvavidas bloqueo';
+    const isBarrera = item.name === 'Barrera';
+
     if (isSalvavidas) {
       // El backend gestiona compra y uso en un único action
       ws.send(JSON.stringify({ action: 'usar_salvavidas', payload: { objeto: item.name } }));
+    } else if (isBarrera) {
+      ws.send(JSON.stringify({ action: 'comprar_objeto', payload: { objeto: item.name } }));
+      // En lugar de usarlo inmediatamente, abrimos el modal de selección de objetivo
+      dispatch({ type: 'SET_SHOW_BARRERA_MODAL', value: true });
+      onClose(); // Cerramos la tienda para que se vea el modal de selección
     } else {
       ws.send(JSON.stringify({ action: 'comprar_objeto', payload: { objeto: item.name } }));
       ws.send(JSON.stringify({ action: 'usar_objeto', payload: { objeto: item.name } }));

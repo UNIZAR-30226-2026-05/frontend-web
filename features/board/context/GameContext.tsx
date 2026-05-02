@@ -172,6 +172,8 @@ interface GameState {
   pokerState: PokerState;
   /** Resultados del dilema del prisionero (username -> decision) */
   dilemaResultados: Record<string, 'cooperar' | 'traicionar'> | null;
+  /** Mostrar el modal de la barrera */
+  showBarreraModal: boolean;
 }
 
 // -------------------------------------------------------------------
@@ -226,6 +228,7 @@ export type Action =
   | { type: 'POKER_APUESTA_ACTUALIZADA'; user: string; apuestaObjetivo: number }
   | { type: 'POKER_RESULTADOS'; resultados: PokerResultado }
   | { type: 'POKER_MARK_ACTED' }
+  | { type: 'SET_SHOW_BARRERA_MODAL', value: boolean }
   | { type: 'DILEMA_RESULTADOS'; resultados: Record<string, 'cooperar' | 'traicionar'> };
 
 
@@ -268,6 +271,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         showPoker: false,
         pokerState: { ...initialPokerState },
         dilemaResultados: null,
+        showBarreraModal: false,
       };
     }
 
@@ -412,6 +416,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         showPoker: false,
         pokerState: { ...initialPokerState },
         dilemaResultados: null,
+        showBarreraModal: false,
       };
     }
 
@@ -479,6 +484,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         showDilema: false,
         showPoker: false,
         dilemaResultados: null,
+        showBarreraModal: false,
       };
     }
 
@@ -601,10 +607,14 @@ function gameReducer(state: GameState, action: Action): GameState {
         submittedDobleNadaBet: null,
         dobleNadaResult: null,
         hasUsedAbility: false,
+        showBarreraModal: false,
       };
 
     case 'SET_SHOW_BANQUERO_MODAL':
       return { ...state, showBanqueroModal: action.value };
+
+    case 'SET_SHOW_BARRERA_MODAL':
+      return { ...state, showBarreraModal: action.value };
 
     case 'MARK_ABILITY_USED':
       return { ...state, hasUsedAbility: true };
@@ -786,6 +796,7 @@ const initialState: GameState = {
   showPoker: false,
   pokerState: { ...initialPokerState },
   dilemaResultados: null,
+  showBarreraModal: false,
 };
 
 // -------------------------------------------------------------------
@@ -825,6 +836,8 @@ export interface GameContextType {
   sendScoreDilema: (decision: "cooperar" | "traicionar") => void;
   /** Enviar acción de poker (apostar/retirarse) */
   sendPokerAction: (decision: 'apostar' | 'retirarse', cantidad: number) => void;
+  /** Enviar uso de objeto con objetivo opcional (para Barrera) */
+  sendUsarObjeto: (objeto: string, targetUser?: string) => void;
 }
 
 export const GameContext = createContext<GameContextType | null>(null);
@@ -1368,6 +1381,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'POKER_MARK_ACTED' });
   }, []);
 
+  const sendUsarObjeto = useCallback((objeto: string, targetUser?: string) => {
+    const ws = getGameSocket();
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    
+    const payload: any = { objeto };
+    if (objeto === 'Barrera' && targetUser) {
+      payload.penalizar_a = targetUser;
+    }
+    
+    ws.send(JSON.stringify({ 
+      action: 'usar_objeto', 
+      payload 
+    }));
+  }, []);
+
   // Datos derivados
   const myPlayer = state.myUsername ? (state.players[state.myUsername] ?? null) : null;
   const isMyTurn =
@@ -1377,7 +1405,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
-        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendScoreDobleNada, sendIniRound, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch, sendRoboBanquero, sendScoreDilema, sendPokerAction }}>
+        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendScoreDobleNada, sendIniRound, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch, sendRoboBanquero, sendScoreDilema, sendPokerAction, sendUsarObjeto }}>
 
 
 
