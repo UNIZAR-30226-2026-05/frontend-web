@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useGameContext } from "@/features/board/context/GameContext";
 import PixelButton from "@/components/UI/PixelButton";
@@ -12,7 +12,8 @@ interface DilemaPrisioneroUIProps {
 import Image from "next/image";
 
 export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps) {
-  const { state, myPlayer } = useGameContext();
+  const { state, myPlayer, dispatch, sendEndRound } = useGameContext();
+  const [voted, setVoted] = useState(false);
 
   // Calcular rival: mismo sitio, distinto nombre
   const rivalPlayer = Object.values(state.players).find(
@@ -21,6 +22,10 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
 
   const miPersonaje = myPlayer?.character || 'banquero';
   const personajeRival = rivalPlayer?.character || 'banquero';
+
+  // Resultados una vez que ambos han votado
+  const miResultado = state.dilemaResultados?.[myPlayer?.username || ''];
+  const rivalResultado = state.dilemaResultados?.[rivalPlayer?.username || ''];
 
   const pathname = usePathname();
   const isDebugRoute = pathname.includes("debug");
@@ -40,8 +45,21 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
   const isDebug = isDebugRoute && showDebug;
 
   const handleChoice = (choice: "cooperar" | "traicionar") => {
+    setVoted(true);
     onAction({ score: choice });
   };
+
+  useEffect(() => {
+    if (state.dilemaResultados) {
+      const timer = setTimeout(() => {
+        dispatch({ type: 'HIDE_DILEMA' });
+        if (state.awaitingEndRound) {
+          sendEndRound();
+        }
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [state.dilemaResultados, dispatch, state.awaitingEndRound, sendEndRound]);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden font-pixel flex flex-col items-center justify-center">
@@ -157,10 +175,12 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
       {/* Texto Central Dorado (Top) */}
       <div className="absolute top-24 z-20 text-center px-4">
         <h3 className="text-amber-400 text-4xl md:text-6xl font-bold tracking-[0.1em] drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)] uppercase">
-          ¿COOPERAR O TRAICIONAR?
+          {state.dilemaResultados ? "RESULTADOS" : "¿COOPERAR O TRAICIONAR?"}
         </h3>
         <p className="text-white/60 text-lg md:text-xl mt-4 uppercase tracking-[0.4em] drop-shadow-md">
-          El destino de ambos está en tus manos
+          {state.dilemaResultados 
+            ? "El destino ha sido sellado" 
+            : "El destino de ambos está en tus manos"}
         </p>
       </div>
 
@@ -195,6 +215,15 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
                 maskPosition: "center"
               }}
             />
+
+            {/* Burbuja de resultado Local */}
+            {state.dilemaResultados && miResultado && (
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-black/80 border-2 border-white p-3 shadow-xl animate-in zoom-in duration-300">
+                <span className={`text-2xl uppercase ${miResultado === 'cooperar' ? 'text-green-400' : 'text-red-400'}`}>
+                  {miResultado}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -227,6 +256,15 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
                 maskPosition: "center"
               }}
             />
+
+            {/* Burbuja de resultado Rival */}
+            {state.dilemaResultados && rivalResultado && (
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-black/80 border-2 border-white p-3 shadow-xl animate-in zoom-in duration-300">
+                <span className={`text-2xl uppercase ${rivalResultado === 'cooperar' ? 'text-green-400' : 'text-red-400'}`}>
+                  {rivalResultado}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -234,45 +272,55 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
       {/* Botones de Decisión (Posicionados sobre las "mesas") */}
       <div className="relative z-20 w-full h-full pointer-events-none">
         
-        {/* Traicionar (Izquierda) */}
-        <div 
-          className="absolute -translate-y-1/2 pointer-events-auto"
-          style={{ left: `${debugButSideGap}%`, top: `${debugButTop}%` }}
-        >
-          <div className="flex flex-col items-center gap-6">
-            <PixelButton 
-              variant="red" 
-              onClick={() => handleChoice("traicionar")}
-              style={{ width: `${debugButW}px`, height: `${debugButH}px` }}
-              className="text-3xl md:text-4xl shadow-[0_12px_0_rgb(153,27,27)] hover:scale-105 active:translate-y-1 active:shadow-none transition-all uppercase"
+        {!voted && !state.dilemaResultados ? (
+          <>
+            {/* Traicionar (Izquierda) */}
+            <div 
+              className="absolute -translate-y-1/2 pointer-events-auto"
+              style={{ left: `${debugButSideGap}%`, top: `${debugButTop}%` }}
             >
-              TRAICIONAR
-            </PixelButton>
-            <span className="text-red-500 bg-black/60 px-4 py-1 text-sm tracking-widest uppercase border border-red-500/30">
-              SOLO YO
-            </span>
-          </div>
-        </div>
+              <div className="flex flex-col items-center gap-6">
+                <PixelButton 
+                  variant="red" 
+                  onClick={() => handleChoice("traicionar")}
+                  style={{ width: `${debugButW}px`, height: `${debugButH}px` }}
+                  className="text-3xl md:text-4xl shadow-[0_12px_0_rgb(153,27,27)] hover:scale-105 active:translate-y-1 active:shadow-none transition-all uppercase"
+                >
+                  TRAICIONAR
+                </PixelButton>
+                <span className="text-red-500 bg-black/60 px-4 py-1 text-sm tracking-widest uppercase border border-red-500/30">
+                  SOLO YO
+                </span>
+              </div>
+            </div>
 
-        {/* Cooperar (Derecha) */}
-        <div 
-          className="absolute -translate-y-1/2 pointer-events-auto"
-          style={{ right: `${debugButSideGap}%`, top: `${debugButTop}%` }}
-        >
-          <div className="flex flex-col items-center gap-6">
-            <PixelButton 
-              variant="green" 
-              onClick={() => handleChoice("cooperar")}
-              style={{ width: `${debugButW}px`, height: `${debugButH}px` }}
-              className="text-3xl md:text-4xl shadow-[0_12px_0_rgb(22,101,52)] hover:scale-105 active:translate-y-1 active:shadow-none transition-all uppercase"
+            {/* Cooperar (Derecha) */}
+            <div 
+              className="absolute -translate-y-1/2 pointer-events-auto"
+              style={{ right: `${debugButSideGap}%`, top: `${debugButTop}%` }}
             >
-              COOPERAR
-            </PixelButton>
-            <span className="text-green-500 bg-black/60 px-4 py-1 text-sm tracking-widest uppercase border border-green-500/30">
-              NOSOTROS
-            </span>
+              <div className="flex flex-col items-center gap-6">
+                <PixelButton 
+                  variant="green" 
+                  onClick={() => handleChoice("cooperar")}
+                  style={{ width: `${debugButW}px`, height: `${debugButH}px` }}
+                  className="text-3xl md:text-4xl shadow-[0_12px_0_rgb(22,101,52)] hover:scale-105 active:translate-y-1 active:shadow-none transition-all uppercase"
+                >
+                  COOPERAR
+                </PixelButton>
+                <span className="text-green-500 bg-black/60 px-4 py-1 text-sm tracking-widest uppercase border border-green-500/30">
+                  NOSOTROS
+                </span>
+              </div>
+            </div>
+          </>
+        ) : !state.dilemaResultados ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="bg-black/80 border-4 border-amber-500 p-8 animate-pulse shadow-[0_0_30px_rgba(251,191,36,0.3)]">
+              <p className="text-amber-400 text-3xl tracking-widest uppercase">Esperando al rival...</p>
+            </div>
           </div>
-        </div>
+        ) : null}
 
       </div>
     </div>

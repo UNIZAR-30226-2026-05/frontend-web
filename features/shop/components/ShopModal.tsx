@@ -1,23 +1,24 @@
 "use client";
 
-import React, {} from 'react';
+import React, { } from 'react';
 import PixelButton from '@/components/UI/PixelButton';
 import { useGameContext } from '@/features/board/context/GameContext';
 import { getGameSocket } from '@/lib/gameSocket';
+import Image from 'next/image';
 
 interface ShopItem {
   id: number;
   name: string;       // nombre exacto de BD
-  emoji: string;
+  image: string;
   price: number;
   description: string;
 }
 
 const SHOP_ITEMS: ShopItem[] = [
-  { id: 1, name: "Avanzar Casillas",      emoji: "👞", price: 1,  description: "Avanza una casilla extra tras tirar los dados" },
-  { id: 2, name: "Mejorar Dados",          emoji: "🎲", price: 3,  description: "Mejora tu segundo dado un nivel para esta tirada" },
-  { id: 3, name: "Barrera",               emoji: "🚧", price: 10, description: "Añade un turno de penalización al jugador elegido" },
-  { id: 4, name: "Salvavidas bloqueo",    emoji: "🔒", price: 10, description: "Anula el efecto de una casilla de bloqueo (este objeto no anula la barrera impuesta por otro jugador)" },
+  { id: 1, name: "Avanzar Casillas", image: "/items/item_avanzar.png", price: 1, description: "Avanza una casilla extra tras tirar los dados" },
+  { id: 2, name: "Mejorar Dados", image: "/items/item_dados.png", price: 3, description: "Mejora tu segundo dado un nivel para esta tirada" },
+  { id: 3, name: "Barrera", image: "/items/item_barrera.png", price: 10, description: "Añade un turno de penalización al jugador elegido" },
+  { id: 4, name: "Salvavidas bloqueo", image: "/items/item_salvavidas.png", price: 10, description: "Anula el efecto de una casilla de bloqueo (este objeto no anula la barrera impuesta por otro jugador)" },
 ];
 
 interface ShopModalProps {
@@ -26,7 +27,7 @@ interface ShopModalProps {
 
 export default function ShopModal({ onClose }: ShopModalProps) {
   const { myPlayer, state, markItemPurchased } = useGameContext();
-  
+
   const penaltyTurns = state.penaltyTurns;
   const isBlocked = penaltyTurns > 0;
   const hasRolled = state.hasMoved;
@@ -61,14 +62,14 @@ export default function ShopModal({ onClose }: ShopModalProps) {
           <div className="flex flex-col gap-1">
             <h2 className="text-3xl font-pixel text-white tracking-[0.2em] uppercase">Tienda de Objetos</h2>
             <p className="text-white/40 font-pixel text-xs uppercase tracking-widest">
-                Equípate para la victoria en Snow Party
+              Equípate para la victoria en Snow Party
             </p>
           </div>
           <div className="flex items-center gap-6">
             {myPlayer && (
               <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-lg border-2 border-amber-500/30">
                 <span className="text-amber-400 font-pixel text-2xl drop-shadow-md">
-                    {myPlayer.balance}¢
+                  {myPlayer.balance}¢
                 </span>
               </div>
             )}
@@ -115,10 +116,10 @@ export default function ShopModal({ onClose }: ShopModalProps) {
 
               const disabledReason =
                 (isBlocked && !isSalvavidasBloqueo) ? 'BLOQUEADO' :
-                (isMejorarDados && isFirstPlace) ? 'BLOQUEADO: VAS 1º' :
-                (isAvanzar && state.hasMoved) ? 'Solo antes de tirar' :
-                (isSalvavidasBloqueo && !isBlocked) ? 'No estás bloqueado' :
-                '';
+                  (isMejorarDados && isFirstPlace) ? 'BLOQUEADO: VAS 1º' :
+                    (isAvanzar && state.hasMoved) ? 'Solo antes de tirar' :
+                      (isSalvavidasBloqueo && !isBlocked) ? 'No estás bloqueado' :
+                        '';
 
               return (
                 <div
@@ -126,21 +127,27 @@ export default function ShopModal({ onClose }: ShopModalProps) {
                   className={`flex-1 w-64 bg-slate-800 border-4 ${disabled ? 'border-slate-700 opacity-60' : 'border-white hover:border-amber-400 hover:bg-slate-700'} p-6 flex flex-col items-center text-center gap-4 transition-all duration-200 group relative`}
                 >
                   <div className="relative mb-2">
-                    <span className="text-7xl group-hover:scale-110 transition-transform duration-300 block" role="img">
-                      {item.emoji}
-                    </span>
+                    <div className="relative w-24 h-24 group-hover:scale-110 transition-transform duration-300">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        className="object-contain pixelated"
+                        unoptimized
+                      />
+                    </div>
                     {purchaseCount > 0 && (
                       <span className="absolute -top-2 -right-3 bg-yellow-400 text-black font-pixel text-xs px-1.5 py-0.5 border-2 border-black shadow-lg">
                         x{purchaseCount}
                       </span>
                     )}
                     {isFirstPlace && isMejorarDados && (
-                        <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center rotate-[-15deg]">
-                            <div className="bg-red-600 text-white font-pixel text-[10px] px-2 py-1 border-2 border-white shadow-xl">PROHIBIDO</div>
-                        </div>
+                      <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center rotate-[-15deg]">
+                        <div className="bg-red-600 text-white font-pixel text-[10px] px-2 py-1 border-2 border-white shadow-xl">PROHIBIDO</div>
+                      </div>
                     )}
                   </div>
-                  
+
                   <div className="flex-1 flex flex-col gap-2">
                     <h3 className="text-white font-pixel text-lg leading-tight uppercase tracking-wider">
                       {item.name}
@@ -172,12 +179,12 @@ export default function ShopModal({ onClose }: ShopModalProps) {
             })}
           </div>
         </div>
-        
+
         {/* Footer simple */}
         <div className="p-4 bg-slate-950/50 text-center border-t-4 border-white/10">
-            <p className="text-white/20 font-pixel text-[9px] uppercase tracking-[0.3em]">
-                Snow Party Store • In-Game Items Only
-            </p>
+          <p className="text-white/20 font-pixel text-[9px] uppercase tracking-[0.3em]">
+            Snow Party Store • In-Game Items Only
+          </p>
         </div>
       </div>
     </div>

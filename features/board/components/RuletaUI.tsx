@@ -2,18 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import PixelButton from "@/components/UI/PixelButton";
+import Image from "next/image";
 
 const PREMIOS = [
-  { id: 1, name: "+3 Casillas", emoji: "⏩", color: "#10b981" }, // Esmeralda
-  { id: 2, name: "-3 Casillas", emoji: "⏪", color: "#f43f5e" }, // Rosa/Rojo
-  { id: 3, name: "+3 Monedas",  emoji: "💰", color: "#f59e0b" }, // Ambar
-  { id: 4, name: "-3 Monedas",  emoji: "💸", color: "#6366f1" }, // Indigo
+  { id: 1, name: "+3 Casillas", image: "/items/casillas_mas.png", color: "#10b981" }, // Esmeralda
+  { id: 2, name: "-3 Casillas", image: "/items/casillas_menos.png", color: "#f43f5e" }, // Rosa/Rojo
+  { id: 3, name: "+3 Monedas",  image: "/items/monedas_mas.png", color: "#f59e0b" }, // Ambar
+  { id: 4, name: "-3 Monedas",  image: "/items/monedas_menos.png", color: "#6366f1" }, // Indigo
 ];
 
 interface RuletaUIProps {
   targetPrize?: string;
   isSpectator?: boolean;
-  onAction?: (result: { name: string; emoji: string }) => void;
+  onAction?: (result: { name: string; image: string }) => void;
   onClose?: () => void;
 }
 
@@ -64,7 +65,7 @@ export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }
         setTimeout(() => {
           onAction({ 
             name: PREMIOS[index].name, 
-            emoji: PREMIOS[index].emoji 
+            image: PREMIOS[index].image 
           });
         }, 3000); // 3 seconds of showing where it stopped
       }
@@ -85,7 +86,7 @@ export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }
     if (winningIndex !== null && onAction) {
       onAction({ 
         name: PREMIOS[winningIndex].name, 
-        emoji: PREMIOS[winningIndex].emoji 
+        image: PREMIOS[winningIndex].image 
       });
     }
   };
@@ -131,7 +132,15 @@ export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }
                             className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-start pt-10"
                             style={{ transform: `rotate(${i * 90 + 45}deg)` }}
                         >
-                            <span className="text-5xl drop-shadow-lg filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{item.emoji}</span>
+                            <div className="relative w-20 h-20 filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                              <Image 
+                                src={item.image} 
+                                alt={item.name} 
+                                fill 
+                                className="object-contain pixelated"
+                                unoptimized
+                              />
+                            </div>
                             <span className="text-[10px] text-black font-bold uppercase mt-2 max-w-[80px] text-center leading-tight">
                                 {item.name}
                             </span>
@@ -180,7 +189,15 @@ export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }
                 <div className="bg-[#1e293b] border-4 border-[#fbbf24] p-10 flex flex-col items-center gap-6 shadow-[0_0_50px_rgba(251,191,36,0.5)]">
                     <p className="text-white/60 text-xs uppercase tracking-[0.3em]">Has obtenido un efecto:</p>
                     <div className="flex flex-col items-center gap-4">
-                        <span className="text-8xl animate-bounce">{PREMIOS[winningIndex!].emoji}</span>
+                        <div className="relative w-32 h-32 animate-bounce">
+                          <Image 
+                            src={PREMIOS[winningIndex!].image} 
+                            alt={PREMIOS[winningIndex!].name} 
+                            fill 
+                            className="object-contain pixelated"
+                            unoptimized
+                          />
+                        </div>
                         <h4 className="text-white text-2xl uppercase tracking-widest text-center max-w-[250px]">
                             {PREMIOS[winningIndex!].name}
                         </h4>

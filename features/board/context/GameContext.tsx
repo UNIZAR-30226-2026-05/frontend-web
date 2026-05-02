@@ -170,6 +170,8 @@ interface GameState {
   showPoker: boolean;
   /** Estado completo del minijuego de poker (llenado por WS) */
   pokerState: PokerState;
+  /** Resultados del dilema del prisionero (username -> decision) */
+  dilemaResultados: Record<string, 'cooperar' | 'traicionar'> | null;
 }
 
 // -------------------------------------------------------------------
@@ -223,7 +225,8 @@ export type Action =
   | { type: 'POKER_NUEVA_FASE'; fase: string; bote: number; mesaVisible: PokerCard[]; jugadoresActivos: string[] }
   | { type: 'POKER_APUESTA_ACTUALIZADA'; user: string; apuestaObjetivo: number }
   | { type: 'POKER_RESULTADOS'; resultados: PokerResultado }
-  | { type: 'POKER_MARK_ACTED' };
+  | { type: 'POKER_MARK_ACTED' }
+  | { type: 'DILEMA_RESULTADOS'; resultados: Record<string, 'cooperar' | 'traicionar'> };
 
 
 // -------------------------------------------------------------------
@@ -264,6 +267,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         showDilema: false,
         showPoker: false,
         pokerState: { ...initialPokerState },
+        dilemaResultados: null,
       };
     }
 
@@ -405,9 +409,9 @@ function gameReducer(state: GameState, action: Action): GameState {
         pendingMinigameResults: null,
         pendingObjetoRuleta: null,
         showRuleta: false,
-        showDilema: false,
         showPoker: false,
         pokerState: { ...initialPokerState },
+        dilemaResultados: null,
       };
     }
 
@@ -474,6 +478,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         showRuleta: false,
         showDilema: false,
         showPoker: false,
+        dilemaResultados: null,
       };
     }
 
@@ -629,13 +634,13 @@ function gameReducer(state: GameState, action: Action): GameState {
 
     case 'OPEN_DILEMA':
       return { ...state, showDilema: true };
-
     case 'HIDE_DILEMA':
       return {
         ...state,
         showDilema: false,
         pendingBoardMinigame: null,
         isAnyoneAnimating: false,
+        dilemaResultados: null,
       };
 
     case 'SHOW_POKER_PENDING':
@@ -725,6 +730,12 @@ function gameReducer(state: GameState, action: Action): GameState {
         },
       };
 
+    case 'DILEMA_RESULTADOS':
+      return {
+        ...state,
+        dilemaResultados: action.resultados,
+      };
+
     default:
       return state;
   }
@@ -774,6 +785,7 @@ const initialState: GameState = {
   showDilema: false,
   showPoker: false,
   pokerState: { ...initialPokerState },
+  dilemaResultados: null,
 };
 
 // -------------------------------------------------------------------
@@ -1113,6 +1125,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             break;
           }
 
+          case 'turn_skipped': {
+            dispatch({ type: 'REMOTE_SKIPPED', user: data.user as string });
+            break;
+          }
+
           case 'penalizacion_eliminada': {
             const myUsername = sessionStorage.getItem('username');
             if ((data.user as string) === myUsername) {
@@ -1211,6 +1228,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             });
             break;
           }
+
+          case 'dilema_resultados': {
+            dispatch({
+              type: 'DILEMA_RESULTADOS',
+              resultados: data.resultados as Record<string, 'cooperar' | 'traicionar'>,
+            });
+            break;
+          }
         }
       } catch {
         // Mensaje no-JSON u otros errores → ignorar
@@ -1234,9 +1259,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (pendingBoardMinigame?.type === 'Dilema del Prisionero') {
-      if (isLocalPlayer && pendingBoardMinigame.user === state.myUsername) {
-        dispatch({ type: 'OPEN_DILEMA' });
-      }
+      dispatch({ type: 'OPEN_DILEMA' });
       return;
     }
 
@@ -1332,13 +1355,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       action: 'score_minijuego',
       payload: { score: decision },
     }));
-    dispatch({ type: 'HIDE_DILEMA' });
-    
-    // Si soy el jugador activo que movió, cierro el turno definitivamente
-    if (awaitingEndRoundRef.current) {
-      sendEndRound();
-    }
-  }, [sendEndRound]);
+    // No cerramos el modal aquí, esperamos a dilema_resultados
+  }, []);
 
   const sendPokerAction = useCallback((decision: 'apostar' | 'retirarse', cantidad: number) => {
     const ws = getGameSocket();

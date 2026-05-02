@@ -182,7 +182,7 @@ function RuletaController() {
 
   const isSpectator = state.pendingObjetoRuleta.user !== myPlayer?.username;
 
-  const handleAction = (result: { name: string; emoji: string }) => {
+  const handleAction = (result: { name: string; image: string }) => {
     if (!isSpectator) {
       // Limpiar estado y terminar turno (el backend aplica el efecto automáticamente)
       dispatch({ type: 'SET_PENDING_OBJETO_RULETA', data: null });
