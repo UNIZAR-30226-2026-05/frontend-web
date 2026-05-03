@@ -47,10 +47,11 @@ export default function ShopModal({ onClose }: ShopModalProps) {
 
     if (isSalvavidas) {
       // El backend gestiona compra y uso en un único action
-      ws.send(JSON.stringify({ action: 'usar_salvavidas', payload: { objeto: item.name } }));
-    } else if (isBarrera) {
       ws.send(JSON.stringify({ action: 'comprar_objeto', payload: { objeto: item.name } }));
-      // En lugar de usarlo inmediatamente, abrimos el modal de selección de objetivo
+    } else if (isBarrera) {
+      // No enviamos nada al backend todavía: el payload requiere penalizar_a.
+      // Se enviará un único comprar_objeto con {objeto, penalizar_a} desde sendUsarObjeto
+      // cuando el jugador confirme el objetivo en BarreraModal.
       dispatch({ type: 'SET_SHOW_BARRERA_MODAL', value: true });
       onClose(); // Cerramos la tienda para que se vea el modal de selección
     } else {

@@ -198,16 +198,22 @@ export default function ActionPanel() {
               >
                 FIN DE TURNO
               </PixelButton>
+            ) : penaltyTurns > 0 ? (
+              <PixelButton
+                variant="purple"
+                onClick={sendEndRound}
+                className="w-full py-4 uppercase text-sm"
+              >
+                BLOQUEADO ({penaltyTurns}) — PASAR
+              </PixelButton>
             ) : (
               <PixelButton
                 variant="purple"
-                disabled={visualState === "ROLLING" || penaltyTurns > 0}
+                disabled={visualState === "ROLLING"}
                 onClick={handleRollDice}
                 className="w-full py-4 uppercase text-sm disabled:opacity-50"
               >
-                {visualState === "ROLLING" ? "TIRANDO..." : 
-                 penaltyTurns > 0 ? `BLOQUEADO (${penaltyTurns})` :
-                 "TIRAR DADOS"}
+                {visualState === "ROLLING" ? "TIRANDO..." : "TIRAR DADOS"}
               </PixelButton>
             )}
           </div>

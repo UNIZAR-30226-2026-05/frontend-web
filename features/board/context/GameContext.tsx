@@ -148,6 +148,8 @@ interface GameState {
   dobleNadaResult: DobleNadaResult | null;
   /** El jugador local es el banquero y ya ha usado su habilidad este turno */
   hasUsedAbility: boolean;
+  /** Nombre del jugador que el backend ha declarado activo vía turno_de (null = entre turnos/rondas) */
+  turnoDeUser: string | null;
   /** Mostrar el modal de robo del banquero */
   showBanqueroModal: boolean;
   /** Tiradas futuras vistas por el vidente */
@@ -230,7 +232,11 @@ export type Action =
   | { type: 'POKER_MARK_ACTED' }
   | { type: 'SET_SHOW_BARRERA_MODAL', value: boolean }
   | { type: 'DILEMA_RESULTADOS'; resultados: Record<string, 'cooperar' | 'traicionar'> }
-  | { type: 'ADD_PENALTY_TURN'; user: string; amount: number };
+  | { type: 'ADD_PENALTY_TURN'; user: string; amount: number }
+  /** El backend ha declarado quién juega a continuación */
+  | { type: 'TURNO_DE'; user: string; ronda: number }
+  /** El backend confirma el fin de ronda (antes de lanzar el minijuego de orden) */
+  | { type: 'ROUND_ENDED' };
 
 
 // -------------------------------------------------------------------
@@ -255,6 +261,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         ...state,
         players,
         currentTurnOrder: 1,
+        turnoDeUser: null,
         myUsername: action.myUsername,
         lastSwapEvent: null,
         pendingBoardMinigame: null,
@@ -294,10 +301,7 @@ function gameReducer(state: GameState, action: Action): GameState {
       if (!player) return state;
 
       const isLocalPlayer = action.user === state.myUsername;
-      const nextTurnOrder = player.turnOrder + 1;
-      const totalPlayers = Object.keys(state.players).length;
-      // Si todos jugaron -> 0 (esperando minijuego/nueva ronda)
-      const newCurrentTurnOrder = nextTurnOrder <= totalPlayers ? nextTurnOrder : 0;
+      // currentTurnOrder ya NO lo avanzamos aquí: el backend envía turno_de para indicar quién sigue.
 
       return {
         ...state,
@@ -305,7 +309,6 @@ function gameReducer(state: GameState, action: Action): GameState {
           ...state.players,
           [action.user]: { ...player, position: action.newPos },
         },
-        currentTurnOrder: newCurrentTurnOrder,
         hasMoved: isLocalPlayer ? true : state.hasMoved,
         awaitingEndRound: isLocalPlayer ? true : state.awaitingEndRound,
         isAnyoneAnimating: true,
@@ -372,6 +375,27 @@ function gameReducer(state: GameState, action: Action): GameState {
           nuevo_orden: action.nuevo_orden,
           minigameName: state.currentOrderMinijuego ?? 'Minijuego',
         },
+      };
+    }
+
+    case 'ROUND_ENDED': {
+      return { ...state, currentTurnOrder: 0, turnoDeUser: null };
+    }
+
+    case 'TURNO_DE': {
+      // El backend declara explícitamente quién juega ahora.
+      const isForMe = action.user === state.myUsername;
+      return {
+        ...state,
+        turnoDeUser: action.user,
+        // Actualizamos currentTurnOrder para que el HUD resalte al jugador correcto.
+        // Puede ser el turnOrder antiguo si todavía no se procesó MINIJUEGO_RESULTADOS,
+        // pero se corrige en cuanto el marcador se cierre.
+        currentTurnOrder: state.players[action.user]?.turnOrder ?? state.currentTurnOrder,
+        // Si es nuestro turno, reiniciamos hasMoved/awaitingEndRound para que el botón se habilite.
+        hasMoved: isForMe ? false : state.hasMoved,
+        awaitingEndRound: isForMe ? false : state.awaitingEndRound,
+        purchasedItems: isForMe ? {} : state.purchasedItems,
       };
     }
 
@@ -446,26 +470,11 @@ function gameReducer(state: GameState, action: Action): GameState {
     }
 
     case 'LOCAL_END_ROUND': {
-      // Cuando el jugador tiró dados, PLAYER_MOVED_DICE ya avanzó currentTurnOrder.
-      // Cuando el jugador pasó de turno sin tirar (bloqueado), debemos avanzarlo aquí,
-      // o el siguiente jugador nunca verá isMyTurn = true y el juego queda congelado.
-      const myPlayer = state.players[state.myUsername ?? ''];
-      let newCurrentTurnOrder = state.currentTurnOrder;
-      if (!state.hasMoved && myPlayer) {
-        const totalPlayers = Object.keys(state.players).length;
-        const nextOrder = myPlayer.turnOrder + 1;
-        newCurrentTurnOrder = nextOrder <= totalPlayers ? nextOrder : 0;
-      }
-      // Si el jugador NO movió (turno bloqueado), consumimos un turno de penalización.
-      // Si SÍ movió (acaba de caer en barrera), la penalización empieza el turno siguiente.
-      // El backend confirmará el valor real con penalizacion_actualizada.
-      const newPenaltyTurns =
-        !state.hasMoved && state.penaltyTurns > 0
-          ? state.penaltyTurns - 1
-          : state.penaltyTurns;
+      // El frontend envía end_round y limpia su estado local.
+      // El backend es el responsable de calcular quién juega después y enviar turno_de.
       return {
         ...state,
-        currentTurnOrder: newCurrentTurnOrder,
+        turnoDeUser: null,      // Esperamos la confirmación del backend vía turno_de
         awaitingEndRound: false,
         landedOnBarrera: false,
         showDobleNada: false,
@@ -474,9 +483,6 @@ function gameReducer(state: GameState, action: Action): GameState {
         submittedDobleNadaBet: null,
         dobleNadaResult: null,
         purchasedItems: {},
-        penaltyTurns: newPenaltyTurns,
-        // Si el jugador pasó sin moverse (bloqueado), ninguna animación está pendiente.
-        // Garantizamos isAnyoneAnimating = false para que el siguiente pueda tirar de inmediato.
         isAnyoneAnimating: false,
         hasUsedAbility: false,
         showVidenteModal: false,
@@ -521,16 +527,10 @@ function gameReducer(state: GameState, action: Action): GameState {
       return { ...state, isAnyoneAnimating: action.value };
 
     case 'REMOTE_SKIPPED': {
-      // El jugador remoto saltó su turno bloqueado (no tiró dados).
-      // Avanzamos currentTurnOrder solo si aún apunta a ese jugador;
-      // si ya apuntaba a otro es que esto llegó después de un player_moved y no hace falta.
-      const skipped = state.players[action.user];
-      if (!skipped || skipped.turnOrder !== state.currentTurnOrder) return state;
-      const totalPlayers = Object.keys(state.players).length;
-      const next = skipped.turnOrder + 1;
+      // El backend saltó el turno de este jugador (penalización).
+      // El avance de currentTurnOrder lo gestiona turno_de.
       return {
         ...state,
-        currentTurnOrder: next <= totalPlayers ? next : 0,
         isAnyoneAnimating: false,
       };
     }
@@ -603,10 +603,12 @@ function gameReducer(state: GameState, action: Action): GameState {
     case 'CLEAR_LAST_DICE':
       return { ...state, lastDice: null };
 
-    case 'DEBUG_SET_TURN_ORDER':
+    case 'DEBUG_SET_TURN_ORDER': {
+      const playerWithOrder = Object.values(state.players).find(p => p.turnOrder === action.order);
       return {
         ...state,
         currentTurnOrder: action.order,
+        turnoDeUser: playerWithOrder?.username ?? null,
         hasMoved: false,
         awaitingEndRound: false,
         pendingBoardMinigame: null,
@@ -616,6 +618,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         hasUsedAbility: false,
         showBarreraModal: false,
       };
+    }
 
     case 'SET_SHOW_BANQUERO_MODAL':
       return { ...state, showBanqueroModal: action.value };
@@ -804,6 +807,7 @@ const initialState: GameState = {
   pokerState: { ...initialPokerState },
   dilemaResultados: null,
   showBarreraModal: false,
+  turnoDeUser: null,
 };
 
 // -------------------------------------------------------------------
@@ -904,7 +908,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const sendEndRound = useCallback(() => {
     const ws = getGameSocket();
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ action: 'end_round' }));
+    ws.send(JSON.stringify({ action: 'fin_turno' }));
     dispatch({ type: 'LOCAL_END_ROUND' });
   }, []);
 
@@ -1069,10 +1073,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           }
 
           case 'minijuego_resultados': {
+            const resultados = data.resultados as Record<string, { posicion: number; score: number }>;
+            // El backend ya no envía "nuevo_orden" por separado; lo derivamos de "posicion"
+            // dentro de cada entrada de resultados.
+            const nuevo_orden = Object.fromEntries(
+              Object.entries(resultados).map(([usr, r]) => [usr, r.posicion])
+            ) as Record<string, number>;
             dispatch({
               type: 'SHOW_MINIGAME_RESULTS',
-              resultados: data.resultados as Record<string, { posicion: number; score: number }>,
-              nuevo_orden: data.nuevo_orden as Record<string, number>,
+              resultados,
+              nuevo_orden,
             });
             break;
           }
@@ -1132,6 +1142,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             break;
           }
 
+          case 'turno_de': {
+            // El backend declara quién juega ahora. Aceptamos tanto 'user' (spec)
+            // como 'nombre_jugador' (campo que usa el backend actualmente).
+            const turnoUser = (data.user ?? data.nombre_jugador) as string;
+            dispatch({ type: 'TURNO_DE', user: turnoUser, ronda: data.ronda as number });
+            break;
+          }
+
+          case 'round_ended': {
+            dispatch({ type: 'ROUND_ENDED' });
+            break;
+          }
+
           case 'penalizacion_actualizada': {
             const myUsername = sessionStorage.getItem('username');
             const affectedUser = data.user as string;
@@ -1139,7 +1162,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
               // Actualizar los turnos de penalización del jugador local
               dispatch({ type: 'SET_PENALTY_TURNS', turns: data.penalizacion as number });
             } else {
-              // Otro jugador saltó su turno bloqueado → avanzar currentTurnOrder si toca
+              // Jugador remoto saltado por penalización.
+              // El backend enviará turno_de para el siguiente jugador activo.
               dispatch({ type: 'REMOTE_SKIPPED', user: affectedUser });
             }
             break;
@@ -1363,7 +1387,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const sendIniRound = useCallback((minijuego: string, descripcion: string) => {
     const ws = getGameSocket();
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ action: 'ini_round', payload: { minijuego, descripcion } }));
+    ws.send(JSON.stringify({ action: 'select_mini', payload: { minijuego, descripcion } }));
     dispatch({ type: 'HIDE_VIDEOJUGADOR_ELECCION' });
   }, []);
   
@@ -1408,16 +1432,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
     
     ws.send(JSON.stringify({ 
-      action: 'usar_objeto', 
+      action: 'comprar_objeto', 
       payload 
     }));
   }, []);
 
   // Datos derivados
   const myPlayer = state.myUsername ? (state.players[state.myUsername] ?? null) : null;
+  // isMyTurn depende exclusivamente de lo que el backend declaró vía turno_de,
+  // eliminando toda lógica de avance local de turnos.
   const isMyTurn =
-    myPlayer !== null &&
-    myPlayer.turnOrder === state.currentTurnOrder &&
+    state.turnoDeUser !== null &&
+    state.turnoDeUser === state.myUsername &&
     !state.hasMoved;
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
