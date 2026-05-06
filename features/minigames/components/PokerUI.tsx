@@ -72,15 +72,28 @@ export default function PokerUI({ onClose }: PokerUIProps) {
 
   const canAct = !pokerState.hasActedThisPhase
     && amIActive
+    && pokerState.turnoDe === state.myUsername
     && pokerState.fase !== 'Resultados'
     && pokerState.fase !== '';
 
-  // Slider de apuesta (máximo = mi balance)
-  const maxBet = myPlayer?.balance ?? 1;
+  const minActiveBalance = useMemo(() => {
+    if (pokerState.jugadoresActivos.length === 0) return myPlayer?.balance ?? 1;
+    const balances = pokerState.jugadoresActivos.map(username => state.players[username]?.balance ?? 0);
+    return Math.min(...balances);
+  }, [pokerState.jugadoresActivos, state.players, myPlayer?.balance]);
+
+  // Slider de apuesta (máximo = balance mínimo entre jugadores activos)
+  const maxBet = minActiveBalance;
   const [raiseAmount, setRaiseAmount] = useState(1);
 
   const handleFold = () => sendPokerAction('retirarse', 0);
-  const handleCall = () => sendPokerAction('apostar', pokerState.apuestaObjetivo);
+  const handleCall = () => {
+    if (pokerState.apuestaObjetivo === 0) {
+      sendPokerAction('pasar', 0);
+    } else {
+      sendPokerAction('apostar', pokerState.apuestaObjetivo);
+    }
+  };
   const handleRaise = () => sendPokerAction('apostar', pokerState.apuestaObjetivo + raiseAmount);
 
   // ---------------------------------------------------------------
@@ -171,8 +184,8 @@ export default function PokerUI({ onClose }: PokerUIProps) {
               </div>
             </div>
           ))}
-          {/* Relleno hasta 5 slots */}
-          {Array.from({ length: Math.max(0, 5 - communityCards.length) }).map((_, i) => (
+          {/* Relleno hasta 3 slots */}
+          {Array.from({ length: Math.max(0, 3 - communityCards.length) }).map((_, i) => (
             <div key={`empty-${i}`} className="w-24 h-36 border-2 border-white/5 rounded-lg bg-black/10 backdrop-blur-[2px]" />
           ))}
         </div>

@@ -89,6 +89,7 @@ export interface PokerState {
   jugadoresActivos: string[];      // usernames que no se han retirado
   hasActedThisPhase: boolean;      // true tras enviar acción → bloquea botones
   resultados: PokerResultado | null;
+  turnoDe: string | null;
 }
 
 interface DobleNadaResult {
@@ -231,6 +232,7 @@ export type Action =
   | { type: 'POKER_APUESTA_ACTUALIZADA'; user: string; apuestaObjetivo: number }
   | { type: 'POKER_RESULTADOS'; resultados: PokerResultado }
   | { type: 'POKER_MARK_ACTED' }
+  | { type: 'POKER_TURNO_DE'; user: string }
   | { type: 'SET_SHOW_BARRERA_MODAL', value: boolean }
   | { type: 'DILEMA_RESULTADOS'; resultados: Record<string, 'cooperar' | 'traicionar'> }
   | { type: 'ADD_PENALTY_TURN'; user: string; amount: number }
@@ -755,6 +757,15 @@ function gameReducer(state: GameState, action: Action): GameState {
         },
       };
 
+    case 'POKER_TURNO_DE':
+      return {
+        ...state,
+        pokerState: {
+          ...state.pokerState,
+          turnoDe: action.user,
+        },
+      };
+
     case 'DILEMA_RESULTADOS':
       return {
         ...state,
@@ -775,6 +786,7 @@ const initialPokerState: PokerState = {
   jugadoresActivos: [],
   hasActedThisPhase: false,
   resultados: null,
+  turnoDe: null,
 };
 
 const initialState: GameState = {
@@ -1260,8 +1272,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           case 'poker_apuesta_actualizada': {
             dispatch({
               type: 'POKER_APUESTA_ACTUALIZADA',
-              user: data.user as string,
-              apuestaObjetivo: data.nueva_apuesta_objetivo as number,
+              user: data.nombre_usuario as string,
+              apuestaObjetivo: data.nueva_apuesta_maxima as number,
             });
             break;
           }
@@ -1287,6 +1299,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
                 resultadosOrdenados,
                 mesaCompleta,
               },
+            });
+            break;
+          }
+
+          case 'turno_poker': {
+            dispatch({
+              type: 'POKER_TURNO_DE',
+              user: data.nombre_jugador as string,
             });
             break;
           }
@@ -1417,7 +1437,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     // No cerramos el modal aquí, esperamos a dilema_resultados
   }, []);
 
-  const sendPokerAction = useCallback((decision: 'apostar' | 'retirarse', cantidad: number) => {
+  const sendPokerAction = useCallback((decision: 'apostar' | 'retirarse' | 'pasar', cantidad: number) => {
     const ws = getGameSocket();
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({
