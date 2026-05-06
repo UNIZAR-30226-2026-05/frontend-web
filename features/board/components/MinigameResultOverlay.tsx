@@ -15,6 +15,8 @@ interface MinigameResultOverlayProps {
     subtitle: string;
     results: PlayerResult[];
     onClose: () => void;
+    /** Cuando es true muestra una rueda de carga en lugar de los resultados */
+    isLoading?: boolean;
 }
 
 const CHARACTER_IMAGES: Record<string, string> = {
@@ -28,16 +30,18 @@ export default function MinigameResultOverlay({
     minigameName, 
     subtitle, 
     results, 
-    onClose 
+    onClose,
+    isLoading = false,
 }: MinigameResultOverlayProps) {
     
-    // Cierre automático tras 5 segundos
+    // Cierre automático tras 5 segundos (solo cuando hay resultados)
     useEffect(() => {
+        if (isLoading) return;
         const timer = setTimeout(() => {
             onClose();
         }, 5000);
         return () => clearTimeout(timer);
-    }, [onClose]);
+    }, [onClose, isLoading]);
 
     // Ordenar por posición (el backend ya calculó quién va primero)
     const sortedResults = [...results].sort((a, b) => a.posicion - b.posicion);
@@ -55,50 +59,61 @@ export default function MinigameResultOverlay({
                 </p>
             </div>
 
-            {/* Panel de Resultados */}
+            {/* Panel de Resultados o Carga */}
             <div className="w-full max-w-lg">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                    <span className="text-2xl">🏆</span>
-                    <h2 className="text-[#ffcc00] font-pixel text-2xl uppercase tracking-tighter">
-                        Resultados
-                    </h2>
-                </div>
-
-                <div className="bg-[#1a1a1a]/85 border-2 border-white/20 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
-                    <div className="relative z-10 space-y-5">
-                        {sortedResults.map((player, index) => (
-                            <div key={index} className="flex justify-between items-center group">
-                                <div className="flex items-center gap-4">
-                                    {/* Imagen del personaje */}
-                                    <div className={`
-                                        w-10 h-10 rounded-lg border flex items-center justify-center bg-black/40 p-1
-                                        ${index === 0 ? 'border-[#ffcc00]/50 shadow-[0_0_10px_rgba(255,204,0,0.2)]' : 'border-white/10'}
-                                    `}>
-                                        <Image
-                                            src={CHARACTER_IMAGES[player.character.toLowerCase()] || '/personajes_profile/vidente_profile.png'}
-                                            alt={player.character}
-                                            className="w-full h-full object-contain pixelated"
-                                            width={40}
-                                            height={40}
-                                        />
-                                    </div>
-                                    <span className={`
-                                        font-pixel text-lg md:text-xl uppercase tracking-wider transition-colors
-                                        ${index === 0 ? 'text-[#ffcc00]' : 'text-white'}
-                                    `}>
-                                        {player.username}
-                                    </span>
-                                </div>
-                                <span className={`
-                                    font-pixel text-lg md:text-xl transition-colors
-                                    ${index === 0 ? 'text-[#ffcc00]' : 'text-white/80'}
-                                `}>
-                                    {player.score}
-                                </span>
-                            </div>
-                        ))}
+                {isLoading ? (
+                    <div className="bg-[#1a1a1a]/85 border-2 border-white/20 rounded-2xl p-10 shadow-2xl flex flex-col items-center gap-6">
+                        <div className="w-12 h-12 border-4 border-white/20 border-t-[#ffcc00] rounded-full animate-spin" />
+                        <p className="text-white/70 font-pixel text-xs uppercase tracking-[0.2em] animate-pulse">
+                            Esperando resultados...
+                        </p>
                     </div>
-                </div>
+                ) : (
+                    <>
+                        <div className="flex items-center justify-center gap-2 mb-4">
+                            <span className="text-2xl">🏆</span>
+                            <h2 className="text-[#ffcc00] font-pixel text-2xl uppercase tracking-tighter">
+                                Resultados
+                            </h2>
+                        </div>
+
+                        <div className="bg-[#1a1a1a]/85 border-2 border-white/20 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+                            <div className="relative z-10 space-y-5">
+                                {sortedResults.map((player, index) => (
+                                    <div key={index} className="flex justify-between items-center group">
+                                        <div className="flex items-center gap-4">
+                                            {/* Imagen del personaje */}
+                                            <div className={`
+                                                w-10 h-10 rounded-lg border flex items-center justify-center bg-black/40 p-1
+                                                ${index === 0 ? 'border-[#ffcc00]/50 shadow-[0_0_10px_rgba(255,204,0,0.2)]' : 'border-white/10'}
+                                            `}>
+                                                <Image
+                                                    src={CHARACTER_IMAGES[player.character.toLowerCase()] || '/personajes_profile/vidente_profile.png'}
+                                                    alt={player.character}
+                                                    className="w-full h-full object-contain pixelated"
+                                                    width={40}
+                                                    height={40}
+                                                />
+                                            </div>
+                                            <span className={`
+                                                font-pixel text-lg md:text-xl uppercase tracking-wider transition-colors
+                                                ${index === 0 ? 'text-[#ffcc00]' : 'text-white'}
+                                            `}>
+                                                {player.username}
+                                            </span>
+                                        </div>
+                                        <span className={`
+                                            font-pixel text-lg md:text-xl transition-colors
+                                            ${index === 0 ? 'text-[#ffcc00]' : 'text-white/80'}
+                                        `}>
+                                            {player.score}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Footer */}

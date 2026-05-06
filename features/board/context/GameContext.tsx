@@ -162,6 +162,8 @@ interface GameState {
     nuevo_orden: Record<string, number>;
     minigameName: string;
   } | null;
+  /** El jugador local ya envió su score y espera a que lleguen los resultados del resto */
+  waitingForMinigameResults: boolean;
   /** Objeto que el backend ya ha decidido para la ruleta */
   pendingObjetoRuleta: { user: string; objeto: string; descripcion: string } | null;
   /** Mostrar la UI de la ruleta */
@@ -273,6 +275,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         videnteTiradas: null,
         showVidenteModal: false,
         pendingMinigameResults: null,
+        waitingForMinigameResults: false,
         pendingObjetoRuleta: null,
         showRuleta: false,
         showDilema: false,
@@ -370,6 +373,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         showOrderMinigame: false,
         currentOrderMinijuego: null,
         currentOrderMinijuegoDetails: null,
+        waitingForMinigameResults: false,
         pendingMinigameResults: {
           resultados: action.resultados,
           nuevo_orden: action.nuevo_orden,
@@ -424,6 +428,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         videojugadorOpciones: [],
         currentOrderMinijuego: null,
         currentOrderMinijuegoDetails: null,
+        waitingForMinigameResults: false,
         landedOnBarrera: false,
         showDobleNada: false,
         pendingBoardMinigame: null,
@@ -542,6 +547,7 @@ function gameReducer(state: GameState, action: Action): GameState {
       return {
         ...state,
         showOrderMinigame: false,
+        waitingForMinigameResults: state.showOrderMinigame ? true : state.waitingForMinigameResults,
       };
 
     case 'SHOW_VIDEOJUGADOR_ELECCION':
@@ -800,6 +806,7 @@ const initialState: GameState = {
   videnteTiradas: null,
   showVidenteModal: false,
   pendingMinigameResults: null,
+  waitingForMinigameResults: false,
   pendingObjetoRuleta: null,
   showRuleta: false,
   showDilema: false,

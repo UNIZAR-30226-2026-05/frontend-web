@@ -70,6 +70,8 @@ function VideojugadorEleccionController() {
     state.currentTurnOrder === 0 &&
     !state.isAnyoneAnimating &&
     !state.showOrderMinigame &&
+    !state.waitingForMinigameResults &&
+    !state.pendingMinigameResults &&
     !state.showDobleNada;
 
   if (!state.showVideojugadorEleccion && !isWaitingForVideojugadorChoice) return null;
@@ -149,6 +151,19 @@ function VidenteController() {
 /** Muestra el scoreboard con los resultados del minijuego de orden. */
 function MinigameResultController() {
   const { state, dispatch } = useGameContext();
+
+  // Mientras el jugador espera los resultados del resto (ya envió su score)
+  if (state.waitingForMinigameResults && !state.pendingMinigameResults) {
+    return (
+      <MinigameResultOverlay
+        minigameName={state.currentOrderMinijuego ?? 'Minijuego'}
+        subtitle=""
+        results={[]}
+        isLoading
+        onClose={() => {}}
+      />
+    );
+  }
 
   if (!state.pendingMinigameResults) return null;
 
