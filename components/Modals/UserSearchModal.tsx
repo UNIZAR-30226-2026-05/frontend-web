@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PixelButton from '@/components/UI/PixelButton';
 import PixelInput from '@/components/UI/PixelInput';
 
@@ -13,43 +13,64 @@ interface User {
 
 interface UserSearchModalProps {
     onClose: () => void;
+    onSendRequest: (username: string) => void;
+    onRemoveFriend?: (username: string) => void;
 }
 
-const INITIAL_MOCK_USERS: User[] = [
-    { username: 'ProGamer99', status: 'none' },
-    { username: 'SnowKing', status: 'added' },
-    { username: 'IceQueen', status: 'pending' },
-    { username: 'PixelMaster', status: 'added' },
-    { username: 'WinterIsComing', status: 'none' },
-    { username: 'Frosty', status: 'pending' },
-];
-
-export default function UserSearchModal({ onClose }: UserSearchModalProps) {
+export default function UserSearchModal({ onClose, onSendRequest, onRemoveFriend }: UserSearchModalProps) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [users, setUsers] = useState<User[]>(INITIAL_MOCK_USERS);
+    const [users, setUsers] = useState<User[]>([]);
+
+    useEffect(() => {
+        if (searchQuery.trim().length < 3) {
+            setUsers([]);
+            return;
+        }
+
+        const fetchUsers = async () => {
+            try {
+                const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                const response = await fetch(`${backendUrl}/usuarios/filtrar_usuarios?cadena=${searchQuery}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const formattedUsers = data.map((u: any) => ({
+                        username: typeof u === 'string' ? u : u.username || u.nombre || u,
+                        status: 'none'
+                    }));
+                    setUsers(formattedUsers);
+                }
+            } catch (error) {
+                console.error("Error fetching users:", error);
+            }
+        };
+
+        const debounceTimer = setTimeout(fetchUsers, 500);
+        return () => clearTimeout(debounceTimer);
+    }, [searchQuery]);
 
     const handleAction = (username: string, currentStatus: UserStatus) => {
-        setUsers(prevUsers =>
-            prevUsers.map(user => {
-                if (user.username !== username) return user;
-                
-                // Logic: 
-                // none -> pending
-                // pending -> none (cancel)
-                // added -> none (remove)
-                let nextStatus: UserStatus = 'none';
-                if (currentStatus === 'none') nextStatus = 'pending';
-                else if (currentStatus === 'pending') nextStatus = 'none';
-                else if (currentStatus === 'added') nextStatus = 'none';
-
-                return { ...user, status: nextStatus };
-            })
-        );
+        if (currentStatus === 'none') {
+            onSendRequest(username);
+            setUsers(prevUsers =>
+                prevUsers.map(user =>
+                    user.username === username ? { ...user, status: 'pending' } : user
+                )
+            );
+        } else if (currentStatus === 'pending') {
+            setUsers(prevUsers =>
+                prevUsers.map(user =>
+                    user.username === username ? { ...user, status: 'none' } : user
+                )
+            );
+        } else if (currentStatus === 'added') {
+            if (onRemoveFriend) onRemoveFriend(username);
+            setUsers(prevUsers =>
+                prevUsers.map(user =>
+                    user.username === username ? { ...user, status: 'none' } : user
+                )
+            );
+        }
     };
-
-    const filteredUsers = users.filter(user =>
-        user.username.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     const getButtonConfig = (status: UserStatus) => {
         switch (status) {
@@ -105,8 +126,8 @@ export default function UserSearchModal({ onClose }: UserSearchModalProps) {
                 {/* Resultados con scroll */}
                 <div className="flex-1 overflow-y-auto max-h-[400px] p-6 pt-0 scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent">
                     <div className="flex flex-col gap-3">
-                        {filteredUsers.length > 0 ? (
-                            filteredUsers.map((user) => {
+                        {users.length > 0 ? (
+                            users.map((user) => {
                                 const { text, variant } = getButtonConfig(user.status);
                                 return (
                                     <div
@@ -129,7 +150,7 @@ export default function UserSearchModal({ onClose }: UserSearchModalProps) {
                             })
                         ) : (
                             <p className="text-white/60 font-pixel text-center py-4">
-                                No se encontraron jugadores
+                                {searchQuery.length < 3 ? "Escribe al menos 3 caracteres..." : "No se encontraron jugadores"}
                             </p>
                         )}
                     </div>

@@ -895,6 +895,30 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const pendingObjetoRuletaRef = useRef<GameState['pendingObjetoRuleta']>(null);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).debugAddCoins = () => {
+        const ws = getGameSocket();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'debug_add_coins' }));
+          console.log("🪙 Cheat activado: Comando '+50 monedas' enviado al servidor.");
+        } else {
+          console.warn("No hay conexión WS activa con la partida.");
+        }
+      };
+
+      (window as any).debugForcePoker = () => {
+        const ws = getGameSocket();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'debug_force_poker' }));
+          console.log("🃏 Cheat activado: Comando 'Forzar Poker' enviado al servidor.");
+        } else {
+          console.warn("No hay conexión WS activa con la partida.");
+        }
+      };
+    }
+  }, []);
+
+  useEffect(() => {
     awaitingEndRoundRef.current = state.awaitingEndRound;
   }, [state.awaitingEndRound]);
 

@@ -25,21 +25,13 @@ export default function MenuPage() {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [invitedFriends, setInvitedFriends] = useState<string[]>([]);
 
-    // Mock Data
-    const [invitations] = useState([
-        { inviter: 'ProGamer99', code: '123456' },
-        { inviter: 'Speedy', code: '654321' }
-    ]);
-    const [friends] = useState([
-        { username: 'SnowKing', status: 'offline' },
-        { username: 'IceQueen', status: 'online' },
-        { username: 'PixelMaster', status: 'in_game' },
-        { username: 'OldFriend', status: 'offline' },
-        { username: 'Newbie', status: 'online' }
-    ]);
+    const [invitations, setInvitations] = useState<{inviter: string, code: number}[]>([]);
+    const [friendRequests, setFriendRequests] = useState<string[]>([]);
+    const [friends, setFriends] = useState<{username: string, status: string}[]>([]);
 
     const usernameRef = useRef<string | null>(null);
     const socketRef = useRef<WebSocket | null>(null);
+    const sessionSocketRef = useRef<WebSocket | null>(null);
     const detachSocketListenersRef = useRef<(() => void) | null>(null);
     const routerRef = useRef(router);
     useEffect(() => { routerRef.current = router; }, [router]);
@@ -244,6 +236,65 @@ export default function MenuPage() {
 
             SetIdPartida(id);
             connectToRoom(id, token);
+
+            // Connect to Session WebSocket
+            if (currentUsername) {
+                const backendUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
+                let wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+
+                if (backendUrl.startsWith('https://')) {
+                    wsProtocol = 'wss';
+                } else if (backendUrl.startsWith('http://')) {
+                    wsProtocol = 'ws';
+                }
+
+                const normalizedHost = backendUrl.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '');
+                const encodedToken = encodeURIComponent(token ?? '');
+                const sessionUrl = `${wsProtocol}://${normalizedHost}/ws/usuario/${currentUsername}?token=${encodedToken}`;
+                
+                const sessionWs = new WebSocket(sessionUrl);
+                sessionSocketRef.current = sessionWs;
+                
+                sessionWs.onopen = () => {
+                    console.log('WebSocket de sesión conectado');
+                    sessionWs.send(JSON.stringify({ action: 'get_online_friends' }));
+                };
+                
+                sessionWs.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        switch (data.type) {
+                            case 'friend_requests_list':
+                                setFriendRequests(data.lista);
+                                break;
+                            case 'online_friends_list':
+                                setFriends(data.friends.map((f: string) => ({ username: f, status: 'online' })));
+                                break;
+                            case 'friend_status_update':
+                                setFriends(prev => {
+                                    const exists = prev.find(f => f.username === data.friend_id);
+                                    if (exists) {
+                                        return prev.map(f => f.username === data.friend_id ? { ...f, status: data.status } : f);
+                                    }
+                                    return [...prev, { username: data.friend_id, status: data.status }];
+                                });
+                                break;
+                            case 'receive_invite':
+                                setInvitations(prev => [...prev, { inviter: data.from_user, code: data.game_id }]);
+                                break;
+                            case 'new_friend_request':
+                                setFriendRequests(prev => [...prev, data.from_user]);
+                                break;
+                        }
+                    } catch (e) {
+                        console.error('Error parseando mensaje de sesión', e);
+                    }
+                };
+                
+                sessionWs.onclose = () => {
+                    console.log('WebSocket de sesión desconectado');
+                };
+            }
         };
 
         init();
@@ -257,8 +308,14 @@ export default function MenuPage() {
     }, [connectToRoom]);
 
     const handleInvite = (friendUsername: string) => {
-        if (!invitedFriends.includes(friendUsername)) {
-            setInvitedFriends((prev) => [...prev, friendUsername]);
+        if (sessionSocketRef.current?.readyState === WebSocket.OPEN) {
+            sessionSocketRef.current.send(JSON.stringify({ 
+                action: 'invite_friend', 
+                payload: { friend_id: friendUsername, game_id: idPartida } 
+            }));
+            if (!invitedFriends.includes(friendUsername)) {
+                setInvitedFriends((prev) => [...prev, friendUsername]);
+            }
         }
     };
 
@@ -330,7 +387,7 @@ export default function MenuPage() {
                                     <PixelButton
                                         variant="green"
                                         className="!px-4 !py-2 !text-[1rem]"
-                                        onClick={() => setJoinCode(inv.code)}
+                                        onClick={() => setJoinCode(inv.code.toString())}
                                     >
                                         Unirse
                                     </PixelButton>
@@ -500,7 +557,21 @@ export default function MenuPage() {
                 />
 
                 {isRulesOpen && <RulesModal onClose={() => setIsRulesOpen(false)} />}
-                {isSearchModalOpen && <UserSearchModal onClose={() => setIsSearchModalOpen(false)} />}
+                {isSearchModalOpen && <UserSearchModal 
+                    onClose={() => setIsSearchModalOpen(false)} 
+                    onSendRequest={(username) => {
+                        if (sessionSocketRef.current?.readyState === WebSocket.OPEN) {
+                            sessionSocketRef.current.send(JSON.stringify({ 
+                                action: "send_request", 
+                                payload: { player_id: username } 
+                            }));
+                        }
+                    }}
+                    onRemoveFriend={(username) => {
+                        // TODO: Implement unfollow/remove friend logic when backend supports it
+                        console.log(`TODO: Remove friend ${username}`);
+                    }}
+                />}
 
             </div>
 
