@@ -30,7 +30,7 @@ export default function UserSearchModal({ onClose, onSendRequest, onRemoveFriend
 
         const fetchUsers = async () => {
             try {
-                const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                const backendUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
                 const response = await fetch(`${backendUrl}/usuarios/filtrar_usuarios?cadena=${searchQuery}`);
                 if (response.ok) {
                     const data = await response.json();
