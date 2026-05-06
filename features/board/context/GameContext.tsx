@@ -1102,6 +1102,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
           case 'ini_minijuego': {
             const minijuego = data.minijuego as string;
+            // El vidente ya no necesita el modal cuando empieza el minijuego
+            dispatch({ type: 'HIDE_VIDENTE_MODAL' });
             // Dilema del prisionero (casilla VS)
             if (minijuego === 'Dilema del Prisionero') {
               const myUsername = sessionStorage.getItem('username');
@@ -1359,7 +1361,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({
       action: 'score_minijuego',
-      payload: { score: reactionTimeMs * 1000 },
+      payload: { score: reactionTimeMs },
     }));
     dispatch({ type: 'HIDE_ORDER_MINIGAME' });
   }, []);
@@ -1367,11 +1369,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const sendScoreOrden = useCallback((score: number, objetivo?: number) => {
     const ws = getGameSocket();
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    // Reflejos: el backend espera ms*1000. El resto de minijuegos usan el score directo.
     const minijuego = state.currentOrderMinijuego;
-    const payload: any = minijuego === 'Reflejos'
-      ? { score: score * 1000 }
-      : { score };
+    const payload: any = { score };
     
     if (objetivo !== undefined) {
       payload.objetivo = objetivo;

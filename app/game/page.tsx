@@ -136,14 +136,13 @@ function BanqueroRoboController() {
 
 /** Muestra el modal de las tiradas futuras para el vidente. */
 function VidenteController() {
-  const { state, dispatch } = useGameContext();
+  const { state } = useGameContext();
 
   if (!state.showVidenteModal || !state.videnteTiradas) return null;
 
   return (
     <VidenteDadosModal
       tiradas={state.videnteTiradas}
-      onClose={() => dispatch({ type: 'HIDE_VIDENTE_MODAL' })}
     />
   );
 }

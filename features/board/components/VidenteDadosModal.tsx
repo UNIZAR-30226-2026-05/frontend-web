@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import React from 'react';
-import PixelButton from '@/components/UI/PixelButton';
 
 export type DiceType = "oro" | "plata" | "bronce" | "normal";
 
@@ -14,7 +13,6 @@ export interface TiradaVidente {
 
 interface VidenteDadosModalProps {
     tiradas: TiradaVidente[];
-    onClose: () => void;
 }
 
 const typeStyles: Record<DiceType, string> = {
@@ -33,7 +31,6 @@ const filterStyles: Record<DiceType, string> = {
 
 export default function VidenteDadosModal({ 
     tiradas, 
-    onClose 
 }: VidenteDadosModalProps) {
     return (
         <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-500">
@@ -114,15 +111,7 @@ export default function VidenteDadosModal({
                         })}
                     </div>
 
-                    <div className="pt-2 w-full">
-                        <PixelButton 
-                            variant="purple" 
-                            className="w-full py-3 text-xs"
-                            onClick={onClose}
-                        >
-                            ACEPTAR
-                        </PixelButton>
-                    </div>
+
                 </div>
             </div>
 
