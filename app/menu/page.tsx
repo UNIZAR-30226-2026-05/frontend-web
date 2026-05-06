@@ -228,6 +228,22 @@ export default function MenuPage() {
             setUsername(currentUsername);
             setAuthToken(token);
 
+            if (currentUsername) {
+                const backendHttpUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
+                try {
+                    const resFriends = await fetch(`${backendHttpUrl}/usuarios/${currentUsername}/amigos`, {
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
+                    if (resFriends.ok) {
+                        const data = await resFriends.json();
+                        const friendsList = data.map((u: any) => u.nombre);
+                        setFriends(friendsList.map((f: string) => ({ username: f, status: 'offline' })));
+                    }
+                } catch (e) {
+                    console.error('Error fetching friends:', e);
+                }
+            }
+
             const id = await CrearPartidaService(token);
             if (!id) {
                 console.error('Error al crear la partida: ID no recibido');
@@ -268,7 +284,19 @@ export default function MenuPage() {
                                 setFriendRequests(data.lista);
                                 break;
                             case 'online_friends_list':
-                                setFriends(data.friends.map((f: string) => ({ username: f, status: 'online' })));
+                                setFriends(prev => {
+                                    const onlineSet = new Set(data.friends);
+                                    const updated = prev.map(f => ({
+                                        ...f,
+                                        status: onlineSet.has(f.username) ? 'online' : f.status
+                                    }));
+                                    data.friends.forEach((f: string) => {
+                                        if (!updated.find(u => u.username === f)) {
+                                            updated.push({ username: f, status: 'online' });
+                                        }
+                                    });
+                                    return updated;
+                                });
                                 break;
                             case 'friend_status_update':
                                 setFriends(prev => {
@@ -394,6 +422,62 @@ export default function MenuPage() {
                                 </div>
                             </div>
                         ))}
+
+                        {friendRequests.length > 0 && (
+                            <div className="mt-4">
+                                <h3
+                                    className="text-[2rem] leading-snug mb-4 text-white font-bold whitespace-nowrap"
+                                    style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                >
+                                    Solicitudes de amistad
+                                </h3>
+                                <div className="flex flex-col gap-6">
+                                    {friendRequests.map((req) => (
+                                        <div key={req} className="flex flex-col gap-3 w-fit">
+                                            <p
+                                                className="text-[#a8a8a8] text-[1.3rem] font-bold mb-1"
+                                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                            >
+                                                {req} quiere ser tu amigo
+                                            </p>
+                                            <div className="w-full h-[2px] bg-white mb-2 shadow-[0_2px_0_#000]"></div>
+                                            <div className="flex items-center gap-4">
+                                                <PixelButton
+                                                    variant="green"
+                                                    className="!px-4 !py-2 !text-[1rem]"
+                                                    onClick={() => {
+                                                        sessionSocketRef.current?.send(JSON.stringify({
+                                                            action: 'accept_request',
+                                                            payload: { player_id: req }
+                                                        }));
+                                                        setFriendRequests(prev => prev.filter(u => u !== req));
+                                                        setFriends(prev => {
+                                                            if (prev.find(f => f.username === req)) return prev;
+                                                            return [...prev, { username: req, status: 'offline' }];
+                                                        });
+                                                    }}
+                                                >
+                                                    Aceptar
+                                                </PixelButton>
+                                                <PixelButton
+                                                    variant="purple"
+                                                    className="!px-4 !py-2 !text-[1rem]"
+                                                    onClick={() => {
+                                                        sessionSocketRef.current?.send(JSON.stringify({
+                                                            action: 'reject_request',
+                                                            payload: { player_id: req }
+                                                        }));
+                                                        setFriendRequests(prev => prev.filter(u => u !== req));
+                                                    }}
+                                                >
+                                                    Rechazar
+                                                </PixelButton>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
                 {/* Botón de Ajustes (abajo a la izquierda) */}
@@ -569,7 +653,7 @@ export default function MenuPage() {
                     }}
                     onRemoveFriend={(username) => {
                         // TODO: Implement unfollow/remove friend logic when backend supports it
-                        console.log(`TODO: Remove friend ${username}`);
+                        console.log(`Acción de eliminar amigo no implementada en backend todavía: ${username}`);
                     }}
                 />}
 
