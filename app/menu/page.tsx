@@ -281,7 +281,7 @@ export default function MenuPage() {
                         const data = JSON.parse(event.data);
                         switch (data.type) {
                             case 'friend_requests_list':
-                                setFriendRequests(data.lista);
+                                setFriendRequests(Array.isArray(data.lista) ? data.lista : []);
                                 break;
                             case 'online_friends_list':
                                 setFriends(prev => {
