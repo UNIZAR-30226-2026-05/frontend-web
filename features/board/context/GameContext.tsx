@@ -227,7 +227,7 @@ export type Action =
   | { type: 'SHOW_POKER_PENDING' }
   | { type: 'OPEN_POKER' }
   | { type: 'HIDE_POKER' }
-  | { type: 'POKER_INICIO_RONDA'; fase: string; misCartas: PokerCard[] }
+  | { type: 'POKER_INICIO_RONDA'; fase: string; misCartas: PokerCard[]; bote: number; jugadoresActivos: string[] }
   | { type: 'POKER_NUEVA_FASE'; fase: string; bote: number; mesaVisible: PokerCard[]; jugadoresActivos: string[] }
   | { type: 'POKER_APUESTA_ACTUALIZADA'; user: string; apuestaObjetivo: number }
   | { type: 'POKER_RESULTADOS'; resultados: PokerResultado }
@@ -698,9 +698,9 @@ function gameReducer(state: GameState, action: Action): GameState {
           fase: action.fase,
           misCartas: action.misCartas,
           mesaVisible: [],
-          bote: 0,
+          bote: action.bote,
           apuestaObjetivo: 0,
-          jugadoresActivos: Object.keys(state.players),
+          jugadoresActivos: action.jugadoresActivos,
           hasActedThisPhase: false,
           resultados: null,
         },
@@ -714,6 +714,7 @@ function gameReducer(state: GameState, action: Action): GameState {
           fase: action.fase,
           bote: action.bote,
           mesaVisible: action.mesaVisible,
+          apuestaObjetivo: 0,
           jugadoresActivos: action.jugadoresActivos,
           hasActedThisPhase: state.myUsername
             ? !action.jugadoresActivos.includes(state.myUsername)
@@ -1253,6 +1254,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
               type: 'POKER_INICIO_RONDA',
               fase: data.fase as string,
               misCartas,
+              bote: data.bote_actual as number,
+              jugadoresActivos: data.jugadores_activos as string[],
             });
             break;
           }

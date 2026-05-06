@@ -244,20 +244,22 @@ export default function PokerUI({ onClose }: PokerUIProps) {
 
           {/* Player Identity + Cards */}
           <div className="flex items-center gap-10">
-            <div className="flex flex-row -space-x-14">
-              {myCards.map((card, i) => (
-                <div key={i} className={`w-32 h-44 rotate-[${i === 0 ? '-12deg' : '12deg'}] shadow-2xl transition-transform hover:-translate-y-6 hover:scale-105 group relative`}>
-                  <div className="absolute inset-0 bg-blue-400/10 opacity-0 group-hover:opacity-100 rounded-lg blur-md transition-opacity" />
-                  <Image
-                    src={cardSrc(card)}
-                    alt="Your card"
-                    className="w-full h-full object-contain pixelated relative z-10"
-                    height={176}
-                    width={128}
-                  />
-                </div>
-              ))}
-            </div>
+            {myCards.length > 0 && (
+              <div className="flex flex-row -space-x-14">
+                {myCards.map((card, i) => (
+                  <div key={i} className={`w-32 h-44 rotate-[${i === 0 ? '-12deg' : '12deg'}] shadow-2xl transition-transform hover:-translate-y-6 hover:scale-105 group relative`}>
+                    <div className="absolute inset-0 bg-blue-400/10 opacity-0 group-hover:opacity-100 rounded-lg blur-md transition-opacity" />
+                    <Image
+                      src={cardSrc(card)}
+                      alt="Your card"
+                      className="w-full h-full object-contain pixelated relative z-10"
+                      height={176}
+                      width={128}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="flex flex-col items-start gap-3 relative">
               {canAct && (
@@ -286,55 +288,61 @@ export default function PokerUI({ onClose }: PokerUIProps) {
             )}
 
             {!amIActive && pokerState.fase !== 'Resultados' && pokerState.fase !== '' && (
-              <div className="bg-red-900/60 border border-red-500/30 px-6 py-3 rounded-lg">
-                <span className="text-red-300 text-sm font-pixel tracking-widest">TE HAS RETIRADO</span>
+              <div className="bg-red-900/60 border border-red-500/30 px-6 py-3 rounded-lg text-center">
+                {myCards.length > 0 ? (
+                  <span className="text-red-300 text-sm font-pixel tracking-widest">TE HAS RETIRADO</span>
+                ) : (
+                  <span className="text-red-300 text-sm font-pixel tracking-widest">MÁS SUERTE LA PRÓXIMA VEZ</span>
+                )}
               </div>
             )}
 
-            <div className="flex flex-row gap-5 items-center">
-              <PixelButton
-                variant="red"
-                className="w-44 py-6 text-sm"
-                onClick={handleFold}
-                disabled={!canAct}
-              >
-                RETIRARSE
-              </PixelButton>
-
-              <PixelButton
-                variant={pokerState.apuestaObjetivo > 0 ? "purple" : "green"}
-                className="w-56 py-6 text-sm"
-                onClick={handleCall}
-                disabled={!canAct}
-              >
-                {pokerState.apuestaObjetivo > 0 ? `IGUALAR ${pokerState.apuestaObjetivo}¢` : "PASAR"}
-              </PixelButton>
-
-              <div className="flex flex-col gap-4 p-4 bg-slate-900/60 border border-purple-500/30 rounded-lg backdrop-blur-md w-64 shadow-2xl group">
-                <div className="flex justify-between items-center opacity-80">
-                  <span className="text-purple-400 text-[9px] font-pixel tracking-widest">SUBIR APUESTA</span>
-                  <span className="text-white text-sm font-bold font-mono">+{raiseAmount}¢</span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max={Math.max(1, maxBet - pokerState.apuestaObjetivo)}
-                  step="1"
-                  value={raiseAmount}
-                  onChange={(e) => setRaiseAmount(parseInt(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
-                  disabled={!canAct}
-                />
+            {amIActive && (
+              <div className="flex flex-row gap-5 items-center">
                 <PixelButton
-                  variant="purple"
-                  className="w-full py-5 text-sm"
-                  disabled={!canAct || maxBet < pokerState.apuestaObjetivo + 1}
-                  onClick={handleRaise}
+                  variant="red"
+                  className="w-44 py-6 text-sm"
+                  onClick={handleFold}
+                  disabled={!canAct}
                 >
-                  SUBIR
+                  RETIRARSE
                 </PixelButton>
+
+                <PixelButton
+                  variant={pokerState.apuestaObjetivo > 0 ? "purple" : "green"}
+                  className="w-56 py-6 text-sm"
+                  onClick={handleCall}
+                  disabled={!canAct}
+                >
+                  {pokerState.apuestaObjetivo > 0 ? `IGUALAR ${pokerState.apuestaObjetivo}¢` : "PASAR"}
+                </PixelButton>
+
+                <div className="flex flex-col gap-4 p-4 bg-slate-900/60 border border-purple-500/30 rounded-lg backdrop-blur-md w-64 shadow-2xl group">
+                  <div className="flex justify-between items-center opacity-80">
+                    <span className="text-purple-400 text-[9px] font-pixel tracking-widest">SUBIR APUESTA</span>
+                    <span className="text-white text-sm font-bold font-mono">+{raiseAmount}¢</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max={Math.max(1, maxBet - pokerState.apuestaObjetivo)}
+                    step="1"
+                    value={raiseAmount}
+                    onChange={(e) => setRaiseAmount(parseInt(e.target.value))}
+                    className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                    disabled={!canAct}
+                  />
+                  <PixelButton
+                    variant="purple"
+                    className="w-full py-5 text-sm"
+                    disabled={!canAct || maxBet < pokerState.apuestaObjetivo + 1}
+                    onClick={handleRaise}
+                  >
+                    SUBIR
+                  </PixelButton>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
