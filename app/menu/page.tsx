@@ -642,6 +642,7 @@ export default function MenuPage() {
 
                 {isRulesOpen && <RulesModal onClose={() => setIsRulesOpen(false)} />}
                 {isSearchModalOpen && <UserSearchModal 
+                    existingFriends={friends.map(f => f.username)}
                     onClose={() => setIsSearchModalOpen(false)} 
                     onSendRequest={(username) => {
                         if (sessionSocketRef.current?.readyState === WebSocket.OPEN) {

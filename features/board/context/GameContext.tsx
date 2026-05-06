@@ -911,6 +911,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ action: 'debug_force_poker' }));
           console.log("🃏 Cheat activado: Comando 'Forzar Poker' enviado al servidor.");
+          // Forzar la apertura de la UI tras medio segundo (evita el bloqueo por falta de animación)
+          setTimeout(() => {
+            dispatch({ type: 'OPEN_POKER' });
+          }, 500);
         } else {
           console.warn("No hay conexión WS activa con la partida.");
         }

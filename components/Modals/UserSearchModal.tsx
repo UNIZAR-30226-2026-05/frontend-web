@@ -15,9 +15,10 @@ interface UserSearchModalProps {
     onClose: () => void;
     onSendRequest: (username: string) => void;
     onRemoveFriend?: (username: string) => void;
+    existingFriends?: string[];
 }
 
-export default function UserSearchModal({ onClose, onSendRequest, onRemoveFriend }: UserSearchModalProps) {
+export default function UserSearchModal({ onClose, onSendRequest, onRemoveFriend, existingFriends = [] }: UserSearchModalProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState<User[]>([]);
 
@@ -33,10 +34,13 @@ export default function UserSearchModal({ onClose, onSendRequest, onRemoveFriend
                 const response = await fetch(`${backendUrl}/usuarios/filtrar_usuarios?cadena=${searchQuery}`);
                 if (response.ok) {
                     const data = await response.json();
-                    const formattedUsers = data.map((u: any) => ({
-                        username: typeof u === 'string' ? u : u.username || u.nombre || u,
-                        status: 'none'
-                    }));
+                    const formattedUsers = data.map((u: any) => {
+                        const name = typeof u === 'string' ? u : u.username || u.nombre || u;
+                        return {
+                            username: name,
+                            status: existingFriends.includes(name) ? 'added' : 'none'
+                        };
+                    });
                     setUsers(formattedUsers);
                 }
             } catch (error) {
