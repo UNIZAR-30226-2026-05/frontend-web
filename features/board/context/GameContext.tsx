@@ -97,15 +97,14 @@ interface DobleNadaResult {
   outcome: 'ganado' | 'perdido' | 'pasado';
   delta: number;
 }
-
 interface OrderMinijuegoDetails {
   objetivo?: number;
   cartas?: number[];
+  vagones?: number[];
 }
 
 interface GameState {
   players: Record<string, GamePlayer>;
-  /** Qué posición del orden está jugando ahora (1–4). 0 = entre rondas. */
   currentTurnOrder: number;
   /** El jugador local ya tiró los dados esta ronda */
   hasMoved: boolean;

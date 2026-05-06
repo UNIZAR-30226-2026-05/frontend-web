@@ -4,25 +4,20 @@ import { type CSSProperties, useState } from "react";
 import { usePathname } from "next/navigation";
 import PixelButton from "@/components/UI/PixelButton";
 import Image from "next/image";
+import { useGameContext } from "@/features/board/context/GameContext";
 
 interface TrenUIProps {
   onAction: (result: { score: number; objetivo?: number }) => void;
 }
 
-// Pool de 10 vagones con recuentos fijos
-const WAGON_POOL = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, count: i + 1 }));
-
-function buildSelectedWagons(count: number, keepSorted: boolean) {
-  const pool = [...WAGON_POOL];
-
-  if (keepSorted) {
-    pool.sort((a, b) => a.id - b.id);
-  } else {
-    pool.sort(() => Math.random() - 0.5);
-  }
-
-  return pool.slice(0, count);
-}
+const WAGON_IMAGES: Record<number, string> = {
+  13: "/minijuegos/tren/vagon1_13pj.png",
+  11: "/minijuegos/tren/vagon2_11pj.png",
+  6: "/minijuegos/tren/vagon3_6pj.png",
+  16: "/minijuegos/tren/vagon4_16pj.png",
+  14: "/minijuegos/tren/vagon5_14pj.png",
+  8: "/minijuegos/tren/vagon6_8pj.png",
+};
 
 /**
  * TrenUI: Minijuego de contar pasajeros.
@@ -33,6 +28,7 @@ function buildSelectedWagons(count: number, keepSorted: boolean) {
  * con el dibujo de las vías en cualquier resolución.
  */
 export default function TrenUI({ onAction }: TrenUIProps) {
+  const { state } = useGameContext();
   const pathname = usePathname();
   const isDebugRoute = pathname.includes("debug");
   const [userCount, setUserCount] = useState(0);
@@ -43,8 +39,11 @@ export default function TrenUI({ onAction }: TrenUIProps) {
   const [debugScale, setDebugScale] = useState(46.0); // Ancho en %
   const [debugStartX, setDebugStartX] = useState(-234); // Inicio en %
   const [debugTimePerWagon, setDebugTimePerWagon] = useState(4.0); // Tiempo (s) por vagón en escena
-  const [debugWagonCount, setDebugWagonCount] = useState(4);
-  const [selectedWagons, setSelectedWagons] = useState(() => buildSelectedWagons(isDebugRoute ? 4 : 4, isDebugRoute));
+
+  const backendWagons = isDebugRoute 
+    ? [13, 11, 6, 16] 
+    : (state.currentOrderMinijuegoDetails?.vagones as number[]) || [];
+  
   const [isPreviewing, setIsPreviewing] = useState(() => !isDebugRoute); // En debug no empieza sola
   const [showDebug, setShowDebug] = useState(true);
   const isDebug = isDebugRoute && showDebug;
@@ -53,7 +52,7 @@ export default function TrenUI({ onAction }: TrenUIProps) {
     if (isFinished) return;
     setIsFinished(true);
     
-    const trueTotal = selectedWagons.reduce((sum, w) => sum + w.count, 0);
+    const trueTotal = backendWagons.reduce((sum, count) => sum + count, 0);
     
     onAction({ score: userCount, objetivo: trueTotal });
   };
@@ -103,16 +102,7 @@ export default function TrenUI({ onAction }: TrenUIProps) {
             />
           </div>
           <div className="flex flex-col">
-            <label>Wagons (Count): {debugWagonCount}</label>
-            <input 
-              type="range" min="1" max="10" step="1" 
-              value={debugWagonCount} onChange={(e) => {
-                const nextWagonCount = parseInt(e.target.value);
-                setDebugWagonCount(nextWagonCount);
-                setSelectedWagons(buildSelectedWagons(nextWagonCount, true));
-              }}
-              className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
-            />
+            <label>Wagons (Count): {backendWagons.length}</label>
           </div>
           <div className="flex flex-col">
             <label>Time per Wagon (Speed): {debugTimePerWagon.toFixed(1)}s</label>
@@ -127,7 +117,7 @@ export default function TrenUI({ onAction }: TrenUIProps) {
             translateY: {debugTranslateY.toFixed(1)}%,<br />
             width: {debugScale.toFixed(1)}%,<br />
             startX: {debugStartX.toFixed(0)}%,<br />
-            wagons: {debugWagonCount},<br />
+            wagons: {backendWagons.length},<br />
             wagonSpeed: {debugTimePerWagon.toFixed(1)}s
           </div>
           
@@ -175,31 +165,20 @@ export default function TrenUI({ onAction }: TrenUIProps) {
             - Usamos translate-y para que la base de las ruedas coincida.
         */}
         <div 
-            key={isPreviewing ? `preview-${debugWagonCount}-${debugTimePerWagon}` : 'static'}
+            key={isPreviewing ? `preview-${backendWagons.length}-${debugTimePerWagon}` : 'static'}
             className={`absolute left-0 w-full z-10 flex ${isPreviewing ? 'animate-[moveTrain_var(--duration)_linear_forwards]' : ''} items-baseline`}
           style={{ 
                 top: `${debugTop}%`, 
                 transform: `translateY(${debugTranslateY}%) translateX(${debugStartX}%)`,
-                '--duration': `${(debugTimePerWagon * (100 + (debugWagonCount + 1) * debugScale)) / (100 + debugScale)}s`
+                '--duration': `${(debugTimePerWagon * (100 + backendWagons.length * debugScale)) / (100 + debugScale)}s`
           } as CSSProperties & { "--duration": string }}
         >
-            {/* Locomotora */}
-            <div className="relative shrink-0" style={{ width: `${debugScale}%`, aspectRatio: '677/369' }}>
-                <Image 
-                    src="/minijuegos/tren/locomotora.png" 
-                    alt="Locomotora" 
-                    fill 
-                    className="object-contain"
-                    unoptimized
-                />
-            </div>
-            
             {/* Vagones Dinámicos */}
-            {selectedWagons.map((wagon, wIdx) => (
+            {[...backendWagons].reverse().map((capacidad, wIdx) => (
                 <div key={wIdx} className="relative shrink-0 ml-[-0.5%]" style={{ width: `${debugScale}%`, aspectRatio: '677/369' }}>
                     <Image 
-                        src={`/minijuegos/tren/vagon${wagon.count}.png`} 
-                        alt={`Vagón con ${wagon.count} pasajeros`} 
+                        src={WAGON_IMAGES[capacidad] || WAGON_IMAGES[13]} 
+                        alt={`Vagón con ${capacidad} pasajeros`} 
                         fill 
                         className="object-contain"
                         unoptimized
