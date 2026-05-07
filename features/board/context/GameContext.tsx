@@ -180,6 +180,8 @@ interface GameState {
   showBarreraModal: boolean;
   isGameOver: boolean;
   gameWinner: string | null;
+  bufferedRuletaMove: { user: string; newPos: number } | null;
+  bufferedRuletaBalances: Record<string, number> | null;
 }
 
 // -------------------------------------------------------------------
@@ -243,7 +245,8 @@ export type Action =
   /** El backend confirma el fin de ronda (antes de lanzar el minijuego de orden) */
   | { type: 'ROUND_ENDED' }
   | { type: 'GAME_OVER'; winner: string }
-  | { type: 'UPGRADE_DICE' };
+  | { type: 'UPGRADE_DICE' }
+  | { type: 'FLUSH_RULETA_BUFFER' };
 
 
 // -------------------------------------------------------------------
@@ -288,6 +291,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         pokerState: { ...initialPokerState },
         dilemaResultados: null,
         showBarreraModal: false,
+        bufferedRuletaMove: null,
+        bufferedRuletaBalances: null,
       };
     }
 
@@ -330,6 +335,9 @@ function gameReducer(state: GameState, action: Action): GameState {
     }
 
     case 'PLAYER_MOVED_FORCED': {
+      if (state.pendingObjetoRuleta && state.pendingObjetoRuleta.user === action.user) {
+        return { ...state, bufferedRuletaMove: { user: action.user, newPos: action.newPos } };
+      }
       const player = state.players[action.user];
       if (!player) return state;
       return {
@@ -363,6 +371,9 @@ function gameReducer(state: GameState, action: Action): GameState {
     }
 
     case 'BALANCES_CHANGED': {
+      if (state.pendingObjetoRuleta) {
+        return { ...state, bufferedRuletaBalances: action.balances };
+      }
       const updatedPlayers = { ...state.players };
       for (const [username, balance] of Object.entries(action.balances)) {
         if (updatedPlayers[username]) {
@@ -452,6 +463,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         pokerState: { ...initialPokerState },
         dilemaResultados: null,
         showBarreraModal: false,
+        bufferedRuletaMove: null,
+        bufferedRuletaBalances: null,
       };
     }
 
@@ -502,6 +515,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         showPoker: false,
         dilemaResultados: null,
         showBarreraModal: false,
+        bufferedRuletaMove: null,
+        bufferedRuletaBalances: null,
       };
     }
 
@@ -799,6 +814,30 @@ function gameReducer(state: GameState, action: Action): GameState {
       };
     }
 
+    case 'FLUSH_RULETA_BUFFER': {
+      let nextState = { ...state, players: { ...state.players } };
+      
+      if (nextState.bufferedRuletaMove) {
+        const { user, newPos } = nextState.bufferedRuletaMove;
+        if (nextState.players[user]) {
+          nextState.players[user] = { ...nextState.players[user], position: newPos };
+          nextState.isAnyoneAnimating = true;
+        }
+        nextState.bufferedRuletaMove = null;
+      }
+      
+      if (nextState.bufferedRuletaBalances) {
+        for (const [username, balance] of Object.entries(nextState.bufferedRuletaBalances)) {
+          if (nextState.players[username]) {
+            nextState.players[username] = { ...nextState.players[username], balance };
+          }
+        }
+        nextState.bufferedRuletaBalances = null;
+      }
+      
+      return nextState;
+    }
+
     default:
       return state;
   }
@@ -829,6 +868,8 @@ const initialState: GameState = {
   currentOrderMinijuego: null,
   currentOrderMinijuegoDetails: null,
   showDobleNada: false,
+  bufferedRuletaMove: null,
+  bufferedRuletaBalances: null,
   landedOnNegativeMove: false,
   landedOnBarrera: false,
   penaltyTurns: 0,

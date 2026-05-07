@@ -205,16 +205,28 @@ function RuletaController() {
   const isSpectator = state.pendingObjetoRuleta.user !== myPlayer?.username;
 
   const handleAction = (result: { name: string; image: string }) => {
-    if (!isSpectator) {
-      // Limpiar estado y terminar turno (el backend aplica el efecto automáticamente)
-      dispatch({ type: 'SET_PENDING_OBJETO_RULETA', data: null });
-      dispatch({ type: 'HIDE_RULETA' });
+    let willAnimateMove = false;
+    if (state.bufferedRuletaMove) {
+      const user = state.bufferedRuletaMove.user;
+      const currentPos = state.players[user]?.position;
+      if (currentPos !== state.bufferedRuletaMove.newPos) {
+        willAnimateMove = true;
+      }
+    }
+
+    dispatch({ type: 'FLUSH_RULETA_BUFFER' });
+    dispatch({ type: 'SET_PENDING_OBJETO_RULETA', data: null });
+    dispatch({ type: 'HIDE_RULETA' });
+
+    // Si no va a haber animación (porque no es un movimiento, porque la distancia es 0, o porque ya se animó),
+    // o si somos espectadores (y por tanto no dependemos de enviar el fin de turno),
+    // liberamos la animación.
+    // Si va a haber animación y somos el jugador activo, la propia animación al terminar llamará a sendEndRound()
+    if (!willAnimateMove || isSpectator) {
       dispatch({ type: 'SET_ANYONE_ANIMATING', value: false });
-      sendEndRound();
-    } else {
-      // Espectador solo limpia la UI
-      dispatch({ type: 'HIDE_RULETA' });
-      dispatch({ type: 'SET_ANYONE_ANIMATING', value: false });
+      if (!isSpectator) {
+        sendEndRound();
+      }
     }
   };
 

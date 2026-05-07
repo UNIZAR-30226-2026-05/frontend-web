@@ -42,7 +42,6 @@ type QueuedTransition =
 
 export default function BoardOverlay() {
   const { state, playerOrder, myPlayer, notifyAnimationEnded } = useGameContext();
-  const animatedUser = state.lastDice?.user ?? null;
 
   // Posición que se renderiza actualmente (animada, puede ir por detrás de la real)
   const [displayPositions, setDisplayPositions] = useState<Record<string, number>>({});
@@ -184,13 +183,6 @@ export default function BoardOverlay() {
           return;
         }
 
-        // Solo animamos casilla a casilla al jugador que acaba de tirar.
-        // Si otro jugador cambia por un efecto colateral del backend, sincronizamos directo.
-        if (username !== animatedUser) {
-          syncPosition(username, position);
-          return;
-        }
-
         if (hasFreshSwapEvent && swapEvent.actor === username) {
           const partnerTo = state.players[swapEvent.otherUser]?.position;
           if (partnerTo === undefined) {
@@ -217,11 +209,12 @@ export default function BoardOverlay() {
         }
 
         if (!busy.current[username]) {
-          // Primera animación del movimiento: esperar a que se vea el dado
+          // Primera animación del movimiento: esperar a que se vea el dado (si aún es visible)
           busy.current[username] = true;
+          const delay = state.lastDice?.user === username ? DICE_SHOW_DELAY_MS : FORCED_MOVE_PAUSE_MS;
           setTimeout(() => {
             startAnimRef.current!(username, displayPosRef.current[username] ?? 0, position);
-          }, DICE_SHOW_DELAY_MS);
+          }, delay);
         } else {
           // Ya hay animación en curso o delay pendiente: encolar el destino
           queues.current[username].push({ kind: 'path', to: position });
@@ -232,7 +225,7 @@ export default function BoardOverlay() {
     if (hasFreshSwapEvent && swapEvent) {
       processedSwapEventId.current = swapEvent.id;
     }
-  }, [animatedUser, playerOrder, state.lastSwapEvent, state.players, syncPosition]);
+  }, [playerOrder, state.lastSwapEvent, state.players, syncPosition]);
 
   // Agrupamiento por casilla usando posiciones ANIMADAS
   const playersByTile: Record<number, string[]> = {};
