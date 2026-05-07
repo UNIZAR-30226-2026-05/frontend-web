@@ -110,7 +110,14 @@ export default function DebugMinigamesPage() {
         jugadoresActivos: [],
         hasActedThisPhase: false,
         resultados: null,
+        turnoDe: null,
       },
+      turnoDeUser: "debug_user",
+      waitingForMinigameResults: false,
+      dilemaResultados: null,
+      showBarreraModal: false,
+      isGameOver: false,
+      gameWinner: null,
     },
     isMyTurn: true,
     myPlayer: mockPlayer,
@@ -131,6 +138,7 @@ export default function DebugMinigamesPage() {
     sendRoboBanquero: () => undefined,
     sendScoreDilema: () => undefined,
     sendPokerAction: () => undefined,
+    sendUsarObjeto: () => undefined,
   };
 
   const minigames: { id: DebugMinigameId; label: string }[] = [
@@ -249,7 +257,6 @@ export default function DebugMinigamesPage() {
                 { dado1: 6, dado2: 1, diceType: "bronce" },
                 { dado1: 3, dado2: 5, diceType: "normal" },
               ]}
-              onClose={() => setActiveMinigame(null)}
             />
           )}
 

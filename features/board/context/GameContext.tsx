@@ -873,7 +873,7 @@ export interface GameContextType {
   /** Enviar decisión del dilema del prisionero (cooperar o traicionar) */
   sendScoreDilema: (decision: "cooperar" | "traicionar") => void;
   /** Enviar acción de poker (apostar/retirarse) */
-  sendPokerAction: (decision: 'apostar' | 'retirarse', cantidad: number) => void;
+  sendPokerAction: (decision: 'apostar' | 'retirarse' | 'pasar', cantidad: number) => void;
   /** Enviar uso de objeto con objetivo opcional (para Barrera) */
   sendUsarObjeto: (objeto: string, targetUser?: string) => void;
 }

@@ -77,10 +77,14 @@ export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }
   };
 
   useEffect(() => {
-    if (isSpectator && !isSpinning && !showResult) {
-      spin();
+    // Iniciamos el giro automáticamente tras un breve delay para que el usuario vea la ruleta
+    if (!isSpinning && !showResult) {
+      const timer = setTimeout(() => {
+        spin();
+      }, 1500);
+      return () => clearTimeout(timer);
     }
-  }, [isSpectator]);
+  }, []);
 
   const handleAccept = () => {
     if (winningIndex !== null && onAction) {
