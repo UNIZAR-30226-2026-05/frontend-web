@@ -208,16 +208,6 @@ export default function Dice({ onOpenShop }: DiceProps) {
         <div className="flex gap-4 w-full">
           {!hasMoved && (
             <>
-              {myPlayer?.character === 'banquero' && (
-                <PixelButton
-                  variant={state.hasUsedAbility ? "red" : "green"}
-                  onClick={() => dispatch({ type: 'SET_SHOW_BANQUERO_MODAL', value: true })}
-                  disabled={state.hasUsedAbility}
-                  className="flex-1 text-sm py-4 uppercase disabled:opacity-50"
-                >
-                  {state.hasUsedAbility ? "Robado" : "Robar"}
-                </PixelButton>
-              )}
               <PixelButton
                 variant="purple"
                 onClick={onOpenShop}

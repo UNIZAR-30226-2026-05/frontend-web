@@ -18,6 +18,7 @@ import MinigameResultOverlay from "@/features/board/components/MinigameResultOve
 import RuletaUI from "@/features/board/components/RuletaUI";
 import PokerUI from "@/features/minigames/components/PokerUI";
 import BarreraModal from "@/features/board/components/BarreraModal";
+import GameOverOverlay from "@/features/board/components/GameOverOverlay";
 
 // Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
 const WS_NAME_TO_ID: Record<string, string> = {
@@ -114,7 +115,13 @@ function DobleNadaController() {
 
 /** Muestra el modal de robo del banquero. */
 function BanqueroRoboController() {
-  const { state, playerOrder, sendRoboBanquero } = useGameContext();
+  const { state, playerOrder, sendRoboBanquero, isMyTurn, myPlayer, dispatch } = useGameContext();
+
+  useEffect(() => {
+    if (isMyTurn && myPlayer?.character === 'banquero' && !state.hasUsedAbility && !state.hasMoved && !state.showBanqueroModal) {
+      dispatch({ type: 'SET_SHOW_BANQUERO_MODAL', value: true });
+    }
+  }, [isMyTurn, myPlayer?.character, state.hasUsedAbility, state.hasMoved, state.showBanqueroModal, dispatch]);
 
   if (!state.showBanqueroModal) return null;
 
@@ -279,6 +286,27 @@ function BarreraController() {
   );
 }
 
+/** Muestra la pantalla final del juego */
+function GameOverController() {
+  const { state, playerOrder } = useGameContext();
+
+  // No mostrar la pantalla final hasta que todas las animaciones hayan terminado
+  if (!state.isGameOver || state.isAnyoneAnimating) return null;
+
+  return (
+    <GameOverOverlay 
+      players={playerOrder.map(p => ({ 
+        username: p.username, 
+        character: p.character || 'banquero', 
+        balance: p.balance 
+      }))}
+      onReturnToMenu={() => {
+        window.location.href = '/menu';
+      }}
+    />
+  );
+}
+
 export default function GamePage() {
   const [lobbyPlayers] = useState<unknown[]>(() => getLobbyPlayers());
   const [unavailableRoles, setUnavailableRoles] = useState<string[]>([]);
@@ -430,6 +458,9 @@ export default function GamePage() {
           onClose={() => setActiveMinigame(null)}
         />
       )}
+
+      {/* Pantalla Final de Partida */}
+      <GameOverController />
 
     </main>
     </GameProvider>

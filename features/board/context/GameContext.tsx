@@ -178,6 +178,8 @@ interface GameState {
   dilemaResultados: Record<string, 'cooperar' | 'traicionar'> | null;
   /** Mostrar el modal de la barrera */
   showBarreraModal: boolean;
+  isGameOver: boolean;
+  gameWinner: string | null;
 }
 
 // -------------------------------------------------------------------
@@ -239,7 +241,8 @@ export type Action =
   /** El backend ha declarado quién juega a continuación */
   | { type: 'TURNO_DE'; user: string; ronda: number }
   /** El backend confirma el fin de ronda (antes de lanzar el minijuego de orden) */
-  | { type: 'ROUND_ENDED' };
+  | { type: 'ROUND_ENDED' }
+  | { type: 'GAME_OVER'; winner: string };
 
 
 // -------------------------------------------------------------------
@@ -773,6 +776,9 @@ function gameReducer(state: GameState, action: Action): GameState {
         dilemaResultados: action.resultados,
       };
 
+    case 'GAME_OVER':
+      return { ...state, isGameOver: true, gameWinner: action.winner };
+
     default:
       return state;
   }
@@ -827,6 +833,8 @@ const initialState: GameState = {
   dilemaResultados: null,
   showBarreraModal: false,
   turnoDeUser: null,
+  isGameOver: false,
+  gameWinner: null,
 };
 
 // -------------------------------------------------------------------
@@ -1348,6 +1356,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
               type: 'DILEMA_RESULTADOS',
               resultados: data.decisiones as Record<string, 'cooperar' | 'traicionar'>,
             });
+            break;
+          }
+
+          case 'fin_partida': {
+            dispatch({ type: 'GAME_OVER', winner: data.winner as string });
             break;
           }
         }
