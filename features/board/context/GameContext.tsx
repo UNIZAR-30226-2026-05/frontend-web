@@ -937,6 +937,7 @@ export interface GameContextType {
   sendPokerAction: (decision: 'apostar' | 'retirarse' | 'pasar', cantidad: number) => void;
   /** Enviar uso de objeto con objetivo opcional (para Barrera) */
   sendUsarObjeto: (objeto: string, targetUser?: string) => void;
+  sendResetAfk: () => void;
 }
 
 export const GameContext = createContext<GameContextType | null>(null);
@@ -1022,6 +1023,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ action: 'fin_turno' }));
     dispatch({ type: 'LOCAL_END_ROUND' });
+  }, []);
+
+  const sendResetAfk = useCallback(() => {
+    const ws = getGameSocket();
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ action: 'reset_afk' }));
   }, []);
 
   const markItemPurchased = useCallback((item: string) => {
@@ -1590,7 +1597,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const playerOrder = Object.values(state.players).sort((a, b) => a.turnOrder - b.turnOrder);
 
   return (
-        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendScoreDobleNada, sendIniRound, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch, sendRoboBanquero, sendScoreDilema, sendPokerAction, sendUsarObjeto }}>
+        <GameContext.Provider value={{ state, isMyTurn, myPlayer, playerOrder, sendMovePlayer, sendEndRound, sendScoreReflejos, sendScoreOrden, sendScoreDobleNada, sendIniRound, markItemPurchased, notifyAnimationEnded, isAnyoneAnimating: state.isAnyoneAnimating, dispatch, sendRoboBanquero, sendScoreDilema, sendPokerAction, sendUsarObjeto, sendResetAfk }}>
 
 
 
