@@ -27,6 +27,7 @@ interface ShopModalProps {
 
 export default function ShopModal({ onClose }: ShopModalProps) {
   const { myPlayer, state, markItemPurchased, dispatch, sendResetAfk } = useGameContext();
+  const [pendingDiceUpgrades, setPendingDiceUpgrades] = React.useState(0);
 
   useEffect(() => {
     sendResetAfk();
@@ -59,6 +60,9 @@ export default function ShopModal({ onClose }: ShopModalProps) {
       dispatch({ type: 'SET_SHOW_BARRERA_MODAL', value: true });
       onClose(); // Cerramos la tienda para que se vea el modal de selección
     } else {
+      if (item.name === 'Mejorar Dados') {
+        setPendingDiceUpgrades(prev => prev + 1);
+      }
       ws.send(JSON.stringify({ action: 'comprar_objeto', payload: { objeto: item.name } }));
       ws.send(JSON.stringify({ action: 'usar_objeto', payload: { objeto: item.name } }));
     }
@@ -121,17 +125,23 @@ export default function ShopModal({ onClose }: ShopModalProps) {
               const isMejorarDados = item.name === 'Mejorar Dados';
               const isSalvavidasBloqueo = item.name === 'Salvavidas bloqueo';
 
+              const getDiceLevel = (type: string | undefined) => type === 'oro' ? 3 : type === 'plata' ? 2 : type === 'bronce' ? 1 : 0;
+              const currentDiceLevel = getDiceLevel(myPlayer?.diceType);
+              const isDiceMaxed = item.name === 'Mejorar Dados' && (currentDiceLevel + pendingDiceUpgrades >= 3);
+
               const disabled =
                 (isSalvavidasBloqueo ? !isBlocked : isBlocked) ||
                 (isAvanzar && state.hasMoved) ||
-                (isMejorarDados && isFirstPlace);
+                (isMejorarDados && isFirstPlace) ||
+                isDiceMaxed;
 
               const disabledReason =
                 (isBlocked && !isSalvavidasBloqueo) ? 'BLOQUEADO' :
                   (isMejorarDados && isFirstPlace) ? 'BLOQUEADO: VAS 1º' :
-                    (isAvanzar && state.hasMoved) ? 'Solo antes de tirar' :
-                      (isSalvavidasBloqueo && !isBlocked) ? 'No estás bloqueado' :
-                        '';
+                    isDiceMaxed ? 'NIVEL MÁXIMO' :
+                      (isAvanzar && state.hasMoved) ? 'Solo antes de tirar' :
+                        (isSalvavidasBloqueo && !isBlocked) ? 'No estás bloqueado' :
+                          '';
 
               return (
                 <div
@@ -178,7 +188,7 @@ export default function ShopModal({ onClose }: ShopModalProps) {
                     disabled={disabled}
                     className="w-full text-xs py-3 px-2 h-14"
                   >
-                    {disabled ? "BLOQUEADO" : "COMPRAR"}
+                    {isDiceMaxed ? "MAX" : disabled ? "BLOQUEADO" : "COMPRAR"}
                   </PixelButton>
 
                   {disabledReason && (

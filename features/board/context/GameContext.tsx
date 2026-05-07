@@ -245,7 +245,7 @@ export type Action =
   /** El backend confirma el fin de ronda (antes de lanzar el minijuego de orden) */
   | { type: 'ROUND_ENDED' }
   | { type: 'GAME_OVER'; winner: string }
-  | { type: 'UPGRADE_DICE' }
+  | { type: 'UPGRADE_DICE'; user: string }
   | { type: 'FLUSH_RULETA_BUFFER' };
 
 
@@ -796,20 +796,20 @@ function gameReducer(state: GameState, action: Action): GameState {
       return { ...state, isGameOver: true, gameWinner: action.winner };
 
     case 'UPGRADE_DICE': {
-      if (!state.myUsername) return state;
-      const myPlayer = state.players[state.myUsername];
-      if (!myPlayer) return state;
+      const targetUser = action.user;
+      const player = state.players[targetUser];
+      if (!player) return state;
       
-      let newDiceType: DiceType = myPlayer.diceType;
-      if (myPlayer.diceType === 'normal') newDiceType = 'bronce';
-      else if (myPlayer.diceType === 'bronce') newDiceType = 'plata';
-      else if (myPlayer.diceType === 'plata') newDiceType = 'oro';
+      let newDiceType: DiceType = player.diceType;
+      if (player.diceType === 'normal') newDiceType = 'bronce';
+      else if (player.diceType === 'bronce') newDiceType = 'plata';
+      else if (player.diceType === 'plata') newDiceType = 'oro';
       
       return {
         ...state,
         players: {
           ...state.players,
-          [state.myUsername]: { ...myPlayer, diceType: newDiceType }
+          [targetUser]: { ...player, diceType: newDiceType }
         }
       };
     }
@@ -1439,7 +1439,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           }
 
           case 'dados_mejorados': {
-            dispatch({ type: 'UPGRADE_DICE' });
+            dispatch({ type: 'UPGRADE_DICE', user: data.user as string });
             break;
           }
         }
