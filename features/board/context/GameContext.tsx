@@ -1044,6 +1044,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         }
 
         switch (data.type as string) {
+          case 'force_disconnect': {
+            alert((data.message as string) || "Has iniciado sesión en otro lugar.");
+            window.location.href = '/';
+            break;
+          }
+
           case 'player_selected': {
             const user = data.user as string;
             const character = data.character as string;
