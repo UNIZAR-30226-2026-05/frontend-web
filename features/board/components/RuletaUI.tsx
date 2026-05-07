@@ -50,7 +50,7 @@ export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }
     
     setRotation(totalNewRotation);
     
-    const transitionDuration = 5000; // Longer for dramatic effect
+    const transitionDuration = 1500; // Longer for dramatic effect
     setTimeout(() => {
       const finalRotationNormalized = totalNewRotation % 360;
       const betaFinal = (360 - (finalRotationNormalized % 360)) % 360;
@@ -118,7 +118,7 @@ export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }
             {/* Custom CSS Roulette Wheel */}
             <div className="w-72 h-72 md:w-96 md:h-96 rounded-full border-[10px] border-[#1e293b] shadow-[0_0_40px_rgba(0,0,0,0.6),inset_0_0_30px_rgba(0,0,0,0.5)] relative overflow-hidden bg-[#1e293b]">
                 <div 
-                    className="w-full h-full transition-transform duration-[5000ms] cubic-bezier(0.2, 0, 0, 1) relative"
+                    className="w-full h-full transition-transform duration-[1500ms] cubic-bezier(0.2, 0, 0, 1) relative"
                     style={{ 
                         transform: `rotate(${rotation}deg)`,
                         background: `conic-gradient(
