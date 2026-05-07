@@ -242,7 +242,8 @@ export type Action =
   | { type: 'TURNO_DE'; user: string; ronda: number }
   /** El backend confirma el fin de ronda (antes de lanzar el minijuego de orden) */
   | { type: 'ROUND_ENDED' }
-  | { type: 'GAME_OVER'; winner: string };
+  | { type: 'GAME_OVER'; winner: string }
+  | { type: 'UPGRADE_DICE' };
 
 
 // -------------------------------------------------------------------
@@ -778,6 +779,25 @@ function gameReducer(state: GameState, action: Action): GameState {
 
     case 'GAME_OVER':
       return { ...state, isGameOver: true, gameWinner: action.winner };
+
+    case 'UPGRADE_DICE': {
+      if (!state.myUsername) return state;
+      const myPlayer = state.players[state.myUsername];
+      if (!myPlayer) return state;
+      
+      let newDiceType: DiceType = myPlayer.diceType;
+      if (myPlayer.diceType === 'normal') newDiceType = 'bronce';
+      else if (myPlayer.diceType === 'bronce') newDiceType = 'plata';
+      else if (myPlayer.diceType === 'plata') newDiceType = 'oro';
+      
+      return {
+        ...state,
+        players: {
+          ...state.players,
+          [state.myUsername]: { ...myPlayer, diceType: newDiceType }
+        }
+      };
+    }
 
     default:
       return state;
@@ -1367,6 +1387,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
           case 'fin_partida': {
             dispatch({ type: 'GAME_OVER', winner: data.winner as string });
+            break;
+          }
+
+          case 'dados_mejorados': {
+            dispatch({ type: 'UPGRADE_DICE' });
             break;
           }
         }

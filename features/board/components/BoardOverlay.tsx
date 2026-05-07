@@ -85,15 +85,48 @@ export default function BoardOverlay() {
         return;
       }
 
-      busy.current[username] = false;
-      busy.current[transition.partner] = false;
-      queues.current[username] = [];
-      queues.current[transition.partner] = [];
-      syncDisplayPositions({
-        [username]: transition.to,
-        [transition.partner]: transition.partnerTo,
-      });
-      notifyAnimationEnded(username);
+      if (transition.kind === 'swap') {
+        const partner = transition.partner;
+        const targetActor = transition.to;
+        const targetPartner = transition.partnerTo;
+        
+        const partnerStart = displayPosRef.current[partner] ?? 0;
+
+        let actorDone = false;
+        let partnerDone = false;
+
+        const checkDone = () => {
+          if (actorDone && partnerDone) {
+            busy.current[username] = false;
+            busy.current[partner] = false;
+            notifyAnimationEnded(username);
+          }
+        };
+
+        const stepAnim = (u: string, current: number, target: number, cb: () => void) => {
+          if (current === target) {
+            cb();
+            return;
+          }
+          const next = current < target ? current + 1 : current - 1;
+          syncDisplayPositions({ [u]: next });
+          setTimeout(() => stepAnim(u, next, target, cb), STEP_INTERVAL_MS);
+        };
+
+        // Limpiar colas para evitar solapamientos
+        queues.current[username] = [];
+        queues.current[partner] = [];
+
+        // Iniciar animación simultánea
+        stepAnim(username, from, targetActor, () => {
+          actorDone = true;
+          checkDone();
+        });
+        stepAnim(partner, partnerStart, targetPartner, () => {
+          partnerDone = true;
+          checkDone();
+        });
+      }
     };
 
     startAnimRef.current = (username: string, from: number, to: number) => {
