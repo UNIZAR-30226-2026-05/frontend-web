@@ -29,6 +29,24 @@ export default function ShopModal({ onClose }: ShopModalProps) {
   const { myPlayer, state, markItemPurchased, dispatch, sendResetAfk } = useGameContext();
   const [pendingDiceUpgrades, setPendingDiceUpgrades] = React.useState(0);
 
+  const getDiceLevel = (type: string | undefined) => {
+    if (type === 'oro') return 3;
+    if (type === 'plata') return 2;
+    if (type === 'bronce') return 1;
+    return 0;
+  };
+
+  const currentDiceLevel = getDiceLevel(myPlayer?.diceType);
+  const lastLevelRef = React.useRef(currentDiceLevel);
+
+  useEffect(() => {
+    if (currentDiceLevel > lastLevelRef.current) {
+      const diff = currentDiceLevel - lastLevelRef.current;
+      setPendingDiceUpgrades(prev => Math.max(0, prev - diff));
+    }
+    lastLevelRef.current = currentDiceLevel;
+  }, [currentDiceLevel]);
+
   useEffect(() => {
     sendResetAfk();
   }, [sendResetAfk]);
@@ -125,8 +143,6 @@ export default function ShopModal({ onClose }: ShopModalProps) {
               const isMejorarDados = item.name === 'Mejorar Dados';
               const isSalvavidasBloqueo = item.name === 'Salvavidas bloqueo';
 
-              const getDiceLevel = (type: string | undefined) => type === 'oro' ? 3 : type === 'plata' ? 2 : type === 'bronce' ? 1 : 0;
-              const currentDiceLevel = getDiceLevel(myPlayer?.diceType);
               const isDiceMaxed = item.name === 'Mejorar Dados' && (currentDiceLevel + pendingDiceUpgrades >= 3);
 
               const disabled =

@@ -118,6 +118,8 @@ export default function DebugMinigamesPage() {
       showBarreraModal: false,
       isGameOver: false,
       gameWinner: null,
+      bufferedRuletaMove: null,
+      bufferedRuletaBalances: null,
     },
     isMyTurn: true,
     myPlayer: mockPlayer,
@@ -139,6 +141,7 @@ export default function DebugMinigamesPage() {
     sendScoreDilema: () => undefined,
     sendPokerAction: () => undefined,
     sendUsarObjeto: () => undefined,
+    sendResetAfk: () => undefined,
   };
 
   const minigames: { id: DebugMinigameId; label: string }[] = [

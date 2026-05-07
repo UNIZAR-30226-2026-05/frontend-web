@@ -9,11 +9,14 @@ export type DiceType = "oro" | "plata" | "bronce" | "normal";
 
 const DICE_MAX: Record<DiceType, number> = { oro: 6, plata: 4, bronce: 2, normal: 6 };
 
-const filterStyles: Record<DiceType, string> = {
-  oro: "brightness(1.1) sepia(1) hue-rotate(-15deg) saturate(4)",
-  plata: "grayscale(1) brightness(1.2) contrast(1.1)",
-  bronce: "sepia(1) hue-rotate(-30deg) saturate(2) brightness(0.7)",
-  normal: "none",
+const getDiceSprite = (value: number, type: DiceType | "normal" | undefined) => {
+  if (!value) return '/dice/1.png'; // Fallback por seguridad
+
+  if (type === 'oro') return `/dice/${value}O.png`;
+  if (type === 'plata' && value <= 4) return `/dice/${value}P.png`;
+  if (type === 'bronce' && value <= 2) return `/dice/${value}B.png`;
+
+  return `/dice/${value}.png`;
 };
 
 const diceLabels: Record<DiceType, string> = {
@@ -165,12 +168,12 @@ export default function Dice({ onOpenShop }: DiceProps) {
             <span className="text-white text-5xl font-pixel">?</span>
           ) : (
             <Image
-              src={`/dice/${value}.png`}
+              src={getDiceSprite(value, isSpecial ? type : 'normal')}
               alt={`Dado ${isSpecial ? type : 'normal'} cara ${value}`}
               fill
               sizes="176px"
               className="object-contain p-2"
-              style={{ filter: isSpecial ? filterStyles[type] : 'none' }}
+              style={{ imageRendering: 'pixelated' }}
             />
           )}
         </div>
