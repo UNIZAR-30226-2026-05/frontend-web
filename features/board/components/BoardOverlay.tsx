@@ -89,19 +89,8 @@ export default function BoardOverlay() {
         const partner = transition.partner;
         const targetActor = transition.to;
         const targetPartner = transition.partnerTo;
-        
+
         const partnerStart = displayPosRef.current[partner] ?? 0;
-
-        let actorDone = false;
-        let partnerDone = false;
-
-        const checkDone = () => {
-          if (actorDone && partnerDone) {
-            busy.current[username] = false;
-            busy.current[partner] = false;
-            notifyAnimationEnded(username);
-          }
-        };
 
         const stepAnim = (u: string, current: number, target: number, cb: () => void) => {
           if (current === target) {
@@ -117,14 +106,15 @@ export default function BoardOverlay() {
         queues.current[username] = [];
         queues.current[partner] = [];
 
-        // Iniciar animación simultánea
+        // Iniciar animación secuencial: Primero el actor, luego la víctima
         stepAnim(username, from, targetActor, () => {
-          actorDone = true;
-          checkDone();
-        });
-        stepAnim(partner, partnerStart, targetPartner, () => {
-          partnerDone = true;
-          checkDone();
+          // Cuando el actor llega a su destino, la víctima empieza a moverse
+          stepAnim(partner, partnerStart, targetPartner, () => {
+            // Cuando la víctima llega, liberamos la UI
+            busy.current[username] = false;
+            busy.current[partner] = false;
+            notifyAnimationEnded(username);
+          });
         });
       }
     };
