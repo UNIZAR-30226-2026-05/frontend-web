@@ -95,12 +95,13 @@ export default function CronometroCiegoUI({ onAction, objetivo = 10 }: Cronometr
       cancelAnimationFrame(timerRef.current);
     }
 
-    // El backend almacena objetivo como randint(7,10) en segundos y clasifica
-    // con abs(score - objetivo). El score debe estar en la misma unidad: ms (int).
+    // Enviamos la diferencia absoluta en ms entre el objetivo y el tiempo conseguido.
+    // Así el backend solo tiene que ordenar de menor a mayor (menor diferencia = mejor).
     const scoreMs = Math.round(time * 1000);
     const objetivoMs = Math.round(objetivo * 1000);
+    const diffMs = Math.abs(scoreMs - objetivoMs);
 
-    onAction({ score: scoreMs, objetivo: objetivoMs });
+    onAction({ score: diffMs, objetivo: objetivoMs });
   };
 
   const formatTime = (t: number) => {
