@@ -2,15 +2,23 @@
 
 import Dice from "@/features/board/components/Dice";
 import PlayerHUD from "@/features/board/components/PlayerHUD";
-import PixelButton from "@/components/UI/PixelButton";
 import ShopModal from "@/features/shop/components/ShopModal";
 import BoardOverlay from "@/features/board/components/BoardOverlay";
 import CharacterSelectionModal from "@/features/board/components/CharacterSelectionModal";
+import VideojugadorEleccionModal from "@/features/board/components/VideojugadorEleccionModal";
 import { GameProvider } from "@/features/board/context/GameContext";
 import { useGameContext } from "@/features/board/context/GameContext";
 import { getGameSocket, getLobbyPlayers } from "@/lib/gameSocket";
 import { useEffect, useState } from "react";
 import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/components/OrderMinigameOverlay";
+import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
+import BanqueroRoboModal from "@/features/board/components/BanqueroRoboModal";
+import VidenteDadosModal from "@/features/board/components/VidenteDadosModal";
+import MinigameResultOverlay from "@/features/board/components/MinigameResultOverlay";
+import RuletaUI from "@/features/board/components/RuletaUI";
+import PokerUI from "@/features/minigames/components/PokerUI";
+import BarreraModal from "@/features/board/components/BarreraModal";
+import GameOverOverlay from "@/features/board/components/GameOverOverlay";
 
 // Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
 const WS_NAME_TO_ID: Record<string, string> = {
@@ -20,28 +28,305 @@ const WS_NAME_TO_ID: Record<string, string> = {
   Vidente: 'vidente',
 };
 
-/** Muestra el overlay de reflejos cuando el backend lo indica y envía la puntuación. */
-function ReflejosMinigameController() {
-  const { state, sendScoreReflejos } = useGameContext();
+// Mapeo nombre backend → tipo local de OrderMinigameOverlay
+const MINIJUEGO_NAME_TO_TYPE: Record<string, OrderMinigameType> = {
+  'Tren': 'tren',
+  'Reflejos': 'reflejos',
+  'Cortar pan': 'pan',
+  'Cronometro ciego': 'crono',
+  'Mayor o Menor': 'cartas',
+};
+
+/** Muestra el overlay del minijuego de orden elegido por el videojugador. */
+function OrderMinigameController() {
+  const { state, myPlayer, sendScoreOrden } = useGameContext();
 
   if (!state.showOrderMinigame) return null;
 
+  const minijuegoType = state.currentOrderMinijuego
+    ? (MINIJUEGO_NAME_TO_TYPE[state.currentOrderMinijuego] ?? 'reflejos')
+    : 'reflejos';
+
   return (
     <OrderMinigameOverlay
-      minigameType="reflejos"
-      onAction={(result: { reactionTimeMs: number }) => sendScoreReflejos(result.reactionTimeMs)}
+      minigameType={minijuegoType}
+      backendCardIndexes={state.currentOrderMinijuegoDetails?.cartas}
+      assignedCardSlot={myPlayer ? myPlayer.turnOrder - 1 : undefined}
+      objetivo={state.currentOrderMinijuegoDetails?.objetivo}
+      onAction={(result) => sendScoreOrden(result.score as number, result.objetivo)}
       onClose={() => {/* no se puede cerrar manualmente */}}
     />
   );
 }
 
+/** Muestra el modal de elección del videojugador (o vista espectador para el resto). */
+function VideojugadorEleccionController() {
+  const { state, myPlayer, sendIniRound } = useGameContext();
+
+  const isVideojugador = myPlayer?.character === 'videojugador';
+  const isWaitingForVideojugadorChoice =
+    !isVideojugador &&
+    !state.showVideojugadorEleccion &&
+    Object.keys(state.players).length > 0 &&
+    state.currentTurnOrder === 0 &&
+    !state.isAnyoneAnimating &&
+    !state.showOrderMinigame &&
+    !state.waitingForMinigameResults &&
+    !state.pendingMinigameResults &&
+    !state.showDobleNada;
+
+  if (!state.showVideojugadorEleccion && !isWaitingForVideojugadorChoice) return null;
+
+  const opciones = state.videojugadorOpciones.map(o => ({
+    id: o.nombre,
+    name: o.nombre,
+    description: o.descripcion ?? undefined,
+  }));
+
+  const handleSelect = (id: string) => {
+    const opcion = state.videojugadorOpciones.find(o => o.nombre === id);
+    if (opcion) {
+      sendIniRound(opcion.nombre, opcion.descripcion ?? '');
+    }
+  };
+
+  return (
+    <VideojugadorEleccionModal
+      isVideojugador={isVideojugador}
+      opciones={opciones}
+      onSelect={handleSelect}
+      onTimeout={isVideojugador
+        ? () => {
+            if (opciones.length > 0) handleSelect(opciones[0].id);
+          }
+        : undefined}
+    />
+  );
+}
+
+/** Muestra el overlay de Doble o Nada cuando el jugador cae en la casilla correspondiente. */
+function DobleNadaController() {
+  const { state } = useGameContext();
+
+  if (!state.showDobleNada && !state.dobleNadaResult) return null;
+
+  return <DobleNadaOverlay />;
+}
+
+/** Muestra el modal de robo del banquero. */
+function BanqueroRoboController() {
+  const { state, playerOrder, sendRoboBanquero, isMyTurn, myPlayer, dispatch } = useGameContext();
+
+  useEffect(() => {
+    if (isMyTurn && myPlayer?.character === 'banquero' && !state.hasUsedAbility && !state.hasMoved && !state.showBanqueroModal) {
+      dispatch({ type: 'SET_SHOW_BANQUERO_MODAL', value: true });
+    }
+  }, [isMyTurn, myPlayer?.character, state.hasUsedAbility, state.hasMoved, state.showBanqueroModal, dispatch]);
+
+  if (!state.showBanqueroModal) return null;
+
+  // Filtrar víctimas: todos los jugadores menos yo mismo
+  const targetPlayers = playerOrder
+    .filter(p => p.username !== state.myUsername)
+    .map(p => ({
+      username: p.username,
+      character: p.character ?? 'banquero', // fallback
+    }));
+
+  return (
+    <BanqueroRoboModal
+      targetPlayers={targetPlayers}
+      onSelect={(targetUser) => sendRoboBanquero(targetUser)}
+    />
+  );
+}
+
+/** Muestra el modal de las tiradas futuras para el vidente. */
+function VidenteController() {
+  const { state } = useGameContext();
+
+  if (!state.showVidenteModal || !state.videnteTiradas) return null;
+
+  return (
+    <VidenteDadosModal
+      tiradas={state.videnteTiradas}
+    />
+  );
+}
+
+/** Muestra el scoreboard con los resultados del minijuego de orden. */
+function MinigameResultController() {
+  const { state, dispatch } = useGameContext();
+
+  // Mientras el jugador espera los resultados del resto (ya envió su score)
+  if (state.waitingForMinigameResults && !state.pendingMinigameResults) {
+    return (
+      <MinigameResultOverlay
+        minigameName={state.currentOrderMinijuego ?? 'Minijuego'}
+        subtitle=""
+        results={[]}
+        isLoading
+        onClose={() => {}}
+      />
+    );
+  }
+
+  if (!state.pendingMinigameResults) return null;
+
+  const { resultados, minigameName } = state.pendingMinigameResults;
+
+  // Transformar Record<username, {posicion, score}> en array PlayerResult[]
+  const resultsArray = Object.entries(resultados).map(([username, data]) => {
+    const player = state.players[username];
+    return {
+      username,
+      score: data.score,
+      character: player?.character ?? 'banquero', // fallback
+      posicion: data.posicion,
+    };
+  });
+
+  return (
+    <MinigameResultOverlay
+      minigameName={minigameName}
+      subtitle={`Clasificación: ${minigameName}`}
+      results={resultsArray}
+      onClose={() => dispatch({ type: 'MINIJUEGO_RESULTADOS' })}
+    />
+  );
+}
+
+/** Muestra la ruleta de objetos cuando el jugador cae en la casilla correspondiente. */
+function RuletaController() {
+  const { state, myPlayer, sendEndRound, dispatch } = useGameContext();
+
+  if (!state.showRuleta || !state.pendingObjetoRuleta) return null;
+
+  const isSpectator = state.pendingObjetoRuleta.user !== myPlayer?.username;
+
+  const handleAction = (result: { name: string; image: string }) => {
+    let willAnimateMove = false;
+    if (state.bufferedRuletaMove) {
+      const user = state.bufferedRuletaMove.user;
+      const currentPos = state.players[user]?.position;
+      if (currentPos !== state.bufferedRuletaMove.newPos) {
+        willAnimateMove = true;
+      }
+    }
+
+    dispatch({ type: 'FLUSH_RULETA_BUFFER' });
+    dispatch({ type: 'SET_PENDING_OBJETO_RULETA', data: null });
+    dispatch({ type: 'HIDE_RULETA' });
+
+    // Si no va a haber animación (porque no es un movimiento, porque la distancia es 0, o porque ya se animó),
+    // o si somos espectadores (y por tanto no dependemos de enviar el fin de turno),
+    // liberamos la animación.
+    // Si va a haber animación y somos el jugador activo, la propia animación al terminar llamará a sendEndRound()
+    if (!willAnimateMove || isSpectator) {
+      dispatch({ type: 'SET_ANYONE_ANIMATING', value: false });
+      if (!isSpectator) {
+        sendEndRound();
+      }
+    }
+  };
+
+  return (
+    <RuletaUI 
+      targetPrize={state.pendingObjetoRuleta.objeto}
+      isSpectator={isSpectator}
+      onAction={handleAction}
+    />
+  );
+}
+
+/** Muestra el Dilema del Prisionero cuando dos jugadores coinciden. */
+function DilemaController() {
+  const { state, sendScoreDilema, dispatch } = useGameContext();
+
+  if (!state.showDilema) return null;
+
+  return (
+    <OrderMinigameOverlay
+      minigameType="dilema"
+      onAction={(result) => sendScoreDilema(result.score as "cooperar" | "traicionar")}
+      onClose={() => dispatch({ type: 'HIDE_DILEMA' })}
+    />
+  );
+}
+
+/** Muestra el Poker cuando el jugador cae en la casilla correspondiente. */
+function PokerController() {
+  const { state, sendEndRound, dispatch } = useGameContext();
+
+  if (!state.showPoker) return null;
+
+  return (
+    <PokerUI
+      onClose={() => {
+        dispatch({ type: 'HIDE_POKER' });
+        if (state.awaitingEndRound) {
+          sendEndRound();
+        }
+      }}
+    />
+  );
+}
+
+/** Muestra el modal de la barrera para elegir objetivo. */
+function BarreraController() {
+  const { state, playerOrder, sendUsarObjeto, dispatch } = useGameContext();
+
+  if (!state.showBarreraModal) return null;
+
+  // Filtrar: todos menos yo y menos el escapista (el backend lo bloquea)
+  const targetPlayers = playerOrder
+    .filter(p => p.username !== state.myUsername && p.character !== 'escapista')
+    .map(p => ({
+      username: p.username,
+      character: p.character ?? 'banquero',
+    }));
+
+  return (
+    <BarreraModal
+      targetPlayers={targetPlayers}
+      onSelect={(targetUser) => {
+        sendUsarObjeto('Barrera', targetUser);
+        dispatch({ type: 'SET_SHOW_BARRERA_MODAL', value: false });
+      }}
+      onClose={() => dispatch({ type: 'SET_SHOW_BARRERA_MODAL', value: false })}
+    />
+  );
+}
+
+/** Muestra la pantalla final del juego */
+function GameOverController() {
+  const { state, playerOrder } = useGameContext();
+
+  // No mostrar la pantalla final hasta que todas las animaciones hayan terminado
+  if (!state.isGameOver || state.isAnyoneAnimating) return null;
+
+  return (
+    <GameOverOverlay 
+      players={playerOrder.map(p => ({ 
+        username: p.username, 
+        character: p.character || 'banquero', 
+        balance: p.balance 
+      }))}
+      onReturnToMenu={() => {
+        window.location.href = '/menu';
+      }}
+    />
+  );
+}
+
 export default function GamePage() {
-  const [isShopOpen, setIsShopOpen] = useState(false);
-  const [showCharacterSelect, setShowCharacterSelect] = useState(true);
   const [lobbyPlayers] = useState<unknown[]>(() => getLobbyPlayers());
   const [unavailableRoles, setUnavailableRoles] = useState<string[]>([]);
 
-  // Debug State for Minigames
+  const [isShopOpen, setIsShopOpen] = useState(false);
+  const [showCharacterSelect, setShowCharacterSelect] = useState(true);
+
+  // Debug State for Minigames - DESACTIVADO POR DEFECTO PARA VER EL BOARD
   const [activeMinigame, setActiveMinigame] = useState<OrderMinigameType | null>(null);
 
   const handleCharacterSelect = (roleId: string) => {
@@ -133,43 +418,49 @@ export default function GamePage() {
       )}
       */}
 
-      {/* Botón Tienda (Esquina inferior izquierda) */}
-      <div className="absolute bottom-6 left-6 z-50">
-        <PixelButton 
-          variant="purple" 
-          onClick={() => setIsShopOpen(true)}
-          className="text-sm px-8 py-4 uppercase"
-        >
-          Tienda
-        </PixelButton>
+      {/* Contenedor central de acciones (Dados) */}
+      <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+        <div className="pointer-events-auto">
+          <Dice onOpenShop={() => setIsShopOpen(true)} />
+        </div>
       </div>
 
       {/* Tienda Modal */}
       {isShopOpen && (
-        <ShopModal onClose={() => setIsShopOpen(false)} />
+        <div className="fixed inset-0 z-[200]">
+          <ShopModal onClose={() => setIsShopOpen(false)} />
+        </div>
       )}
 
-      {/* Contenedor superpuesto para controles (esquina inferior derecha) */}
-      <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-10 z-50 flex flex-col items-end gap-4">
-        <Dice />
-        
-        {/* Debug: Menú de Minijuegos 
-        <div className="flex flex-wrap justify-end gap-2 max-w-[200px]">
-          {(['tren', 'reflejos', 'pan', 'crono', 'cartas'] as OrderMinigameType[]).map((type) => (
-            <button
-              key={type}
-              onClick={() => setActiveMinigame(type)}
-              className="bg-black/50 hover:bg-black/80 text-white text-[8px] font-pixel p-2 border border-white/20 rounded uppercase"
-            >
-              {type}
-            </button>
-          ))}
-        </div>
-        */}
-      </div>
+      {/* Overlay de Minijuego de Orden (elegido por el videojugador) */}
+      <OrderMinigameController />
 
-      {/* Overlay de Minijuego de Orden (Reflejos) - gestionado por el backend */}
-      <ReflejosMinigameController />
+      {/* Modal de elección del videojugador */}
+      <VideojugadorEleccionController />
+
+      {/* Overlay de Doble o Nada */}
+      <DobleNadaController />
+
+      {/* Modal de Robo del Banquero */}
+      <BanqueroRoboController />
+
+      {/* Modal del Vidente */}
+      <VidenteController />
+
+      {/* Scoreboard de resultados del minijuego */}
+      <MinigameResultController />
+
+      {/* Ruleta de objetos */}
+      <RuletaController />
+
+      {/* Dilema del Prisionero */}
+      <DilemaController />
+
+      {/* Mano de Poker */}
+      <PokerController />
+
+      {/* Modal de Barrera */}
+      <BarreraController />
 
       {/* Overlay de Minijuegos de Orden */}
       {activeMinigame && (
@@ -179,6 +470,9 @@ export default function GamePage() {
           onClose={() => setActiveMinigame(null)}
         />
       )}
+
+      {/* Pantalla Final de Partida */}
+      <GameOverController />
 
     </main>
     </GameProvider>

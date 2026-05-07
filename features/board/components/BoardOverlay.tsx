@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useGameContext } from '@/features/board/context/GameContext';
 
@@ -12,33 +12,7 @@ import { useGameContext } from '@/features/board/context/GameContext';
  *   se aplica el desplazamiento adicional.
  */
 
-// Coordenadas calibradas manualmente (0-71)
-const BOARD_COORDS = [
-  { "x": 15.03, "y": 87.72 }, { "x": 23.02, "y": 87.95 }, { "x": 28.16, "y": 87.72 },
-  { "x": 33.3, "y": 88.11 }, { "x": 38.4, "y": 88.11 }, { "x": 43.5, "y": 88.19 },
-  { "x": 48.69, "y": 88.03 }, { "x": 53.97, "y": 88.03 }, { "x": 58.98, "y": 88.03 },
-  { "x": 64.17, "y": 88.03 }, { "x": 69.36, "y": 88.19 }, { "x": 74.63, "y": 87.56 },
-  { "x": 80.13, "y": 83.62 }, { "x": 84.48, "y": 78.74 }, { "x": 87.98, "y": 72.05 },
-  { "x": 91.18, "y": 64.09 }, { "x": 92.42, "y": 54.17 }, { "x": 92.68, "y": 45.2 },
-  { "x": 92.28, "y": 35.28 }, { "x": 89.49, "y": 26.06 }, { "x": 85.54, "y": 18.98 },
-  { "x": 80.4, "y": 14.09 }, { "x": 74.77, "y": 12.76 }, { "x": 69.31, "y": 12.6 },
-  { "x": 64.3, "y": 12.68 }, { "x": 58.98, "y": 12.52 }, { "x": 53.92, "y": 12.76 },
-  { "x": 48.96, "y": 12.83 }, { "x": 43.68, "y": 12.52 }, { "x": 38.71, "y": 12.76 },
-  { "x": 33.26, "y": 12.44 }, { "x": 28.03, "y": 12.52 }, { "x": 22.66, "y": 12.76 },
-  { "x": 17.56, "y": 15.51 }, { "x": 13.13, "y": 22.36 }, { "x": 10.33, "y": 30.24 },
-  { "x": 9.27, "y": 40.87 }, { "x": 10.16, "y": 50.47 }, { "x": 12.37, "y": 59.21 },
-  { "x": 17.52, "y": 65.2 }, { "x": 23.1, "y": 66.46 }, { "x": 28.07, "y": 66.54 },
-  { "x": 33.44, "y": 66.77 }, { "x": 38.71, "y": 66.61 }, { "x": 43.68, "y": 66.38 },
-  { "x": 48.51, "y": 66.69 }, { "x": 53.88, "y": 66.77 }, { "x": 58.94, "y": 66.85 },
-  { "x": 64.39, "y": 66.93 }, { "x": 69.53, "y": 66.54 }, { "x": 75.34, "y": 64.41 },
-  { "x": 79.2, "y": 56.22 }, { "x": 79.2, "y": 45.43 }, { "x": 74.81, "y": 36.38 },
-  { "x": 69.45, "y": 34.49 }, { "x": 64.26, "y": 34.02 }, { "x": 59.07, "y": 34.33 },
-  { "x": 53.92, "y": 34.09 }, { "x": 48.65, "y": 34.09 }, { "x": 43.64, "y": 34.41 },
-  { "x": 38.31, "y": 34.17 }, { "x": 33.26, "y": 34.25 }, { "x": 27.41, "y": 35.51 },
-  { "x": 23.24, "y": 45.12 }, { "x": 27.72, "y": 54.49 }, { "x": 33.17, "y": 55.28 },
-  { "x": 38.18, "y": 54.88 }, { "x": 43.46, "y": 55.2 }, { "x": 48.91, "y": 55.43 },
-  { "x": 53.92, "y": 55.28 }, { "x": 59.02, "y": 55.51 }, { "x": 68.29, "y": 51.34 }
-];
+import { BOARD_COORDS } from '@/features/board/constants/board';
 
 const ROLE_ASSETS: Record<string, string> = {
   banquero: '/personajes_tablero/banquero_t_der.png',
@@ -56,62 +30,138 @@ const FALLBACK_ASSETS = [
 ];
 
 /** ms a esperar desde que llega player_moved hasta que empieza el movimiento (da tiempo a ver el dado) */
-const DICE_SHOW_DELAY_MS = 1200;
+const DICE_SHOW_DELAY_MS = 2000;
 /** ms entre cada avance de una casilla */
 const STEP_INTERVAL_MS = 280;
-/** pausa antes de empezar el movimiento forzado (casilla de movimiento) */
+/** pausa antes de aplicar el movimiento forzado o el intercambio */
 const FORCED_MOVE_PAUSE_MS = 400;
 
+type QueuedTransition =
+  | { kind: 'path'; to: number }
+  | { kind: 'swap'; to: number; partner: string; partnerTo: number };
+
 export default function BoardOverlay() {
-  const { playerOrder } = useGameContext();
+  const { state, playerOrder, myPlayer, notifyAnimationEnded } = useGameContext();
 
   // Posición que se renderiza actualmente (animada, puede ir por detrás de la real)
   const [displayPositions, setDisplayPositions] = useState<Record<string, number>>({});
 
   // Refs de control: no necesitan provocar re-renders adicionales
   const displayPosRef = useRef<Record<string, number>>({});
-  const queues = useRef<Record<string, number[]>>({});
+  const queues = useRef<Record<string, QueuedTransition[]>>({});
   // busy = true mientras haya una animación en curso o haya un delay inicial pendiente
   const busy = useRef<Record<string, boolean>>({});
   const prevRealPos = useRef<Record<string, number>>({});
+  const processedSwapEventId = useRef<number | null>(null);
+
+  const syncDisplayPositions = useCallback((updates: Record<string, number>) => {
+    Object.entries(updates).forEach(([username, position]) => {
+      displayPosRef.current[username] = position;
+    });
+
+    setDisplayPositions(prev => {
+      let changed = false;
+      const next = { ...prev };
+
+      Object.entries(updates).forEach(([username, position]) => {
+        if (next[username] !== position) {
+          next[username] = position;
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, []);
 
   // Función de animación en ref para ser llamada recursivamente sin problemas de cierre
+  const runQueuedTransitionRef = useRef<(username: string, from: number, transition: QueuedTransition) => void>(null!);
   const startAnimRef = useRef<(username: string, from: number, to: number) => void>(null!);
   useLayoutEffect(() => {
-  startAnimRef.current = (username: string, from: number, to: number) => {
-    const onComplete = (finalPos: number) => {
-      if ((queues.current[username]?.length ?? 0) > 0) {
-        // Hay un movimiento forzado encolado: pequeña pausa y luego continuar
-        const nextTarget = queues.current[username].shift()!;
-        setTimeout(() => {
-          startAnimRef.current!(username, finalPos, nextTarget);
-        }, FORCED_MOVE_PAUSE_MS);
-      } else {
-        busy.current[username] = false;
-      }
-    };
-
-    if (from === to) {
-      onComplete(from);
-      return;
-    }
-
-    const step = (current: number) => {
-      if (current === to) {
-        onComplete(current);
+    runQueuedTransitionRef.current = (username: string, from: number, transition: QueuedTransition) => {
+      if (transition.kind === 'path') {
+        startAnimRef.current!(username, from, transition.to);
         return;
       }
-      const next = current < to ? current + 1 : current - 1;
-      displayPosRef.current[username] = next;
-      setDisplayPositions(prev => ({ ...prev, [username]: next }));
-      setTimeout(() => step(next), STEP_INTERVAL_MS);
+
+      if (transition.kind === 'swap') {
+        const partner = transition.partner;
+        const targetActor = transition.to;
+        const targetPartner = transition.partnerTo;
+
+        const partnerStart = displayPosRef.current[partner] ?? 0;
+
+        const stepAnim = (u: string, current: number, target: number, cb: () => void) => {
+          if (current === target) {
+            cb();
+            return;
+          }
+          const next = current < target ? current + 1 : current - 1;
+          syncDisplayPositions({ [u]: next });
+          setTimeout(() => stepAnim(u, next, target, cb), STEP_INTERVAL_MS);
+        };
+
+        // Limpiar colas para evitar solapamientos
+        queues.current[username] = [];
+        queues.current[partner] = [];
+
+        // Iniciar animación secuencial: Primero el actor, luego la víctima
+        stepAnim(username, from, targetActor, () => {
+          // Cuando el actor llega a su destino, la víctima empieza a moverse
+          stepAnim(partner, partnerStart, targetPartner, () => {
+            // Cuando la víctima llega, liberamos la UI
+            busy.current[username] = false;
+            busy.current[partner] = false;
+            notifyAnimationEnded(username);
+          });
+        });
+      }
     };
 
-    step(from);
-  };
-  });
+    startAnimRef.current = (username: string, from: number, to: number) => {
+      const onComplete = (finalPos: number) => {
+        if ((queues.current[username]?.length ?? 0) > 0) {
+          const nextTransition = queues.current[username].shift()!;
+          setTimeout(() => {
+            runQueuedTransitionRef.current!(username, finalPos, nextTransition);
+          }, FORCED_MOVE_PAUSE_MS);
+        } else {
+          busy.current[username] = false;
+          // Si acaba de terminar la cadena de animaciones del jugador local,
+          // notificar al contexto para que termine el turno automáticamente.
+          notifyAnimationEnded(username);
+        }
+      };
+
+      if (from === to) {
+        onComplete(from);
+        return;
+      }
+
+      const step = (current: number) => {
+        if (current === to) {
+          onComplete(current);
+          return;
+        }
+        const next = current < to ? current + 1 : current - 1;
+        syncDisplayPositions({ [username]: next });
+        setTimeout(() => step(next), STEP_INTERVAL_MS);
+      };
+
+      step(from);
+    };
+  }, [myPlayer?.username, notifyAnimationEnded, syncDisplayPositions]);
+
+  const syncPosition = useCallback((username: string, position: number) => {
+    busy.current[username] = false;
+    queues.current[username] = [];
+    syncDisplayPositions({ [username]: position });
+  }, [syncDisplayPositions]);
 
   useEffect(() => {
+    const swapEvent = state.lastSwapEvent;
+    const hasFreshSwapEvent = !!swapEvent && swapEvent.id !== processedSwapEventId.current;
+
     playerOrder.forEach(player => {
       const { username, position } = player;
 
@@ -129,19 +179,53 @@ export default function BoardOverlay() {
       if (position !== prevRealPos.current[username]) {
         prevRealPos.current[username] = position;
 
+        if (hasFreshSwapEvent && swapEvent.otherUser === username) {
+          return;
+        }
+
+        if (hasFreshSwapEvent && swapEvent.actor === username) {
+          const partnerTo = state.players[swapEvent.otherUser]?.position;
+          if (partnerTo === undefined) {
+            syncPosition(username, position);
+            return;
+          }
+
+          const swapTransition: QueuedTransition = {
+            kind: 'swap',
+            to: position,
+            partner: swapEvent.otherUser,
+            partnerTo,
+          };
+
+          if (!busy.current[username]) {
+            busy.current[username] = true;
+            setTimeout(() => {
+              runQueuedTransitionRef.current!(username, displayPosRef.current[username] ?? 0, swapTransition);
+            }, DICE_SHOW_DELAY_MS);
+          } else {
+            queues.current[username].push(swapTransition);
+          }
+          return;
+        }
+
         if (!busy.current[username]) {
-          // Primera animación del movimiento: esperar a que se vea el dado
+          // Primera animación del movimiento: esperar a que se vea el dado (si aún es visible)
           busy.current[username] = true;
+          const delay = state.lastDice?.user === username ? DICE_SHOW_DELAY_MS : FORCED_MOVE_PAUSE_MS;
           setTimeout(() => {
             startAnimRef.current!(username, displayPosRef.current[username] ?? 0, position);
-          }, DICE_SHOW_DELAY_MS);
+          }, delay);
         } else {
           // Ya hay animación en curso o delay pendiente: encolar el destino
-          queues.current[username].push(position);
+          queues.current[username].push({ kind: 'path', to: position });
         }
       }
     });
-  }, [playerOrder]);
+
+    if (hasFreshSwapEvent && swapEvent) {
+      processedSwapEventId.current = swapEvent.id;
+    }
+  }, [playerOrder, state.lastSwapEvent, state.players, syncPosition]);
 
   // Agrupamiento por casilla usando posiciones ANIMADAS
   const playersByTile: Record<number, string[]> = {};
@@ -188,6 +272,8 @@ export default function BoardOverlay() {
           ? (ROLE_ASSETS[player.character] ?? FALLBACK_ASSETS[playerIdx % 4])
           : FALLBACK_ASSETS[playerIdx % 4];
 
+        const isFacingLeft = (displayPos >= 16 && displayPos < 36) || (displayPos >= 51 && displayPos < 63);
+
         return (
           <div
             key={player.username}
@@ -197,7 +283,7 @@ export default function BoardOverlay() {
               top: `${c.y}%`,
               width: `${size}px`,
               height: `${size}px`,
-              transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px)`,
+              transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) ${isFacingLeft ? 'scaleX(-1)' : 'scaleX(1)'}`,
               zIndex: 30 + playerIdx,
             }}
           >

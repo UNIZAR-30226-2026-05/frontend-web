@@ -29,7 +29,6 @@ const RULES = [
             { emoji: "👞", name: "Avanzar Casillas (1¢)", desc: "Avanza una casilla extra. Solo antes de tirar." },
             { emoji: "🎲", name: "Mejorar Dados (3¢)", desc: "Mejora tu segundo dado un nivel para la tirada." },
             { emoji: "🚧", name: "Barrera (10¢)", desc: "Penaliza un turno al jugador elegido." },
-            { emoji: "🛟", name: "Salvavidas movimiento (5¢)", desc: "Anula el efecto de una casilla de movimiento." },
             { emoji: "🔒", name: "Salvavidas bloqueo (10¢)", desc: "Anula el efecto de una casilla de bloqueo." },
         ],
     },
