@@ -652,9 +652,20 @@ export default function MenuPage() {
                             }));
                         }
                     }}
-                    onRemoveFriend={(username) => {
-                        // TODO: Implement unfollow/remove friend logic when backend supports it
-                        console.log(`Acción de eliminar amigo no implementada en backend todavía: ${username}`);
+                    onRemoveFriend={async (username) => {
+                        const backendHttpUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
+                        try {
+                            const myUsername = sessionStorage.getItem('username');
+                            if (!myUsername) return;
+                            const res = await fetch(`${backendHttpUrl}/usuarios/amigos?user1=${myUsername}&user2=${username}`, {
+                                method: 'DELETE'
+                            });
+                            if (res.ok) {
+                                setFriends(prev => prev.filter(f => f.username !== username));
+                            }
+                        } catch (e) {
+                            console.error("Error al eliminar amigo", e);
+                        }
                     }}
                 />}
 
