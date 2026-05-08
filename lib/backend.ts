@@ -61,7 +61,7 @@ export async function loginUserService(userData: UserData) {
 export async function CrearPartidaService(token: string | null): Promise<number> {
 
     // Usamos NEXT_PUBLIC_API_URL porque es invocado desde un Client Component
-    const apiHost = process.env.NEXT_PUBLIC_API_URL || 'localhost:8080';
+    const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     const baseUrl = `${apiHost}`;
     const url = `${baseUrl}/partidas/crear_partida`;
 
@@ -81,7 +81,19 @@ export async function CrearPartidaService(token: string | null): Promise<number>
 
         const data = await response.json();
 
-        return data;
+        if (typeof data === 'number') {
+            return data;
+        }
+
+        if (typeof data === 'object' && data !== null) {
+            const res = data as Record<string, unknown>;
+            const id = res.id ?? res.id_partida ?? res.codigo_partida ?? res.partida_id;
+            if (typeof id === 'number') {
+                return id;
+            }
+        }
+
+        return data; // Fallback original
 
     } catch (error) {
         console.error('Error creating game:', error);
@@ -92,7 +104,7 @@ export async function CrearPartidaService(token: string | null): Promise<number>
 
 export async function UnirsePartidaService(codigoPartida: number, token: string | null): Promise<number> {
 
-    const apiHost = process.env.NEXT_PUBLIC_API_URL || 'localhost:8080';
+    const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     const baseUrl = `${apiHost}`;
 
     const attempts: Array<{ url: string; body: Record<string, number> | null }> = [

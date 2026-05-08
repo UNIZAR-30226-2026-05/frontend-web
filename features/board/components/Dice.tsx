@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import PixelButton from "@/components/UI/PixelButton";
 import { useGameContext } from "@/features/board/context/GameContext";
 
@@ -8,59 +9,82 @@ export type DiceType = "oro" | "plata" | "bronce" | "normal";
 
 const DICE_MAX: Record<DiceType, number> = { oro: 6, plata: 4, bronce: 2, normal: 6 };
 
-const typeStyles: Record<DiceType, string> = {
-  oro: "border-yellow-400/50 shadow-[0_0_15px_rgba(255,215,0,0.5)]",
-  plata: "border-slate-300/50 shadow-[0_0_15px_rgba(203,213,225,0.4)]",
-  bronce: "border-orange-700/50 shadow-[0_0_15px_rgba(194,65,12,0.4)]",
-  normal: "border-white shadow-lg",
+const getDiceSprite = (value: number, type: DiceType | "normal" | undefined) => {
+  if (!value) return '/dice/1.png'; // Fallback por seguridad
+
+  if (type === 'oro') return `/dice/${value}O.png`;
+  if (type === 'plata' && value <= 4) return `/dice/${value}P.png`;
+  if (type === 'bronce' && value <= 2) return `/dice/${value}B.png`;
+
+  return `/dice/${value}.png`;
 };
 
-export default function Dice() {
-  const { state, isMyTurn, myPlayer, sendMovePlayer, sendEndRound } = useGameContext();
+const diceLabels: Record<DiceType, string> = {
+  oro: "1-6 ORO",
+  plata: "1-4 PLATA",
+  bronce: "1-2 BRONCE",
+  normal: "1-6 NORMAL",
+};
+
+interface DiceProps {
+  onOpenShop?: () => void;
+}
+
+export default function Dice({ onOpenShop }: DiceProps) {
+  const { state, isMyTurn, myPlayer, sendMovePlayer, sendEndRound, isAnyoneAnimating, dispatch } = useGameContext();
   const { hasMoved, awaitingEndRound, lastDice } = state;
   const penaltyTurns = state.penaltyTurns;
 
   const [currentNormal, setCurrentNormal] = useState(1);
   const [currentSpecial, setCurrentSpecial] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
-  // Controla el estado "esperando respuesta del backend" tras pulsar el botón
+  const [isRollingVisual, setIsRollingVisual] = useState(false);
   const [waitingForResponse, setWaitingForResponse] = useState(false);
+  const prevLastDiceRef = useRef<typeof lastDice>(null);
 
-  // ── Render-phase: detectar nuevo lastDice para arrancar animación ──────────
-  // Patrón "storing information from previous renders" (React docs) – evita
-  // llamar a setState de forma síncrona dentro de un useEffect (cascade renders).
-  const [prevLastDice, setPrevLastDice] = useState<typeof lastDice>(null);
-  if (prevLastDice !== lastDice) {
-    setPrevLastDice(lastDice);
+  useEffect(() => {
+    let frameId = 0;
+
     if (lastDice !== null) {
-      const prev = prevLastDice;
+      const prev = prevLastDiceRef.current;
       const didChange =
         !prev ||
         prev.dado1 !== lastDice.dado1 ||
         prev.dado2 !== lastDice.dado2 ||
         prev.user !== lastDice.user;
       if (didChange) {
-        setIsAnimating(true);
-        setWaitingForResponse(false);
+        frameId = requestAnimationFrame(() => {
+          setIsAnimating(true);
+          setWaitingForResponse(false);
+        });
       }
     }
-  }
+    prevLastDiceRef.current = lastDice;
 
-  // ── Render-phase: limpiar waitingForResponse al recuperar el turno ────────
-  const [prevIsMyTurn, setPrevIsMyTurn] = useState(isMyTurn);
-  if (prevIsMyTurn !== isMyTurn) {
-    setPrevIsMyTurn(isMyTurn);
+    return () => {
+      if (frameId !== 0) cancelAnimationFrame(frameId);
+    };
+  }, [lastDice]);
+
+  useEffect(() => {
+    let frameId = 0;
+
     if (isMyTurn && waitingForResponse) {
-      setWaitingForResponse(false);
+      frameId = requestAnimationFrame(() => {
+        setWaitingForResponse(false);
+      });
     }
-  }
 
-  // ── Effect: ciclar los dados aleatoriamente 1 s cuando se activa animación ─
-  // Solo llama a setState dentro de callbacks (setInterval/setTimeout), no en
-  // el cuerpo síncrono del efecto → sin cascade renders.
+    return () => {
+      if (frameId !== 0) cancelAnimationFrame(frameId);
+    };
+  }, [isMyTurn, waitingForResponse]);
+
+  // Effect: ciclar los dados aleatoriamente y manejar la duración de la visibilidad
   useEffect(() => {
     if (!lastDice || !isAnimating) return;
 
+    setIsRollingVisual(true);
     const maxSpecial = DICE_MAX[lastDice.diceType];
     const showSpecial = lastDice.diceType !== 'normal' && lastDice.dado2 > 0;
 
@@ -71,16 +95,25 @@ export default function Dice() {
       }
     }, 100);
 
-    const timeout = setTimeout(() => {
+    // Fase 1: Parar el rodado visual a los 1000ms
+    const rollTimeout = setTimeout(() => {
       clearInterval(rollInterval);
+      setIsRollingVisual(false);
       setCurrentNormal(lastDice.dado1);
       if (lastDice.dado2 > 0) setCurrentSpecial(lastDice.dado2);
-      setIsAnimating(false);
     }, 1000);
+
+    // Fase 2: Ocultar el panel completo a los 1800ms
+    // (Dando 800ms de tiempo estático para ver el resultado)
+    const hideTimeout = setTimeout(() => {
+      setIsAnimating(false);
+      dispatch({ type: 'CLEAR_LAST_DICE' });
+    }, 1800);
 
     return () => {
       clearInterval(rollInterval);
-      clearTimeout(timeout);
+      clearTimeout(rollTimeout);
+      clearTimeout(hideTimeout);
     };
   }, [lastDice, isAnimating]);
 
@@ -96,8 +129,18 @@ export default function Dice() {
     : (isMyTurn && myPlayer !== null && myPlayer.diceType !== 'normal');
 
   const isBlocked = penaltyTurns > 0;
-  const canRoll = isMyTurn && !hasMoved && !waitingForResponse && !awaitingEndRound && !isBlocked;
-  const isRolling = isAnimating || waitingForResponse;
+  const canRoll = isMyTurn && !hasMoved && !waitingForResponse && !awaitingEndRound && !isBlocked && !isAnyoneAnimating;
+  const isRolling = isRollingVisual || waitingForResponse;
+
+  // Ocultar mientras cualquier ficha se mueve para no tapar la acción, 
+  // pero solo si ya hemos terminado de ver el dado.
+  if (isAnyoneAnimating && !isAnimating && !waitingForResponse) return null;
+
+  // Visibilidad: solo si es mi turno, o hay animación, o hay un resultado visible, o alguien está esperando
+  const isSpectating = !isMyTurn && !lastDice && !isAnimating;
+  
+  // Si estamos esperando a otro jugador al inicio de la ronda, mostramos el panel con estado "esperando"
+  if (isSpectating && !currentTurnPlayer) return null;
 
   const handleRollDice = () => {
     if (!canRoll) return;
@@ -105,63 +148,98 @@ export default function Dice() {
     sendMovePlayer();
   };
 
-  // Texto del botón de tirar
-  const rollButtonLabel = () => {
-    if (isRolling) return "Tirando...";
-    if (isBlocked) return `Bloqueado (${penaltyTurns} turno${penaltyTurns > 1 ? 's' : ''} restante${penaltyTurns > 1 ? 's' : ''})`;
-    if (!isMyTurn) return "Esperando turno...";
-    return displayType === "normal" ? "Tirar Dado" : "Tirar Dados";
+  const getTitle = () => {
+    if (isAnimating) return "TIRANDO...";
+    if (lastDice) return "RESULTADO";
+    if (isMyTurn) return "ES TU TURNO";
+    if (currentTurnPlayer) return `TURNO DE ${currentTurnPlayer.username.toUpperCase()}`;
+    return "";
+  };
+
+  const renderDie = (value: number, type: DiceType, isSpecial: boolean) => {
+    const isPlaceholder = !lastDice && !isAnimating;
+
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <div className={`relative w-44 h-44 transition-all duration-300 flex items-center justify-center
+          ${isRolling ? "animate-pulse scale-110 rotate-12" : "scale-100 rotate-0"}
+        `}>
+          {isPlaceholder ? (
+            <span className="text-white text-5xl font-pixel">?</span>
+          ) : (
+            <Image
+              src={getDiceSprite(value, isSpecial ? type : 'normal')}
+              alt={`Dado ${isSpecial ? type : 'normal'} cara ${value}`}
+              fill
+              sizes="176px"
+              className="object-contain p-2"
+              style={{ imageRendering: 'pixelated' }}
+            />
+          )}
+        </div>
+        {isPlaceholder && (
+          <span className={`text-[10px] font-pixel tracking-tighter ${isSpecial ? 'text-amber-400' : 'text-white'}`}>
+            {diceLabels[type]}
+          </span>
+        )}
+      </div>
+    );
   };
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      {/* Contenedor de Dados */}
-      <div className="flex items-center justify-center gap-4 min-h-[120px]">
-        {/* Dado Normal (siempre visible) */}
-        <div className="relative group">
-          <img
-            src={`/dice/normal_${currentNormal}.jpg`}
-            alt={`Dado normal cara ${currentNormal}`}
-            className={`w-24 h-24 rounded-xl border-4 object-cover bg-white transition-all duration-300
-              border-white shadow-lg
-              ${isRolling ? "animate-pulse scale-110 rotate-12" : "scale-100 rotate-0"}
-            `}
-          />
-        </div>
+    <div className="bg-slate-900/40 border-4 border-amber-500/50 rounded-[40px] p-8 backdrop-blur-sm shadow-2xl flex flex-col items-center gap-6 min-w-[480px] animate-in fade-in zoom-in duration-300">
+      {/* Título */}
+      <h3 className="text-amber-400 font-pixel text-xl uppercase tracking-[0.2em] mb-2 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">
+        {getTitle()}
+      </h3>
 
-        {/* Dado Especial (oro/plata/bronce) */}
-        {showSecondDice && (
-          <div className="relative group animate-in slide-in-from-right duration-300">
-            <img
-              src={`/dice/${displayType}_${currentSpecial}.jpg`}
-              alt={`Dado ${displayType} cara ${currentSpecial}`}
-              className={`w-24 h-24 rounded-xl border-4 object-cover bg-white transition-all duration-300
-                ${typeStyles[displayType]}
-                ${isRolling ? "animate-pulse scale-110 rotate-12" : "scale-100 rotate-0"}
-              `}
-            />
-          </div>
-        )}
+      {/* Contenedor de Dados */}
+      <div className="flex items-start justify-center gap-8 min-h-[140px]">
+        {renderDie(currentNormal, "normal", false)}
+        {showSecondDice && renderDie(currentSpecial, displayType, true)}
       </div>
 
+      {/* Resultado Numérico Total (solo al terminar de rodar) */}
+      {isAnimating && !isRollingVisual && lastDice && (
+        <div className="text-amber-400 font-pixel text-8xl animate-in zoom-in duration-300 drop-shadow-[0_0_25px_rgba(251,191,36,0.9)] -mt-2 mb-2">
+          {lastDice.dado1 + lastDice.dado2}
+        </div>
+      )}
+
       {/* Botones de acción */}
-      {awaitingEndRound ? (
-        <PixelButton onClick={sendEndRound} variant="purple" className="w-full">
-          Fin de Turno
-        </PixelButton>
-      ) : isBlocked && isMyTurn ? (
-        <PixelButton onClick={sendEndRound} variant="red" className="w-full">
-          Saltar Turno ({penaltyTurns} restante{penaltyTurns > 1 ? 's' : ''})
-        </PixelButton>
-      ) : (
-        <PixelButton
-          onClick={handleRollDice}
-          disabled={!canRoll || isRolling}
-          variant="purple"
-          className="w-full"
-        >
-          {rollButtonLabel()}
-        </PixelButton>
+      {isMyTurn && (
+        <div className="flex gap-4 w-full">
+          {!hasMoved && (
+            <>
+              <PixelButton
+                variant="purple"
+                onClick={onOpenShop}
+                className="flex-1 text-sm py-4 uppercase"
+              >
+                Tienda
+              </PixelButton>
+            </>
+          )}
+
+          {awaitingEndRound ? (
+            <PixelButton onClick={sendEndRound} variant="purple" className="flex-1 py-4">
+              Fin de Turno
+            </PixelButton>
+          ) : isBlocked ? (
+            <PixelButton onClick={sendEndRound} variant="red" className="flex-1 py-4">
+              Saltar Turno ({penaltyTurns})
+            </PixelButton>
+          ) : (
+            <PixelButton
+              onClick={handleRollDice}
+              disabled={!canRoll || isRolling}
+              variant="purple"
+              className="flex-1 py-4 uppercase"
+            >
+              {isRolling ? "Tirando..." : (displayType === "normal" ? "Tirar Dado" : "Tirar Dados")}
+            </PixelButton>
+          )}
+        </div>
       )}
     </div>
   );
