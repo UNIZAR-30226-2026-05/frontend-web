@@ -312,6 +312,7 @@ function GameOverController() {
         character: p.character || 'banquero', 
         balance: p.balance 
       }))}
+      winnerUsername={state.gameWinner ?? undefined}
       onReturnToMenu={() => {
         window.location.href = '/menu';
       }}

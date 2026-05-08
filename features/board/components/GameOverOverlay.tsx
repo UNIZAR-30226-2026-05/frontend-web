@@ -12,6 +12,7 @@ interface Player {
 
 interface GameOverOverlayProps {
     players: Player[];
+    winnerUsername?: string;
     onReturnToMenu: () => void;
 }
 
@@ -22,11 +23,11 @@ const CHARACTER_IMAGES: Record<string, string> = {
     vidente: '/personajes_profile/vidente_profile.png',
 };
 
-export default function GameOverOverlay({ players, onReturnToMenu }: GameOverOverlayProps) {
-    // Ordenar jugadores por balance descendente (aunque ya vengan ordenados por seguridad)
-    const sortedPlayers = [...players].sort((a, b) => b.balance - a.balance);
-    const winner = sortedPlayers[0];
-    const others = sortedPlayers.slice(1);
+export default function GameOverOverlay({ players, winnerUsername, onReturnToMenu }: GameOverOverlayProps) {
+    const winner = winnerUsername
+        ? players.find(p => p.username === winnerUsername) ?? players[0]
+        : [...players].sort((a, b) => b.balance - a.balance)[0];
+    const others = players.filter(p => p.username !== winner?.username);
 
     return (
         <div className="fixed inset-0 z-[500] bg-black/95 flex flex-col items-center justify-center p-4 md:p-8 animate-in fade-in duration-700 overflow-y-auto">
