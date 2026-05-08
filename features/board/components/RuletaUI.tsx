@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import PixelButton from "@/components/UI/PixelButton";
 import Image from "next/image";
 
 const PREMIOS = [
@@ -13,12 +12,10 @@ const PREMIOS = [
 
 interface RuletaUIProps {
   targetPrize?: string;
-  isSpectator?: boolean;
   onAction?: (result: { name: string; image: string }) => void;
-  onClose?: () => void;
 }
 
-export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }: RuletaUIProps) {
+export default function RuletaUI({ targetPrize, onAction }: RuletaUIProps) {
   const numPremios = PREMIOS.length;
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -60,14 +57,14 @@ export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }
       setIsSpinning(false);
       setShowResult(true);
 
-      // Spectator auto-dismiss
-      if (isSpectator && onAction) {
+      // Auto-dismiss for all players
+      if (onAction) {
         setTimeout(() => {
           onAction({ 
             name: PREMIOS[index].name, 
             image: PREMIOS[index].image 
           });
-        }, 3000); // 3 seconds of showing where it stopped
+        }, 3000);
       }
       
       console.log(`[Ruleta Debug] 
@@ -85,15 +82,6 @@ export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }
       return () => clearTimeout(timer);
     }
   }, []);
-
-  const handleAccept = () => {
-    if (winningIndex !== null && onAction) {
-      onAction({ 
-        name: PREMIOS[winningIndex].name, 
-        image: PREMIOS[winningIndex].image 
-      });
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-500">
@@ -165,54 +153,25 @@ export default function RuletaUI({ targetPrize, isSpectator, onAction, onClose }
             </div>
         </div>
 
-        <div className="flex flex-col items-center gap-6 w-full">
-            {!isSpectator && (
-              <PixelButton 
-                  variant="purple" 
-                  onClick={spin}
-                  disabled={isSpinning}
-                  className={`min-w-[240px] h-16 text-2xl transition-all ${isSpinning ? 'opacity-50 brightness-50' : 'hover:scale-105 active:scale-95'}`}
-              >
-                  {isSpinning ? "GIRANDO..." : "¡GIRAR!"}
-              </PixelButton>
-            )}
-            
-            {!isSpinning && !showResult && !isSpectator && (
-                <button 
-                    onClick={onClose}
-                    className="text-white/30 hover:text-white text-xs uppercase tracking-widest border-b border-transparent hover:border-white transition-all shadow-sm"
-                >
-                    Abandonar
-                </button>
-            )}
-        </div>
-
         {/* Result Overlay */}
-        {showResult && !isSpectator && (
+        {showResult && winningIndex !== null && (
             <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-3xl animate-in zoom-in duration-300">
                 <div className="bg-[#1e293b] border-4 border-[#fbbf24] p-10 flex flex-col items-center gap-6 shadow-[0_0_50px_rgba(251,191,36,0.5)]">
                     <p className="text-white/60 text-xs uppercase tracking-[0.3em]">Has obtenido un efecto:</p>
                     <div className="flex flex-col items-center gap-4">
                         <div className="relative w-32 h-32 animate-bounce">
                           <Image 
-                            src={PREMIOS[winningIndex!].image} 
-                            alt={PREMIOS[winningIndex!].name} 
+                            src={PREMIOS[winningIndex].image} 
+                            alt={PREMIOS[winningIndex].name} 
                             fill 
                             className="object-contain pixelated"
                             unoptimized
                           />
                         </div>
                         <h4 className="text-white text-2xl uppercase tracking-widest text-center max-w-[250px]">
-                            {PREMIOS[winningIndex!].name}
+                            {PREMIOS[winningIndex].name}
                         </h4>
                     </div>
-                    <PixelButton 
-                        variant="green" 
-                        onClick={handleAccept}
-                        className="mt-4 px-12 h-14"
-                    >
-                        ACEPTAR
-                    </PixelButton>
                 </div>
             </div>
         )}

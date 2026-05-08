@@ -204,7 +204,7 @@ function RuletaController() {
 
   const isSpectator = state.pendingObjetoRuleta.user !== myPlayer?.username;
 
-  const handleAction = (result: { name: string; image: string }) => {
+  const handleAction = () => {
     let willAnimateMove = false;
     if (state.bufferedRuletaMove) {
       const user = state.bufferedRuletaMove.user;
@@ -233,7 +233,6 @@ function RuletaController() {
   return (
     <RuletaUI 
       targetPrize={state.pendingObjetoRuleta.objeto}
-      isSpectator={isSpectator}
       onAction={handleAction}
     />
   );
