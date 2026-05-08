@@ -373,7 +373,6 @@ export default function MenuPage() {
                     {/* Zona interactiva del Logo (dibujado en el fondo) */}
                     <div
                         className="absolute top-4 left-4 w-[12rem] h-[10rem] cursor-pointer z-10"
-                        onClick={() => window.location.href = '/'}
                         aria-label="Snow Party Logo"
                     />
                     <div className="flex items-center gap-6 ml-[14rem]">
