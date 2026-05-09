@@ -173,10 +173,10 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
       </div>
 
       {/* Texto Central Dorado (Top) */}
-      <div className="absolute top-24 z-20 text-center px-4">
-        <h3 className="text-amber-400 text-4xl md:text-6xl font-bold tracking-[0.1em] drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)] uppercase">
+      <div className="absolute top-20 z-20 text-center px-4">
+        <h4 className="text-amber-400 text-4xl md:text-6xl font-bold tracking-[0.1em] drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)] uppercase">
           {state.dilemaResultados ? "RESULTADOS" : "¿COOPERAR O TRAICIONAR?"}
-        </h3>
+        </h4>
         <p className="text-white/60 text-lg md:text-xl mt-4 uppercase tracking-[0.4em] drop-shadow-md">
           {state.dilemaResultados
             ? "El destino ha sido sellado"
@@ -184,12 +184,46 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
         </p>
       </div>
 
+      {/* Tabla de Penalizaciones */}
+      {!state.dilemaResultados && (
+        <div className="absolute z-20 top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div className="bg-black/70 border-2 border-white/30 p-7 min-w-[420px] shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+            <p className="text-white font-pixel text-[13px] tracking-[0.25em] uppercase text-center border-b border-white/20 pb-3 mb-4">
+              Tabla de Penalizaciones
+            </p>
+            <div className="flex flex-col gap-3">
+              {[
+                { label: "Ambos Cooperais",         left: "+2¢ cada uno",  leftColor: "text-green-400" },
+                { label: "Ambos os traicionais",        left: "+0¢ cada uno",  leftColor: "text-red-400"   },
+                { label: "Tú le traicionas / Él coopera", left: "+3¢", leftColor: "text-green-400", right: "+0¢", rightColor: "text-red-400" },
+                { label: "Tú cooperas / Él te traiciona", left: "+0¢", leftColor: "text-red-400",   right: "+3¢", rightColor: "text-green-400" },
+              ].map((row) => (
+                <div key={row.label} className="flex items-center justify-between gap-8">
+                  <span className="text-white/70 font-pixel text-[10px] uppercase tracking-wide whitespace-nowrap">
+                    {row.label}
+                  </span>
+                  <span className="font-pixel text-[13px] whitespace-nowrap">
+                    <span className={row.leftColor}>{row.left}</span>
+                    {row.right && (
+                      <>
+                        <span className="text-white/40 mx-1">/</span>
+                        <span className={row.rightColor}>{row.right}</span>
+                      </>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Capa de Personajes */}
       <div className="absolute inset-0 z-10 pointer-events-none">
         {/* Local (Izquierda) */}
         <div
           className="absolute -translate-y-1/2"
-          style={{ left: `${debugAvSideGap}%`, top: `${debugAvTop}%` }}
+          style={{ left: `calc(${debugAvSideGap}% - 40px)`, top: `${debugAvTop}%` }}
         >
           <div className="relative" style={{ width: `${debugAvSize}px`, height: `${debugAvSize}px` }}>
             <Image
@@ -284,13 +318,10 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
                   variant="red"
                   onClick={() => handleChoice("traicionar")}
                   style={{ width: `${debugButW}px`, height: `${debugButH}px` }}
-                  className="text-3xl md:text-4xl shadow-[0_12px_0_rgb(153,27,27)] hover:scale-105 active:translate-y-1 active:shadow-none transition-all uppercase"
+                  className="text-3xl md:text-4xl hover:scale-105 active:translate-y-1 active:shadow-none transition-all uppercase"
                 >
                   TRAICIONAR
                 </PixelButton>
-                <span className="text-red-500 bg-black/60 px-4 py-1 text-sm tracking-widest uppercase border border-red-500/30">
-                  SOLO YO
-                </span>
               </div>
             </div>
 
@@ -304,13 +335,10 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
                   variant="green"
                   onClick={() => handleChoice("cooperar")}
                   style={{ width: `${debugButW}px`, height: `${debugButH}px` }}
-                  className="text-3xl md:text-4xl shadow-[0_12px_0_rgb(22,101,52)] hover:scale-105 active:translate-y-1 active:shadow-none transition-all uppercase"
+                  className="text-3xl md:text-4xl hover:scale-105 active:translate-y-1 active:shadow-none transition-all uppercase"
                 >
                   COOPERAR
                 </PixelButton>
-                <span className="text-green-500 bg-black/60 px-4 py-1 text-sm tracking-widest uppercase border border-green-500/30">
-                  NOSOTROS
-                </span>
               </div>
             </div>
           </>
