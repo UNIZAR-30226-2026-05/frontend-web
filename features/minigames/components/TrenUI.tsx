@@ -38,7 +38,7 @@ export default function TrenUI({ onAction }: TrenUIProps) {
   const [debugTranslateY, setDebugTranslateY] = useState(-113.5);
   const [debugScale, setDebugScale] = useState(46.0); // Ancho en %
   const [debugStartX, setDebugStartX] = useState(-234); // Inicio en %
-  const [debugTimePerWagon, setDebugTimePerWagon] = useState(4.0); // Tiempo (s) por vagón en escena
+  const [debugTimePerWagon, setDebugTimePerWagon] = useState(8.0); // Tiempo (s) por vagón en escena
 
   const backendWagons = isDebugRoute 
     ? [13, 11, 6, 16] 
