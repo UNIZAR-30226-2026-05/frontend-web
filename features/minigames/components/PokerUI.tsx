@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import PixelButton from "@/components/UI/PixelButton";
 import { useGameContext } from "@/features/board/context/GameContext";
@@ -100,6 +100,16 @@ export default function PokerUI({ onClose }: PokerUIProps) {
   // Resultados
   // ---------------------------------------------------------------
   const resultados = pokerState.resultados;
+
+  // Auto-dismiss after 5 s when results arrive, without requiring a button click
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  useEffect(() => {
+    if (resultados === null) return;
+    const timer = setTimeout(() => onCloseRef.current(), 5000);
+    return () => clearTimeout(timer);
+  }, [resultados]);
+
   const winner = useMemo(() => {
     if (!resultados || resultados.idGanadores.length === 0) return null;
     const winnerUsername = resultados.idGanadores[0];
@@ -371,13 +381,7 @@ export default function PokerUI({ onClose }: PokerUIProps) {
               <span className="text-white text-6xl font-pixel tracking-tighter text-amber-500">{resultados.boteGanado}¢</span>
             </div>
 
-            <PixelButton
-              variant="green"
-              className="mt-12 w-64 text-sm"
-              onClick={onClose}
-            >
-              CONTINUAR
-            </PixelButton>
+
           </div>
         </div>
       )}

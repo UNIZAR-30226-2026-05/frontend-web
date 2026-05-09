@@ -41,6 +41,8 @@ const MINIJUEGO_NAME_TO_TYPE: Record<string, OrderMinigameType> = {
 function OrderMinigameController() {
   const { state, myPlayer, sendScoreOrden } = useGameContext();
 
+  if (state.showPoker) return null;
+  if (state.showRuleta) return null;
   if (!state.showOrderMinigame) return null;
 
   const minijuegoType = state.currentOrderMinijuego
@@ -62,6 +64,9 @@ function OrderMinigameController() {
 /** Muestra el modal de elección del videojugador (o vista espectador para el resto). */
 function VideojugadorEleccionController() {
   const { state, myPlayer, sendIniRound } = useGameContext();
+
+  if (state.showPoker) return null;
+  if (state.showRuleta) return null;
 
   const isVideojugador = myPlayer?.character === 'videojugador';
   const isWaitingForVideojugadorChoice =
@@ -118,11 +123,15 @@ function BanqueroRoboController() {
   const { state, playerOrder, sendRoboBanquero, isMyTurn, myPlayer, dispatch } = useGameContext();
 
   useEffect(() => {
+    if (state.showPoker) return;
+    if (state.showRuleta) return;
     if (isMyTurn && myPlayer?.character === 'banquero' && !state.hasUsedAbility && !state.hasMoved && !state.showBanqueroModal) {
       dispatch({ type: 'SET_SHOW_BANQUERO_MODAL', value: true });
     }
-  }, [isMyTurn, myPlayer?.character, state.hasUsedAbility, state.hasMoved, state.showBanqueroModal, dispatch]);
+  }, [isMyTurn, myPlayer?.character, state.hasUsedAbility, state.hasMoved, state.showBanqueroModal, state.showPoker, state.showRuleta, dispatch]);
 
+  if (state.showPoker) return null;
+  if (state.showRuleta) return null;
   if (!state.showBanqueroModal) return null;
 
   // Filtrar víctimas: todos los jugadores menos yo mismo
@@ -145,6 +154,8 @@ function BanqueroRoboController() {
 function VidenteController() {
   const { state } = useGameContext();
 
+  if (state.showPoker) return null;
+  if (state.showRuleta) return null;
   if (!state.showVidenteModal || !state.videnteTiradas) return null;
 
   return (
@@ -157,6 +168,9 @@ function VidenteController() {
 /** Muestra el scoreboard con los resultados del minijuego de orden. */
 function MinigameResultController() {
   const { state, dispatch } = useGameContext();
+
+  if (state.showPoker) return null;
+  if (state.showRuleta) return null;
 
   // Mientras el jugador espera los resultados del resto (ya envió su score)
   if (state.waitingForMinigameResults && !state.pendingMinigameResults) {
