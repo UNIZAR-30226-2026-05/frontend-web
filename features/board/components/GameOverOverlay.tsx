@@ -27,7 +27,6 @@ export default function GameOverOverlay({ players, winnerUsername, onReturnToMen
     const winner = winnerUsername
         ? players.find(p => p.username === winnerUsername) ?? players[0]
         : [...players].sort((a, b) => b.balance - a.balance)[0];
-    const others = players.filter(p => p.username !== winner?.username);
 
     return (
         <div className="fixed inset-0 z-[500] bg-black/95 flex flex-col items-center justify-center p-4 md:p-8 animate-in fade-in duration-700 overflow-y-auto">
@@ -42,9 +41,8 @@ export default function GameOverOverlay({ players, winnerUsername, onReturnToMen
                 <div className="h-1 w-64 md:w-96 bg-gradient-to-r from-transparent via-yellow-500 to-transparent mx-auto mt-4" />
             </div>
 
-            <div className="relative z-10 w-full max-w-4xl flex flex-col gap-8">
-                {/* GANADOR (1º PUESTO) */}
-                {winner && (
+            {/* GANADOR */}
+            {winner && (
                     <div className="flex flex-col items-center animate-in zoom-in duration-700 delay-300 fill-mode-both">
                         <div className="relative group">
                             {/* Corona */}
@@ -78,41 +76,6 @@ export default function GameOverOverlay({ players, winnerUsername, onReturnToMen
                         </div>
                     </div>
                 )}
-
-                {/* RESTO DE CLASIFICACIÓN */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-                    {others.map((player, index) => (
-                        <div 
-                            key={player.username}
-                            className={`
-                                flex items-center gap-4 bg-[#1a0b2e] border-2 border-white/10 rounded-2xl p-4
-                                animate-in slide-in-from-bottom-10 duration-700 fill-mode-both
-                            `}
-                            style={{ animationDelay: `${(index + 5) * 150}ms` }}
-                        >
-                            <div className="text-slate-500 font-pixel text-xl shrink-0">
-                                {index + 2}º
-                            </div>
-
-                            <div className="w-12 h-12 bg-black/40 rounded-lg flex items-center justify-center border border-white/5 shrink-0">
-                                <Image
-                                    src={CHARACTER_IMAGES[player.character.toLowerCase()] || '/personajes_profile/vidente_profile.png'}
-                                    alt={player.character}
-                                    width={40}
-                                    height={40}
-                                    className="object-contain pixelated p-1"
-                                />
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                                <p className="text-white font-pixel text-lg truncate uppercase tracking-widest">
-                                    {player.username}
-                                </p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
 
             {/* BOTÓN DE ACCIÓN */}
             <div className="relative z-10 mt-16 animate-in slide-in-from-bottom-2 duration-1000 delay-1000 fill-mode-both">
