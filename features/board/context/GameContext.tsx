@@ -416,6 +416,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         hasMoved: isForMe ? false : state.hasMoved,
         awaitingEndRound: isForMe ? false : state.awaitingEndRound,
         purchasedItems: isForMe ? {} : state.purchasedItems,
+        showBanqueroModal: false,
       };
     }
 
