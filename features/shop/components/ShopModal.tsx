@@ -179,11 +179,6 @@ export default function ShopModal({ onClose }: ShopModalProps) {
                         x{purchaseCount}
                       </span>
                     )}
-                    {isFirstPlace && isMejorarDados && (
-                      <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center rotate-[-15deg]">
-                        <div className="bg-red-600 text-white font-pixel text-[10px] px-2 py-1 border-2 border-white shadow-xl">PROHIBIDO</div>
-                      </div>
-                    )}
                   </div>
 
                   <div className="flex-1 flex flex-col gap-2">
@@ -218,12 +213,7 @@ export default function ShopModal({ onClose }: ShopModalProps) {
           </div>
         </div>
 
-        {/* Footer simple */}
-        <div className="p-4 bg-slate-950/50 text-center border-t-4 border-white/10">
-          <p className="text-white/20 font-pixel text-[9px] uppercase tracking-[0.3em]">
-            Snow Party Store • In-Game Items Only
-          </p>
-        </div>
+        
       </div>
     </div>
   );
