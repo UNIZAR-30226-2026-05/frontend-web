@@ -1300,6 +1300,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             // como 'nombre_jugador' (campo que usa el backend actualmente).
             const turnoUser = (data.user ?? data.nombre_jugador) as string;
             dispatch({ type: 'TURNO_DE', user: turnoUser, ronda: data.ronda as number });
+            // Aseguramos que el AFK task existe en el backend para el jugador activo.
+            // Tras finalizar_minijuego_orden el back envía turno_de al primer jugador
+            // sin crear la tarea AFK. reset_afk la crea (o reinicia si ya existe).
+            const myUsernameAfk = sessionStorage.getItem('username');
+            if (turnoUser === myUsernameAfk) {
+              const wsAfk = getGameSocket();
+              if (wsAfk && wsAfk.readyState === WebSocket.OPEN) {
+                wsAfk.send(JSON.stringify({ action: 'reset_afk' }));
+              }
+            }
             break;
           }
 
