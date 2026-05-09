@@ -586,15 +586,75 @@ export default function MenuPage() {
                 <div className="flex justify-end mb-8">
                     <PixelButton
                         variant="purple"
-                        className="!px-6 !py-4 !text-[1.2rem]"
-                        onClick={() => setIsSearchModalOpen(true)}
-                    >
+                            className="!px-6 !py-4 !text-[1.2rem]"
+                            onClick={() => setIsSearchModalOpen(true)}
+                        >
                         <span className="mr-2">🔍</span> Buscar Jugadores
                     </PixelButton>
                 </div>
+
+                {/* ✅ NUEVO: SOLICITUDES DE AMISTAD EN LA DERECHA ✅ */}
+                {friendRequests.length > 0 && (
+                    <div className="flex flex-col w-full max-w-[22rem] ml-auto mt-2 mb-4">
+                        <div className="flex flex-col items-center mb-2">
+                            <h2
+                                className="text-[1.8rem] tracking-[0.1em] pb-2 text-white font-bold whitespace-nowrap"
+                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                            >
+                                Solicitudes
+                            </h2>
+                            <div className="w-[85%] mx-auto h-[2px] bg-[#dcbaff] shadow-[0_2px_0px_rgba(0,0,0,1)]"></div>
+                        </div>
+
+                        <div className="flex flex-col gap-5 px-2 mt-2 overflow-y-auto max-h-[14rem] scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent pr-2">
+                            {friendRequests.map((req) => (
+                                <div key={req} className="flex flex-col gap-2 w-full">
+                                    <span
+                                        className="text-[#a8a8a8] text-[1.2rem] font-bold text-center"
+                                        style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                    >
+                                        {req} quiere ser tu amigo
+                                    </span>
+                                    <div className="flex items-center justify-center gap-3">
+                                        <PixelButton
+                                            variant="green"
+                                            className="!px-3 !py-1 !text-[1rem] flex-1"
+                                            onClick={() => {
+                                                sessionSocketRef.current?.send(JSON.stringify({
+                                                    action: 'accept_request',
+                                                    payload: { player_id: req }
+                                                }));
+                                                setFriendRequests(prev => prev.filter(u => u !== req));
+                                                setFriends(prev => {
+                                                    if (prev.find(f => f.username === req)) return prev;
+                                                    return [...prev, { username: req, status: 'offline' }];
+                                                });
+                                            }}
+                                        >
+                                            Aceptar
+                                        </PixelButton>
+                                        <PixelButton
+                                            variant="purple"
+                                            className="!px-3 !py-1 !text-[1rem] flex-1"
+                                            onClick={() => {
+                                                sessionSocketRef.current?.send(JSON.stringify({
+                                                    action: 'reject_request',
+                                                    payload: { player_id: req }
+                                                }));
+                                                setFriendRequests(prev => prev.filter(u => u !== req));
+                                            }}
+                                        >
+                                            Rechazar
+                                        </PixelButton>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             
                 {/* Lista de amigos */}
-                <div className="flex flex-col gap-6 w-full max-w-[22rem] ml-auto mt-6 flex-1 overflow-hidden">
+                <div className="flex flex-col gap-6 w-full max-w-[22rem] ml-auto mt-2 flex-1 overflow-hidden">
                     <div className="flex flex-col items-center mb-2">
                         <h2
                             className="text-[2.2rem] tracking-[0.1em] pb-2 text-white font-bold"
