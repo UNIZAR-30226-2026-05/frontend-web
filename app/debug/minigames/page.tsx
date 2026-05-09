@@ -115,6 +115,8 @@ export default function DebugMinigamesPage() {
       turnoDeUser: "debug_user",
       waitingForMinigameResults: false,
       dilemaResultados: null,
+      dilemaRecompensas: null,
+      dilemaParticipantes: null,
       showBarreraModal: false,
       isGameOver: false,
       gameWinner: null,
