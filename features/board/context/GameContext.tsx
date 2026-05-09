@@ -176,6 +176,10 @@ interface GameState {
   pokerState: PokerState;
   /** Resultados del dilema del prisionero (username -> decision) */
   dilemaResultados: Record<string, 'cooperar' | 'traicionar'> | null;
+  /** Recompensas del dilema del prisionero (username -> monedas ganadas), para espectadores */
+  dilemaRecompensas: Record<string, number> | null;
+  /** Participantes del dilema del prisionero (para espectadores que no reciben ini_minijuego) */
+  dilemaParticipantes: string[] | null;
   /** Mostrar el modal de la barrera */
   showBarreraModal: boolean;
   isGameOver: boolean;
@@ -238,7 +242,8 @@ export type Action =
   | { type: 'POKER_MARK_ACTED' }
   | { type: 'POKER_TURNO_DE'; user: string }
   | { type: 'SET_SHOW_BARRERA_MODAL', value: boolean }
-  | { type: 'DILEMA_RESULTADOS'; resultados: Record<string, 'cooperar' | 'traicionar'> }
+  | { type: 'DILEMA_RESULTADOS'; resultados: Record<string, 'cooperar' | 'traicionar'>; recompensas: Record<string, number> }
+  | { type: 'SET_DILEMA_PARTICIPANTES'; users: string[] }
   | { type: 'ADD_PENALTY_TURN'; user: string; amount: number }
   /** El backend ha declarado quién juega a continuación */
   | { type: 'TURNO_DE'; user: string; ronda: number }
@@ -290,6 +295,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         showPoker: false,
         pokerState: { ...initialPokerState },
         dilemaResultados: null,
+        dilemaRecompensas: null,
+        dilemaParticipantes: null,
         showBarreraModal: false,
         bufferedRuletaMove: null,
         bufferedRuletaBalances: null,
@@ -515,6 +522,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         showDilema: false,
         showPoker: false,
         dilemaResultados: null,
+        dilemaRecompensas: null,
+        dilemaParticipantes: null,
         showBarreraModal: false,
         bufferedRuletaMove: null,
         bufferedRuletaBalances: null,
@@ -688,6 +697,8 @@ function gameReducer(state: GameState, action: Action): GameState {
         pendingBoardMinigame: null,
         isAnyoneAnimating: false,
         dilemaResultados: null,
+        dilemaRecompensas: null,
+        dilemaParticipantes: null,
       };
 
     case 'SHOW_POKER_PENDING':
@@ -791,7 +802,11 @@ function gameReducer(state: GameState, action: Action): GameState {
       return {
         ...state,
         dilemaResultados: action.resultados,
+        dilemaRecompensas: action.recompensas,
       };
+
+    case 'SET_DILEMA_PARTICIPANTES':
+      return { ...state, dilemaParticipantes: action.users };
 
     case 'GAME_OVER':
       return { ...state, isGameOver: true, gameWinner: action.winner };
@@ -893,6 +908,8 @@ const initialState: GameState = {
   showPoker: false,
   pokerState: { ...initialPokerState },
   dilemaResultados: null,
+  dilemaRecompensas: null,
+  dilemaParticipantes: null,
   showBarreraModal: false,
   turnoDeUser: null,
   isGameOver: false,
@@ -1266,6 +1283,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             if (data.minijuego === 'Doble o Nada') {
               awaitingDobleNadaBalanceRef.current = true;
               dispatch({ type: 'SHOW_DOBLE_NADA', user: data.user as string });
+            } else if (data.minijuego === 'Dilema del Prisionero' && Array.isArray(data.jugadores)) {
+              dispatch({ type: 'SET_DILEMA_PARTICIPANTES', users: data.jugadores as string[] });
             }
             break;
           }
@@ -1430,6 +1449,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             dispatch({
               type: 'DILEMA_RESULTADOS',
               resultados: data.decisiones as Record<string, 'cooperar' | 'traicionar'>,
+              recompensas: data.recompensas as Record<string, number>,
             });
             break;
           }
@@ -1461,6 +1481,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (pendingBoardMinigame?.type === 'Doble o Nada') {
       if (isLocalPlayer && pendingBoardMinigame.user === state.myUsername) {
         dispatch({ type: 'OPEN_DOBLE_NADA' });
+      } else if (!isLocalPlayer) {
+        // Espectador: la animación del jugador que cayó ha terminado → desbloquear banner
+        dispatch({ type: 'SET_ANYONE_ANIMATING', value: false });
       }
       return;
     }

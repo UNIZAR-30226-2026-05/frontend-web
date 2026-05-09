@@ -9,7 +9,8 @@ export default function DobleNadaOverlay() {
   const balance = myPlayer?.balance ?? 0;
   const isSubmitting = state.isSubmittingDobleNada;
   const result = state.dobleNadaResult;
-  const canIncreaseBet = balance > 0;
+
+  // Hooks must come before any conditional returns
   const [betAmount, setBetAmount] = React.useState(0);
 
   React.useEffect(() => {
@@ -17,6 +18,33 @@ export default function DobleNadaOverlay() {
     setBetAmount(0);
   }, [state.showDobleNada]);
 
+  // Vista espectador: otro jugador está apostando y nosotros esperamos
+  const spectatorUser = state.pendingBoardMinigame?.type === 'Doble o Nada'
+    ? state.pendingBoardMinigame.user
+    : null;
+  const isSpectator = spectatorUser !== null && spectatorUser !== state.myUsername;
+
+  if (isSpectator && !result) {
+    return (
+      <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="bg-[#301A51] border-4 border-[#FACC15] p-10 flex flex-col items-center gap-6 rounded-xl max-w-sm w-full mx-4 font-pixel [filter:drop-shadow(0_0_15px_rgba(250,204,21,0.4))]">
+          <h3 className="text-white text-3xl tracking-[0.2em] text-center uppercase drop-shadow-md">
+            DOBLE O NADA
+          </h3>
+          <div className="w-full border-4 border-white/15 bg-black/20 rounded-lg px-6 py-5 text-center">
+            <p className="text-[#FACC15] text-base uppercase tracking-[0.15em] animate-pulse">
+              {(spectatorUser ?? '').toUpperCase()} está desafiando a la suerte
+            </p>
+          </div>
+          <p className="text-white/60 text-[10px] uppercase tracking-[0.25em] text-center">
+            Esperando resultado...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const canIncreaseBet = balance > 0;
   const isPass = betAmount === 0;
 
   const handleIncrement = () => {

@@ -9,7 +9,7 @@ import VideojugadorEleccionModal from "@/features/board/components/VideojugadorE
 import { GameProvider } from "@/features/board/context/GameContext";
 import { useGameContext } from "@/features/board/context/GameContext";
 import { getGameSocket, getLobbyPlayers } from "@/lib/gameSocket";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/components/OrderMinigameOverlay";
 import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
 import BanqueroRoboModal from "@/features/board/components/BanqueroRoboModal";
@@ -114,7 +114,13 @@ function VideojugadorEleccionController() {
 function DobleNadaController() {
   const { state } = useGameContext();
 
-  if (!state.showDobleNada && !state.dobleNadaResult) return null;
+  const isSpectator = state.pendingBoardMinigame?.type === 'Doble o Nada' &&
+    state.pendingBoardMinigame.user !== state.myUsername;
+
+  if (!state.showDobleNada && !state.dobleNadaResult && !isSpectator) return null;
+  // Espectador: esperar a que termine la animación antes de mostrar el banner,
+  // pero no ocultar si ya hay resultado (isAnyoneAnimating se reactiva al mostrar resultado)
+  if (isSpectator && state.isAnyoneAnimating && !state.dobleNadaResult) return null;
 
   return <DobleNadaOverlay />;
 }
@@ -265,6 +271,97 @@ function DilemaController() {
       onAction={(result) => sendScoreDilema(result.score as "cooperar" | "traicionar")}
       onClose={() => dispatch({ type: 'HIDE_DILEMA' })}
     />
+  );
+}
+
+/** Vista espectadora del Dilema del Prisionero: banner durante el juego y resultados al final. */
+function DilemaSpectatorController() {
+  const { state, dispatch } = useGameContext();
+
+  // Solo para espectadores (participantes ven la UI completa)
+  if (state.showDilema) return null;
+
+  // Mostrar resultados para espectadores
+  if (state.dilemaResultados && state.dilemaRecompensas) {
+    const users = Object.keys(state.dilemaResultados);
+    return (
+      <DilemaSpectatorResultOverlay
+        resultados={state.dilemaResultados}
+        recompensas={state.dilemaRecompensas}
+        users={users}
+        onClose={() => dispatch({ type: 'HIDE_DILEMA' })}
+      />
+    );
+  }
+
+  // Mostrar banner mientras se juega
+  if (state.dilemaParticipantes && state.dilemaParticipantes.length >= 2) {
+    const [p1, p2] = state.dilemaParticipantes;
+    return (
+      <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="bg-[#1A1A2E] border-4 border-[#7C3AED] p-10 flex flex-col items-center gap-6 rounded-xl max-w-md w-full mx-4 font-pixel [filter:drop-shadow(0_0_15px_rgba(124,58,237,0.5))]">
+          <h3 className="text-white text-2xl tracking-[0.15em] text-center uppercase drop-shadow-md">
+            DILEMA DEL PRISIONERO
+          </h3>
+          <div className="w-full border-4 border-white/15 bg-black/20 rounded-lg px-6 py-5 text-center">
+            <p className="text-[#C084FC] text-sm uppercase tracking-[0.1em] animate-pulse leading-relaxed">
+              {`¿${p1.toUpperCase()} y ${p2.toUpperCase()} podrán cooperar o se traicionarán mutuamente?`}
+            </p>
+          </div>
+          <p className="text-white/60 text-[10px] uppercase tracking-[0.25em] text-center">
+            Esperando decisión...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+interface DilemaSpectatorResultProps {
+  resultados: Record<string, 'cooperar' | 'traicionar'>;
+  recompensas: Record<string, number>;
+  users: string[];
+  onClose: () => void;
+}
+
+function DilemaSpectatorResultOverlay({ resultados, recompensas, users, onClose }: DilemaSpectatorResultProps) {
+  const { useEffect } = React;
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-[#1A1A2E] border-4 border-[#7C3AED] p-10 flex flex-col items-center gap-6 rounded-xl max-w-md w-full mx-4 font-pixel [filter:drop-shadow(0_0_15px_rgba(124,58,237,0.6))]">
+        <h3 className="text-white text-2xl tracking-[0.15em] text-center uppercase drop-shadow-md">
+          DILEMA DEL PRISIONERO
+        </h3>
+        <div className="w-full border-4 border-white/15 bg-black/20 rounded-lg px-6 py-5 flex flex-col gap-3">
+          {users.map((u) => {
+            const decision = resultados[u];
+            const recompensa = recompensas[u] ?? 0;
+            const isCooperar = decision === 'cooperar';
+            return (
+              <div key={u} className="flex items-center justify-between gap-4">
+                <span className="text-white/80 text-xs uppercase tracking-wide">{u.toUpperCase()}</span>
+                <span className={`text-sm uppercase tracking-wide ${isCooperar ? 'text-[#4ADE80]' : 'text-[#F87171]'}`}>
+                  {isCooperar ? 'COOPERÓ' : 'TRAICIONÓ'}
+                </span>
+                <span className={`text-base ${recompensa > 0 ? 'text-[#4ADE80]' : 'text-white/50'}`}>
+                  {recompensa > 0 ? `+${recompensa}¢` : `+0¢`}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-white/60 text-[10px] uppercase tracking-[0.25em] animate-pulse text-center">
+          Cerrando en breve...
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -473,6 +570,9 @@ export default function GamePage() {
 
       {/* Dilema del Prisionero */}
       <DilemaController />
+
+      {/* Vista espectadora del Dilema del Prisionero */}
+      <DilemaSpectatorController />
 
       {/* Mano de Poker */}
       <PokerController />
