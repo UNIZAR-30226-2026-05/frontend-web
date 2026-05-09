@@ -144,7 +144,7 @@ export default function DilemaPrisioneroUI({ onAction }: DilemaPrisioneroUIProps
               className="w-48 h-6 bg-transparent border-none cursor-pointer mt-1"
             />
           </div>
-          <div className="mt-2 p-2 bg-white/10 rounded font-mono text-[9px]">
+          <div className="mt-2 p-2 bg-white/10 rounded font-pixel text-[9px]">
             BUT: w: {debugButW}, h: {debugButH}, top: {debugButTop}%, gap: {debugButSideGap}%<br />
             AV: size: {debugAvSize}, top: {debugAvTop}%, gap: {debugAvSideGap}%, tint: "{debugAvTintColor}", op: {debugAvTintOpacity}
           </div>

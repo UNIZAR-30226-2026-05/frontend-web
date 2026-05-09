@@ -112,7 +112,7 @@ export default function TrenUI({ onAction }: TrenUIProps) {
               className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
             />
           </div>
-          <div className="mt-2 p-2 bg-white/10 rounded font-mono text-[9px]">
+          <div className="mt-2 p-2 bg-white/10 rounded font-pixel text-[9px]">
             top: {debugTop.toFixed(1)}%,<br />
             translateY: {debugTranslateY.toFixed(1)}%,<br />
             width: {debugScale.toFixed(1)}%,<br />

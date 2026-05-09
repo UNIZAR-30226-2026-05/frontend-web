@@ -236,7 +236,7 @@ export default function PokerUI({ onClose }: PokerUIProps) {
                 <span className="text-[10px] font-bold text-white tracking-widest outline-black">RETIRADO</span>
               </div>
             )}
-            <div className="absolute -bottom-1 -right-1 bg-slate-950 border border-white/20 text-white text-[10px] px-2 py-0.5 rounded leading-tight shadow-xl font-mono">
+            <div className="absolute -bottom-1 -right-1 bg-slate-950 border border-white/20 text-white text-[10px] px-2 py-0.5 rounded leading-tight shadow-xl font-pixel">
               {rival.balance}¢
             </div>
           </div>
@@ -330,7 +330,7 @@ export default function PokerUI({ onClose }: PokerUIProps) {
                 <div className="flex flex-col gap-4 p-4 bg-slate-900/60 border border-purple-500/30 rounded-lg backdrop-blur-md w-64 shadow-2xl group">
                   <div className="flex justify-between items-center opacity-80">
                     <span className="text-purple-400 text-[9px] font-pixel tracking-widest">SUBIR APUESTA</span>
-                    <span className="text-white text-sm font-bold font-mono">+{raiseAmount}¢</span>
+                    <span className="text-white text-sm font-bold font-pixel">+{raiseAmount}¢</span>
                   </div>
                   <input
                     type="range"
@@ -374,7 +374,7 @@ export default function PokerUI({ onClose }: PokerUIProps) {
             <h2 className="text-white text-4xl mb-2 font-pixel tracking-tighter text-center uppercase drop-shadow-lg">
               {winner.isMe ? "¡TÚ GANAS!" : winner.name}
             </h2>
-            <p className="text-amber-500 text-lg mb-10 font-mono tracking-widest opacity-80 text-center">SE LLEVA EL BOTE</p>
+            <p className="text-amber-500 text-lg mb-10 font-pixel tracking-widest opacity-80 text-center">SE LLEVA EL BOTE</p>
 
             <div className="bg-white/5 border border-amber-500/20 px-12 py-6 rounded-xl flex flex-col items-center transition-transform hover:scale-105">
               <span className="text-white/40 text-[10px] mb-2 font-pixel">TOTAL PREMIO</span>

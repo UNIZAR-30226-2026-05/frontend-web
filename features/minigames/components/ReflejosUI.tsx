@@ -125,7 +125,7 @@ export default function ReflejosUI({ onAction, objetivo }: ReflejosUIProps) {
               className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
             />
           </div>
-          <div className="mt-2 p-2 bg-white/10 rounded font-mono text-[9px]">
+          <div className="mt-2 p-2 bg-white/10 rounded font-pixel text-[9px]">
             minDelay: {debugMinDelay},<br />
             maxDelay: {debugMaxDelay},<br />
             width: {debugButW},<br />

@@ -195,7 +195,7 @@ export default function DebugMinigamesPage() {
             ))}
           </div>
 
-          <div className="bg-black/50 border border-white/10 p-4 rounded h-64 overflow-y-auto font-mono text-xs shadow-inner">
+          <div className="bg-black/50 border border-white/10 p-4 rounded h-64 overflow-y-auto font-pixel text-xs shadow-inner">
             <h3 className="text-amber-500 mb-2 uppercase border-b border-white/10 pb-1">Action Logs:</h3>
             {debugLog.length === 0 && <p className="text-slate-600 italic">No actions recorded...</p>}
             {debugLog.map((log, i) => (

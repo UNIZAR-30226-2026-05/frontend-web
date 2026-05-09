@@ -195,7 +195,7 @@ export default function CronometroCiegoUI({ onAction, objetivo = 10 }: Cronometr
               className="w-48 appearance-none bg-amber-900/40 h-1 rounded-full cursor-pointer mt-1"
             />
           </div>
-          <div className="mt-2 p-2 bg-white/10 rounded font-mono text-[9px]">
+          <div className="mt-2 p-2 bg-white/10 rounded font-pixel text-[9px]">
             minBlind: {debugMinBlindTime.toFixed(1)},<br />
             maxBlind: {debugMaxBlindTime.toFixed(1)},<br />
             transition: {debugDoorTransitionMs},<br />
@@ -247,7 +247,7 @@ export default function CronometroCiegoUI({ onAction, objetivo = 10 }: Cronometr
           }}
         >
           {/* Reloj Digital */}
-          <div className="text-6xl md:text-8xl lg:text-9xl font-mono text-green-500 tracking-tighter font-bold drop-shadow-[0_0_20px_rgba(34,197,94,0.6)]">
+          <div className="text-6xl md:text-8xl lg:text-9xl font-pixel text-green-500 tracking-tighter font-bold drop-shadow-[0_0_20px_rgba(34,197,94,0.6)]">
             {formatTime(time)}
           </div>
 
