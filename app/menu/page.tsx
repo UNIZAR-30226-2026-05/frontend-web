@@ -419,6 +419,8 @@ export default function MenuPage() {
                                 </div>
                             </div>
                         ))}
+                        </div>
+                </div>
 
                 {/* Botón de Ajustes (abajo a la izquierda) */}
                 <div className="mt-auto p-4 mb-2">
