@@ -224,7 +224,6 @@ export default function DebugMinigamesPage() {
           {activeMinigame === "ruleta" && (
             <RuletaUI
               onAction={handleAction}
-              onClose={() => setActiveMinigame(null)}
             />
           )}
 
