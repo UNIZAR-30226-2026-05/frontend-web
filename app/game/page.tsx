@@ -13,7 +13,7 @@ import React, { useEffect, useState } from "react";
 import OrderMinigameOverlay, { OrderMinigameType, MinigameResultEntry } from "@/features/minigames/components/OrderMinigameOverlay";
 import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
 import BanqueroRoboModal from "@/features/board/components/BanqueroRoboModal";
-import VidenteDadosModal from "@/features/board/components/VidenteDadosModal";
+import VidenteDadosModal, { TiradaVidente } from "@/features/board/components/VidenteDadosModal";
 import MinigameResultOverlay from "@/features/board/components/MinigameResultOverlay";
 import RuletaUI from "@/features/board/components/RuletaUI";
 import PokerUI from "@/features/minigames/components/PokerUI";
@@ -181,7 +181,7 @@ function VidenteController() {
 
   return (
     <VidenteDadosModal
-      tiradas={state.videnteTiradas}
+      tiradas={state.videnteTiradas as TiradaVidente[]}
     />
   );
 }

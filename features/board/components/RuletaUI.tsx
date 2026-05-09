@@ -1,18 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
+
+const GREEN = "#16a34a";
+const RED   = "#dc2626";
 
 const PREMIOS = [
-  { id: 1, name: "+3 Casillas", image: "/items/casillas_mas.png", color: "#10b981" }, // Esmeralda
-  { id: 2, name: "-3 Casillas", image: "/items/casillas_menos.png", color: "#f43f5e" }, // Rosa/Rojo
-  { id: 3, name: "+3 Monedas",  image: "/items/monedas_mas.png", color: "#f59e0b" }, // Ambar
-  { id: 4, name: "-3 Monedas",  image: "/items/monedas_menos.png", color: "#6366f1" }, // Indigo
+  { id: 1, name: "+3 Casillas", color: GREEN },
+  { id: 2, name: "-3 Casillas", color: RED   },
+  { id: 3, name: "+3 Monedas",  color: GREEN },
+  { id: 4, name: "-3 Monedas",  color: RED   },
 ];
 
 interface RuletaUIProps {
   targetPrize?: string;
-  onAction?: (result: { name: string; image: string }) => void;
+  onAction?: (result: { name: string }) => void;
 }
 
 export default function RuletaUI({ targetPrize, onAction }: RuletaUIProps) {
@@ -60,10 +62,7 @@ export default function RuletaUI({ targetPrize, onAction }: RuletaUIProps) {
       // Auto-dismiss for all players
       if (onAction) {
         setTimeout(() => {
-          onAction({ 
-            name: PREMIOS[index].name, 
-            image: PREMIOS[index].image 
-          });
+          onAction({ name: PREMIOS[index].name });
         }, 3000);
       }
       
@@ -91,9 +90,6 @@ export default function RuletaUI({ targetPrize, onAction }: RuletaUIProps) {
             <h3 className="text-[#fbbf24] text-4xl tracking-[0.2em] uppercase drop-shadow-[0_4px_0_rgba(0,0,0,0.8)]">
                 RULETA DE LA SUERTE
             </h3>
-            <p className="text-white/40 text-[10px] uppercase tracking-widest mt-2">
-                ¡Consigue efectos directos para tu partida!
-            </p>
         </div>
 
         <div className="relative flex flex-col items-center">
@@ -117,24 +113,18 @@ export default function RuletaUI({ targetPrize, onAction }: RuletaUIProps) {
                         )`
                     }}
                 >
-                    {/* Items on the segments */}
+                    {/* Text labels on the segments */}
                     {PREMIOS.map((item, i) => (
                         <div 
                             key={i}
                             className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-start pt-10"
                             style={{ transform: `rotate(${i * 90 + 45}deg)` }}
                         >
-                            <div className="relative w-20 h-20 filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                              <Image 
-                                src={item.image} 
-                                alt={item.name} 
-                                fill 
-                                className="object-contain pixelated"
-                                unoptimized
-                              />
-                            </div>
-                            <span className="text-[10px] text-black font-bold uppercase mt-2 max-w-[80px] text-center leading-tight">
-                                {item.name}
+                            <span className="text-white font-bold text-base uppercase text-center leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] max-w-[70px]">
+                                {item.name.split(" ")[0]}
+                            </span>
+                            <span className="text-white font-bold text-xs uppercase text-center leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] mt-0.5">
+                                {item.name.split(" ").slice(1).join(" ")}
                             </span>
                         </div>
                     ))}
@@ -158,17 +148,11 @@ export default function RuletaUI({ targetPrize, onAction }: RuletaUIProps) {
             <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-3xl animate-in zoom-in duration-300">
                 <div className="bg-[#1e293b] border-4 border-[#fbbf24] p-10 flex flex-col items-center gap-6 shadow-[0_0_50px_rgba(251,191,36,0.5)]">
                     <p className="text-white/60 text-xs uppercase tracking-[0.3em]">Has obtenido un efecto:</p>
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="relative w-32 h-32 animate-bounce">
-                          <Image 
-                            src={PREMIOS[winningIndex].image} 
-                            alt={PREMIOS[winningIndex].name} 
-                            fill 
-                            className="object-contain pixelated"
-                            unoptimized
-                          />
-                        </div>
-                        <h4 className="text-white text-2xl uppercase tracking-widest text-center max-w-[250px]">
+                    <div
+                        className="px-8 py-6 rounded-2xl flex items-center justify-center"
+                        style={{ backgroundColor: PREMIOS[winningIndex].color }}
+                    >
+                        <h4 className="text-white text-3xl font-bold uppercase tracking-widest text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                             {PREMIOS[winningIndex].name}
                         </h4>
                     </div>
