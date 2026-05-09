@@ -371,10 +371,6 @@ export default function MenuPage() {
                 {/* Usuario Component */}
                 <div className="flex items-center gap-4 p-4 mt-2">
                     {/* Zona interactiva del Logo (dibujado en el fondo) */}
-                    <div
-                        className="absolute top-4 left-4 w-[12rem] h-[10rem] cursor-pointer z-10"
-                        aria-label="Snow Party Logo"
-                    />
                     <div className="flex items-center gap-6 ml-[14rem]">
                         <span
                             className="text-[3rem] tracking-widest font-bold text-white whitespace-nowrap"
