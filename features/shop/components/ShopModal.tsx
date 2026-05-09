@@ -144,20 +144,23 @@ export default function ShopModal({ onClose }: ShopModalProps) {
               const isSalvavidasBloqueo = item.name === 'Salvavidas bloqueo';
 
               const isDiceMaxed = item.name === 'Mejorar Dados' && (currentDiceLevel + pendingDiceUpgrades >= 3);
+              const isDiceAlreadyBoughtThisTurn = isMejorarDados && (state.purchasedItems['Mejorar Dados'] ?? 0) >= 1;
 
               const disabled =
                 (isSalvavidasBloqueo ? !isBlocked : isBlocked) ||
                 (isAvanzar && state.hasMoved) ||
                 (isMejorarDados && isFirstPlace) ||
-                isDiceMaxed;
+                isDiceMaxed ||
+                isDiceAlreadyBoughtThisTurn;
 
               const disabledReason =
                 (isBlocked && !isSalvavidasBloqueo) ? 'BLOQUEADO' :
                   (isMejorarDados && isFirstPlace) ? 'BLOQUEADO: VAS 1º' :
                     isDiceMaxed ? 'NIVEL MÁXIMO' :
-                      (isAvanzar && state.hasMoved) ? 'Solo antes de tirar' :
-                        (isSalvavidasBloqueo && !isBlocked) ? 'No estás bloqueado' :
-                          '';
+                      isDiceAlreadyBoughtThisTurn ? 'YA USADO ESTA RONDA' :
+                        (isAvanzar && state.hasMoved) ? 'Solo antes de tirar' :
+                          (isSalvavidasBloqueo && !isBlocked) ? 'No estás bloqueado' :
+                            '';
 
               return (
                 <div
