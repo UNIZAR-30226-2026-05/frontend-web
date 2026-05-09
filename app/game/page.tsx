@@ -19,6 +19,7 @@ import RuletaUI from "@/features/board/components/RuletaUI";
 import PokerUI from "@/features/minigames/components/PokerUI";
 import BarreraModal from "@/features/board/components/BarreraModal";
 import GameOverOverlay from "@/features/board/components/GameOverOverlay";
+import TurnTimer from "@/features/board/components/TurnTimer";
 
 // Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
 const WS_NAME_TO_ID: Record<string, string> = {
@@ -423,6 +424,9 @@ export default function GamePage() {
       <div className="absolute top-2 left-2 z-50">
         <PlayerHUD />
       </div>
+
+      {/* Temporizador de turno (Arriba a la derecha) */}
+      <TurnTimer />
 
       {/*
       {lobbyPlayers.length > 0 && (
