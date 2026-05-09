@@ -221,7 +221,7 @@ export default function Dice({ onOpenShop }: DiceProps) {
             </>
           )}
 
-          {awaitingEndRound ? (
+          {awaitingEndRound && !isAnyoneAnimating ? (
             <PixelButton onClick={sendEndRound} variant="purple" className="flex-1 py-4">
               Fin de Turno
             </PixelButton>
