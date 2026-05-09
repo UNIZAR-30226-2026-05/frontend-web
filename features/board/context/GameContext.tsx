@@ -155,7 +155,7 @@ interface GameState {
   /** Mostrar el modal de robo del banquero */
   showBanqueroModal: boolean;
   /** Tiradas futuras vistas por el vidente */
-  videnteTiradas: any[] | null; // Usamos any[] temporalmente para evitar circular dependency si no movemos el tipo
+  videnteTiradas: unknown[] | null; // Usamos unknown[] para evitar circular dependency si no movemos el tipo
   /** Mostrar el modal del vidente */
   showVidenteModal: boolean;
   /** Resultados pendientes de mostrar en el scoreboard antes de volver al tablero */
@@ -225,7 +225,7 @@ export type Action =
   | { type: 'CLEAR_LAST_DICE' }
   | { type: 'SET_SHOW_BANQUERO_MODAL'; value: boolean }
   | { type: 'MARK_ABILITY_USED' }
-  | { type: 'SHOW_VIDENTE_MODAL'; tiradas: any[] }
+  | { type: 'SHOW_VIDENTE_MODAL'; tiradas: unknown[] }
   | { type: 'HIDE_VIDENTE_MODAL' }
   | { type: 'DEBUG_SET_TURN_ORDER'; order: number }
   | { type: 'SET_PENDING_OBJETO_RULETA'; data: { user: string; objeto: string; descripcion: string } | null }
@@ -836,7 +836,7 @@ function gameReducer(state: GameState, action: Action): GameState {
     }
 
     case 'FLUSH_RULETA_BUFFER': {
-      let nextState = { ...state, players: { ...state.players } };
+      const nextState = { ...state, players: { ...state.players } };
       
       if (nextState.bufferedRuletaMove) {
         const { user, newPos } = nextState.bufferedRuletaMove;
@@ -990,7 +990,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).debugAddCoins = () => {
+      (window as Window & { debugAddCoins?: () => void }).debugAddCoins = () => {
         const ws = getGameSocket();
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ action: 'debug_add_coins' }));
@@ -1000,7 +1000,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         }
       };
 
-      (window as any).debugForcePoker = () => {
+      (window as Window & { debugForcePoker?: () => void }).debugForcePoker = () => {
         const ws = getGameSocket();
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ action: 'debug_force_poker' }));
@@ -1428,7 +1428,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
               ? (data.mesa_completa as BackendCard[]).map(mapBackendCard)
               : [];
             const resultadosOrdenados = Array.isArray(data.resultados_ordenados)
-              ? (data.resultados_ordenados as any[]).map((r: any) => ({
+              ? (data.resultados_ordenados as { user: string; mano: string; cartas: BackendCard[] }[]).map((r) => ({
                   user: r.user as string,
                   mano: r.mano as string,
                   cartas: Array.isArray(r.cartas)
@@ -1537,7 +1537,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => {
       dispatch({ type: 'SET_ANYONE_ANIMATING', value: false });
     }, POST_ANIMATION_DELAY_MS);
-  }, [sendEndRound, state.myUsername, state.pendingObjetoRuleta]);
+  }, [sendEndRound, state.myUsername]);
 
   const sendScoreReflejos = useCallback((reactionTimeMs: number) => {
     const ws = getGameSocket();
@@ -1552,8 +1552,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const sendScoreOrden = useCallback((score: number, objetivo?: number) => {
     const ws = getGameSocket();
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    const minijuego = state.currentOrderMinijuego;
-    const payload: any = { score };
+    const payload: { score: number; objetivo?: number } = { score };
     
     if (objetivo !== undefined) {
       payload.objetivo = objetivo;
@@ -1561,7 +1560,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     ws.send(JSON.stringify({ action: 'score_minijuego', payload }));
     dispatch({ type: 'HIDE_ORDER_MINIGAME' });
-  }, [state.currentOrderMinijuego]);
+  }, []);
 
   const sendScoreDobleNada = useCallback((score: number) => {
     const ws = getGameSocket();
@@ -1615,7 +1614,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const ws = getGameSocket();
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     
-    const payload: any = { objeto };
+    const payload: { objeto: string; penalizar_a?: string } = { objeto };
     if (targetUser) {
       payload.penalizar_a = targetUser;
     }

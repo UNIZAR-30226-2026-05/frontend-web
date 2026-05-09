@@ -84,7 +84,7 @@ export default function Dice({ onOpenShop }: DiceProps) {
   useEffect(() => {
     if (!lastDice || !isAnimating) return;
 
-    setIsRollingVisual(true);
+    requestAnimationFrame(() => setIsRollingVisual(true));
     const maxSpecial = DICE_MAX[lastDice.diceType];
     const showSpecial = lastDice.diceType !== 'normal' && lastDice.dado2 > 0;
 
@@ -115,7 +115,7 @@ export default function Dice({ onOpenShop }: DiceProps) {
       clearTimeout(rollTimeout);
       clearTimeout(hideTimeout);
     };
-  }, [lastDice, isAnimating]);
+  }, [lastDice, isAnimating, dispatch]);
 
   // Tipo de dado a mostrar: el de la última tirada o el del turno actual
   const currentTurnPlayer = Object.values(state.players).find(
