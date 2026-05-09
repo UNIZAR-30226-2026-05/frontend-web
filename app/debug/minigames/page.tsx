@@ -213,8 +213,9 @@ export default function DebugMinigamesPage() {
           {activeMinigame !== null && isOrderMinigameType(activeMinigame) && (
             <OrderMinigameOverlay
               minigameType={activeMinigame}
+              minigameName={activeMinigame}
               onAction={handleAction}
-              onClose={() => setActiveMinigame(null)}
+              onResultsClosed={() => setActiveMinigame(null)}
             />
           )}
 
