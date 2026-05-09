@@ -420,63 +420,6 @@ export default function MenuPage() {
                             </div>
                         ))}
 
-                        {friendRequests.length > 0 && (
-                            <div className="mt-4">
-                                <h3
-                                    className="text-[2rem] leading-snug mb-4 text-white font-bold whitespace-nowrap"
-                                    style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
-                                >
-                                    Solicitudes de amistad
-                                </h3>
-                                <div className="flex flex-col gap-6">
-                                    {friendRequests.map((req) => (
-                                        <div key={req} className="flex flex-col gap-3 w-fit">
-                                            <p
-                                                className="text-[#a8a8a8] text-[1.3rem] font-bold mb-1"
-                                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
-                                            >
-                                                {req} quiere ser tu amigo
-                                            </p>
-                                            <div className="w-full h-[2px] bg-white mb-2 shadow-[0_2px_0_#000]"></div>
-                                            <div className="flex items-center gap-4">
-                                                <PixelButton
-                                                    variant="green"
-                                                    className="!px-4 !py-2 !text-[1rem]"
-                                                    onClick={() => {
-                                                        sessionSocketRef.current?.send(JSON.stringify({
-                                                            action: 'accept_request',
-                                                            payload: { player_id: req }
-                                                        }));
-                                                        setFriendRequests(prev => prev.filter(u => u !== req));
-                                                        setFriends(prev => {
-                                                            if (prev.find(f => f.username === req)) return prev;
-                                                            return [...prev, { username: req, status: 'offline' }];
-                                                        });
-                                                    }}
-                                                >
-                                                    Aceptar
-                                                </PixelButton>
-                                                <PixelButton
-                                                    variant="purple"
-                                                    className="!px-4 !py-2 !text-[1rem]"
-                                                    onClick={() => {
-                                                        sessionSocketRef.current?.send(JSON.stringify({
-                                                            action: 'reject_request',
-                                                            payload: { player_id: req }
-                                                        }));
-                                                        setFriendRequests(prev => prev.filter(u => u !== req));
-                                                    }}
-                                                >
-                                                    Rechazar
-                                                </PixelButton>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
                 {/* Botón de Ajustes (abajo a la izquierda) */}
                 <div className="mt-auto p-4 mb-2">
                     <button
@@ -593,7 +536,6 @@ export default function MenuPage() {
                     </PixelButton>
                 </div>
 
-                {/* ✅ NUEVO: SOLICITUDES DE AMISTAD EN LA DERECHA ✅ */}
                 {friendRequests.length > 0 && (
                     <div className="flex flex-col w-full max-w-[22rem] ml-auto mt-2 mb-4">
                         <div className="flex flex-col items-center mb-2">
