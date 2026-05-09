@@ -55,10 +55,8 @@ export default function ShopModal({ onClose }: ShopModalProps) {
   const isBlocked = penaltyTurns > 0;
   const hasRolled = state.hasMoved;
 
-  // Calcular ranking por posición en el tablero
-  const sortedPlayers = Object.values(state.players).sort((a, b) => b.position - a.position);
-  const myRank = sortedPlayers.findIndex(p => p.username === state.myUsername) + 1;
-  const isFirstPlace = myRank === 1 && state.myUsername !== null;
+  // Bloqueado para comprar "Mejorar Dados" si eres el primero en tirar esta ronda
+  const isFirstPlace = myPlayer?.turnOrder === 1;
 
   const handleBuy = (item: ShopItem) => {
     const ws = getGameSocket();

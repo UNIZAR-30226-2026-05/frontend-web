@@ -10,7 +10,7 @@ import { GameProvider } from "@/features/board/context/GameContext";
 import { useGameContext } from "@/features/board/context/GameContext";
 import { getGameSocket, getLobbyPlayers } from "@/lib/gameSocket";
 import React, { useEffect, useState } from "react";
-import OrderMinigameOverlay, { OrderMinigameType } from "@/features/minigames/components/OrderMinigameOverlay";
+import OrderMinigameOverlay, { OrderMinigameType, MinigameResultEntry } from "@/features/minigames/components/OrderMinigameOverlay";
 import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
 import BanqueroRoboModal from "@/features/board/components/BanqueroRoboModal";
 import VidenteDadosModal from "@/features/board/components/VidenteDadosModal";
@@ -40,24 +40,38 @@ const MINIJUEGO_NAME_TO_TYPE: Record<string, OrderMinigameType> = {
 
 /** Muestra el overlay del minijuego de orden elegido por el videojugador. */
 function OrderMinigameController() {
-  const { state, myPlayer, sendScoreOrden } = useGameContext();
+  const { state, myPlayer, sendScoreOrden, dispatch } = useGameContext();
 
   if (state.showPoker) return null;
   if (state.showRuleta) return null;
-  if (!state.showOrderMinigame) return null;
+  if (!state.showOrderMinigame && !state.waitingForMinigameResults && !state.pendingMinigameResults) return null;
 
   const minijuegoType = state.currentOrderMinijuego
     ? (MINIJUEGO_NAME_TO_TYPE[state.currentOrderMinijuego] ?? 'reflejos')
     : 'reflejos';
 
+  // Construir array de resultados con info de personaje para el podio inline
+  const results: MinigameResultEntry[] | undefined = state.pendingMinigameResults
+    ? Object.entries(state.pendingMinigameResults.resultados).map(([username, data]) => ({
+        username,
+        score: data.score,
+        posicion: data.posicion,
+        character: state.players[username]?.character ?? 'banquero',
+      }))
+    : undefined;
+
   return (
     <OrderMinigameOverlay
       minigameType={minijuegoType}
+      minigameName={state.pendingMinigameResults?.minigameName ?? state.currentOrderMinijuego ?? 'Minijuego'}
+      description={state.currentOrderMinijuegoDescripcion ?? undefined}
       backendCardIndexes={state.currentOrderMinijuegoDetails?.cartas}
       assignedCardSlot={myPlayer ? myPlayer.turnOrder - 1 : undefined}
       objetivo={state.currentOrderMinijuegoDetails?.objetivo}
       onAction={(result) => sendScoreOrden(result.score as number, result.objetivo)}
-      onClose={() => {/* no se puede cerrar manualmente */}}
+      onResultsClosed={() => dispatch({ type: 'MINIJUEGO_RESULTADOS' })}
+      waitingForResults={state.waitingForMinigameResults}
+      results={results}
     />
   );
 }
@@ -178,6 +192,8 @@ function MinigameResultController() {
 
   if (state.showPoker) return null;
   if (state.showRuleta) return null;
+  // Los resultados de orden se muestran inline dentro del OrderMinigameOverlay
+  if (state.showOrderMinigame || state.waitingForMinigameResults) return null;
 
   // Mientras el jugador espera los resultados del resto (ya envió su score)
   if (state.waitingForMinigameResults && !state.pendingMinigameResults) {
@@ -268,8 +284,12 @@ function DilemaController() {
   return (
     <OrderMinigameOverlay
       minigameType="dilema"
-      onAction={(result) => sendScoreDilema(result.score as "cooperar" | "traicionar")}
-      onClose={() => dispatch({ type: 'HIDE_DILEMA' })}
+      minigameName="Dilema del Prisionero"
+      onAction={(result) => {
+        sendScoreDilema(result.score as "cooperar" | "traicionar");
+        dispatch({ type: 'HIDE_DILEMA' });
+      }}
+      onResultsClosed={() => {/* resultados gestionados por DilemaSpectatorController */}}
     />
   );
 }
@@ -584,8 +604,9 @@ export default function GamePage() {
       {activeMinigame && (
         <OrderMinigameOverlay 
           minigameType={activeMinigame} 
+          minigameName={activeMinigame}
           onAction={handleMinigameAction}
-          onClose={() => setActiveMinigame(null)}
+          onResultsClosed={() => setActiveMinigame(null)}
         />
       )}
 

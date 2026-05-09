@@ -124,6 +124,8 @@ interface GameState {
   currentOrderMinijuego: string | null;
   /** Detalles enviados por backend para el minijuego de orden actual */
   currentOrderMinijuegoDetails: OrderMinijuegoDetails | null;
+  /** Descripción del minijuego de orden actual (enviada por el backend en ini_minijuego) */
+  currentOrderMinijuegoDescripcion: string | null;
   /** Mostrar overlay de Doble o Nada */
   showDobleNada: boolean;
   /** El jugador local cayó en una casilla de movimiento negativo este turno */
@@ -206,7 +208,7 @@ export type Action =
   | { type: 'HIDE_ORDER_MINIGAME' }
   | { type: 'SHOW_VIDEOJUGADOR_ELECCION'; opciones: { nombre: string; descripcion: string | null }[] }
   | { type: 'HIDE_VIDEOJUGADOR_ELECCION' }
-  | { type: 'SET_CURRENT_ORDER_MINIJUEGO'; minijuego: string; details: OrderMinijuegoDetails | null }
+  | { type: 'SET_CURRENT_ORDER_MINIJUEGO'; minijuego: string; details: OrderMinijuegoDetails | null; descripcion?: string }
   | { type: 'SHOW_DOBLE_NADA'; user: string }
   | { type: 'OPEN_DOBLE_NADA' }
   | { type: 'SUBMIT_DOBLE_NADA'; score: number }
@@ -289,6 +291,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         showVidenteModal: false,
         pendingMinigameResults: null,
         waitingForMinigameResults: false,
+        currentOrderMinijuegoDescripcion: null,
         pendingObjetoRuleta: null,
         showRuleta: false,
         showDilema: false,
@@ -393,7 +396,7 @@ function gameReducer(state: GameState, action: Action): GameState {
     case 'SHOW_MINIGAME_RESULTS': {
       return {
         ...state,
-        showOrderMinigame: false,
+        // showOrderMinigame stays true — overlay transitions to results phase
         currentOrderMinijuego: null,
         currentOrderMinijuegoDetails: null,
         waitingForMinigameResults: false,
@@ -452,6 +455,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         videojugadorOpciones: [],
         currentOrderMinijuego: null,
         currentOrderMinijuegoDetails: null,
+        currentOrderMinijuegoDescripcion: null,
         waitingForMinigameResults: false,
         landedOnBarrera: false,
         showDobleNada: false,
@@ -576,7 +580,7 @@ function gameReducer(state: GameState, action: Action): GameState {
     case 'HIDE_ORDER_MINIGAME':
       return {
         ...state,
-        showOrderMinigame: false,
+        // showOrderMinigame stays true — overlay handles waiting/results phases
         waitingForMinigameResults: state.showOrderMinigame ? true : state.waitingForMinigameResults,
       };
 
@@ -591,6 +595,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         ...state,
         currentOrderMinijuego: action.minijuego,
         currentOrderMinijuegoDetails: action.details,
+        currentOrderMinijuegoDescripcion: action.descripcion ?? null,
       };
 
     case 'SHOW_DOBLE_NADA':
@@ -883,6 +888,7 @@ const initialState: GameState = {
   videojugadorOpciones: [],
   currentOrderMinijuego: null,
   currentOrderMinijuegoDetails: null,
+  currentOrderMinijuegoDescripcion: null,
   showDobleNada: false,
   bufferedRuletaMove: null,
   bufferedRuletaBalances: null,
@@ -1254,7 +1260,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
                 ? data.detalles as OrderMinijuegoDetails
                 : null;
               dispatch({ type: 'HIDE_VIDEOJUGADOR_ELECCION' });
-              dispatch({ type: 'SET_CURRENT_ORDER_MINIJUEGO', minijuego, details });
+              dispatch({ type: 'SET_CURRENT_ORDER_MINIJUEGO', minijuego, details, descripcion: data.descripcion as string | undefined });
               dispatch({ type: 'SHOW_ORDER_MINIGAME' });
             }
             break;

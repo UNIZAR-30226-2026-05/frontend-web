@@ -122,6 +122,7 @@ export default function DebugMinigamesPage() {
       gameWinner: null,
       bufferedRuletaMove: null,
       bufferedRuletaBalances: null,
+      currentOrderMinijuegoDescripcion: null,
     },
     isMyTurn: true,
     myPlayer: mockPlayer,
