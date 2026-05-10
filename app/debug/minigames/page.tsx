@@ -232,9 +232,9 @@ export default function DebugMinigamesPage() {
           {activeMinigame === "banquero" && (
             <BanqueroRoboModal
               targetPlayers={[
-                { username: "David", character: "Escapista" },
-                { username: "Maria", character: "Vidente" },
-                { username: "Alex", character: "Videojugador" },
+                { username: "David", character: "Escapista", balance: 1 },
+                { username: "Maria", character: "Vidente", balance: 5 },
+                { username: "Alex", character: "Videojugador", balance: 0 },
               ]}
               onSelect={(username) => {
                 handleAction({ type: 'robbery', target: username });
