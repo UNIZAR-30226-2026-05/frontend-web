@@ -376,6 +376,23 @@ export default function MenuPage() {
         }
     };
 
+    const handleSalirSala = () => {
+        if (detachSocketListenersRef.current) {
+            detachSocketListenersRef.current();
+            detachSocketListenersRef.current = null;
+        }
+        if (socketRef.current) {
+            socketRef.current.close();
+            socketRef.current = null;
+        }
+        SetIdPartida(0);
+        setJugadoresEnLobby([]);
+        setPlayersConnected(null);
+        setJoinSuccess(null);
+        setJoinError(null);
+        setInvitedFriends([]);
+    };
+
     const getFriendStatus = (friendUsername: string, friendOnlineStatus: string) => {
         if (jugadoresEnLobby.includes(friendUsername)) return 'contigo';
         if (invitedFriends.includes(friendUsername)) return 'invitado';
@@ -478,7 +495,7 @@ export default function MenuPage() {
             </div>
 
             {/* Columna Central: Crear y Unirse a Partida / Cambio de Contraseña */}
-            <div className="flex flex-col items-center justify-center gap-[4rem] p-8 z-10 relative">
+            <div className="flex flex-col items-center justify-center gap-[4rem] p-8 z-10 relative overflow-hidden">
 
                 {isPasswordModalOpen ? (
                     <ChangePasswordForm onClose={() => setIsPasswordModalOpen(false)} />
@@ -512,17 +529,25 @@ export default function MenuPage() {
                                             </span>
                                         </div>
                                         <div className="flex justify-end">
-                                            <PixelButton variant="purple" className="!px-6 !py-3 !text-[1.3rem] !tracking-wider">
+                                            <PixelButton variant="green" className="!px-6 !py-3 !text-[1.3rem] !tracking-wider">
                                                 {username}
                                             </PixelButton>
                                         </div>
                                     </div>
 
                                     <div className="flex justify-between w-full gap-5">
-                                        <PixelButton variant="purple" className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[0] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[0] ?? 'Vacío'}</PixelButton>
-                                        <PixelButton variant="purple" className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[1] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[1] ?? 'Vacío'}</PixelButton>
-                                        <PixelButton variant="purple" className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[2] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[2] ?? 'Vacío'}</PixelButton>
+                                        <PixelButton variant={jugadoresEnLobby[0] ? 'green' : 'purple'} className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[0] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[0] ?? 'Vacío'}</PixelButton>
+                                        <PixelButton variant={jugadoresEnLobby[1] ? 'green' : 'purple'} className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[1] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[1] ?? 'Vacío'}</PixelButton>
+                                        <PixelButton variant={jugadoresEnLobby[2] ? 'green' : 'purple'} className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[2] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[2] ?? 'Vacío'}</PixelButton>
                                     </div>
+
+                                    <PixelButton
+                                        variant="red"
+                                        className="w-full !py-3 !text-[1.2rem]"
+                                        onClick={handleSalirSala}
+                                    >
+                                        Salir de la sala
+                                    </PixelButton>
                                 </>
                             )}
                         </div>
