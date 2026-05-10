@@ -24,6 +24,7 @@ export default function MenuPage() {
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [invitedFriends, setInvitedFriends] = useState<string[]>([]);
+    const [isCreatingGame, setIsCreatingGame] = useState(false);
 
     const [invitations, setInvitations] = useState<{inviter: string, code: number}[]>([]);
     const [friendRequests, setFriendRequests] = useState<string[]>([]);
@@ -333,14 +334,6 @@ export default function MenuPage() {
                 };
             }
 
-            const id = await CrearPartidaService(token);
-            if (!id) {
-                console.error('Error al crear la partida: ID no recibido');
-                return;
-            }
-
-            SetIdPartida(id);
-            connectToRoom(id, token);
         };
 
         init();
@@ -352,6 +345,24 @@ export default function MenuPage() {
             }
         };
     }, [connectToRoom]);
+
+    const handleCrearPartida = async () => {
+        if (isCreatingGame || idPartida > 0) return;
+        setIsCreatingGame(true);
+        try {
+            const id = await CrearPartidaService(authToken);
+            if (!id) {
+                console.error('Error al crear la partida: ID no recibido');
+                return;
+            }
+            SetIdPartida(id);
+            connectToRoom(id, authToken);
+        } catch (e) {
+            console.error('Error al crear la partida:', e);
+        } finally {
+            setIsCreatingGame(false);
+        }
+    };
 
     const handleInvite = (friendUsername: string) => {
         if (sessionSocketRef.current?.readyState === WebSocket.OPEN) {
@@ -473,35 +484,47 @@ export default function MenuPage() {
                     <ChangePasswordForm onClose={() => setIsPasswordModalOpen(false)} />
                 ) : (
                     <>
-                        {/* Partida temporal compacta */}
-                        <div className="w-full max-w-[28rem] mt-2 mb-4">
-                            <div className="flex justify-between items-center w-full mb-4 px-2">
-                                <div className="flex flex-col">
-                                    <span
-                                        className="text-[1.3rem] leading-snug text-white font-bold"
-                                        style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
-                                    >
-                                        Código de partida:
-                                    </span>
-                                    <span
-                                        className="text-[2rem] text-white mt-1 inline-block font-bold"
-                                        style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
-                                    >
-                                        {idPartida}
-                                    </span>
-                                </div>
-                                <div className="flex justify-end">
-                                    <PixelButton variant="purple" className="!px-6 !py-3 !text-[1.3rem] !tracking-wider">
-                                        {username}
-                                    </PixelButton>
-                                </div>
-                            </div>
+                        {/* Botón Crear Partida / Lobby info */}
+                        <div className="w-full max-w-[28rem] flex flex-col items-center gap-4 mt-2 mb-4">
+                            <PixelButton
+                                variant="purple"
+                                className="w-full !py-5 !text-[1.8rem] !tracking-wider"
+                                onClick={handleCrearPartida}
+                            >
+                                {isCreatingGame ? 'Creando...' : 'Crear partida'}
+                            </PixelButton>
 
-                            <div className="flex justify-between w-full gap-5">
-                                <PixelButton variant="purple" className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[0] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[0] ?? 'Vacío'}</PixelButton>
-                                <PixelButton variant="purple" className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[1] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[1] ?? 'Vacío'}</PixelButton>
-                                <PixelButton variant="purple" className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[2] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[2] ?? 'Vacío'}</PixelButton>
-                            </div>
+                            {idPartida > 0 && (
+                                <>
+                                    <div className="flex justify-between items-center w-full px-2">
+                                        <div className="flex flex-col">
+                                            <span
+                                                className="text-[1.3rem] leading-snug text-white font-bold"
+                                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                            >
+                                                Código de partida:
+                                            </span>
+                                            <span
+                                                className="text-[2rem] text-white mt-1 inline-block font-bold"
+                                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                            >
+                                                {idPartida}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-end">
+                                            <PixelButton variant="purple" className="!px-6 !py-3 !text-[1.3rem] !tracking-wider">
+                                                {username}
+                                            </PixelButton>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between w-full gap-5">
+                                        <PixelButton variant="purple" className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[0] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[0] ?? 'Vacío'}</PixelButton>
+                                        <PixelButton variant="purple" className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[1] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[1] ?? 'Vacío'}</PixelButton>
+                                        <PixelButton variant="purple" className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[2] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[2] ?? 'Vacío'}</PixelButton>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         {/* Unirse a una partida */}
