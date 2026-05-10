@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import PixelButton from '@/components/UI/PixelButton';
 import PixelInput from '@/components/UI/PixelInput';
 
-type UserStatus = 'none' | 'pending' | 'added';
+type UserStatus = 'none' | 'added';
 
 interface User {
     username: string;
@@ -13,7 +13,7 @@ interface User {
 
 interface UserSearchModalProps {
     onClose: () => void;
-    onSendRequest: (username: string) => void;
+    onSendRequest: (username: string) => void | Promise<void>;
     onRemoveFriend?: (username: string) => void;
     existingFriends?: string[];
 }
@@ -52,18 +52,12 @@ export default function UserSearchModal({ onClose, onSendRequest, onRemoveFriend
         return () => clearTimeout(debounceTimer);
     }, [searchQuery]);
 
-    const handleAction = (username: string, currentStatus: UserStatus) => {
+    const handleAction = async (username: string, currentStatus: UserStatus) => {
         if (currentStatus === 'none') {
-            onSendRequest(username);
+            await onSendRequest(username);
             setUsers(prevUsers =>
                 prevUsers.map(user =>
-                    user.username === username ? { ...user, status: 'pending' } : user
-                )
-            );
-        } else if (currentStatus === 'pending') {
-            setUsers(prevUsers =>
-                prevUsers.map(user =>
-                    user.username === username ? { ...user, status: 'none' } : user
+                    user.username === username ? { ...user, status: 'added' } : user
                 )
             );
         } else if (currentStatus === 'added') {
@@ -80,8 +74,6 @@ export default function UserSearchModal({ onClose, onSendRequest, onRemoveFriend
         switch (status) {
             case 'added':
                 return { text: 'Eliminar', variant: 'red' as const };
-            case 'pending':
-                return { text: 'Pendiente', variant: 'purple' as const };
             default:
                 return { text: 'Añadir', variant: 'green' as const };
         }

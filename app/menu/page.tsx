@@ -249,17 +249,8 @@ export default function MenuPage() {
                 }
             }
 
-            const id = await CrearPartidaService(token);
-            if (!id) {
-                console.error('Error al crear la partida: ID no recibido');
-                return;
-            }
-
-            SetIdPartida(id);
-            connectToRoom(id, token);
-
-            // Connect to Session WebSocket
-            if (currentUsername) {
+            // Connect to Session WebSocket first (independent of game creation)
+            if (currentUsername && token) {
                 const backendUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
                 let wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
 
@@ -270,7 +261,7 @@ export default function MenuPage() {
                 }
 
                 const normalizedHost = backendUrl.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '');
-                const encodedToken = encodeURIComponent(token ?? '');
+                const encodedToken = encodeURIComponent(token);
                 const sessionUrl = `${wsProtocol}://${normalizedHost}/ws/usuario/${currentUsername}?token=${encodedToken}`;
                 
                 const sessionWs = new WebSocket(sessionUrl);
@@ -279,6 +270,7 @@ export default function MenuPage() {
                 sessionWs.onopen = () => {
                     console.log('WebSocket de sesión conectado');
                     sessionWs.send(JSON.stringify({ action: 'get_online_friends' }));
+                    sessionWs.send(JSON.stringify({ action: 'get_pending_request' }));
                 };
                 
                 sessionWs.onmessage = (event) => {
@@ -290,12 +282,12 @@ export default function MenuPage() {
                                 break;
                             case 'online_friends_list':
                                 setFriends(prev => {
-                                    const onlineSet = new Set(data.friends);
+                                    const onlineSet = new Set<string>(Array.isArray(data.friends) ? data.friends : []);
                                     const updated = prev.map(f => ({
                                         ...f,
                                         status: onlineSet.has(f.username) ? 'online' : f.status
                                     }));
-                                    data.friends.forEach((f: string) => {
+                                    (Array.isArray(data.friends) ? data.friends as string[] : []).forEach((f: string) => {
                                         if (!updated.find(u => u.username === f)) {
                                             updated.push({ username: f, status: 'online' });
                                         }
@@ -316,7 +308,19 @@ export default function MenuPage() {
                                 setInvitations(prev => [...prev, { inviter: data.from_user, code: data.game_id }]);
                                 break;
                             case 'new_friend_request':
-                                setFriendRequests(prev => [...prev, data.from_user]);
+                                setFriendRequests(prev => {
+                                    if (prev.includes(data.from_user)) return prev;
+                                    return [...prev, data.from_user];
+                                });
+                                break;
+                            case 'request_sended':
+                                console.log('Solicitud de amistad enviada a:', data.username);
+                                break;
+                            case 'failed_request':
+                                console.warn('Solicitud fallida:', data.username, data.cause);
+                                break;
+                            case 'user_not_exists':
+                                console.warn('Usuario no encontrado:', data.username);
                                 break;
                         }
                     } catch (e) {
@@ -328,6 +332,15 @@ export default function MenuPage() {
                     console.log('WebSocket de sesión desconectado');
                 };
             }
+
+            const id = await CrearPartidaService(token);
+            if (!id) {
+                console.error('Error al crear la partida: ID no recibido');
+                return;
+            }
+
+            SetIdPartida(id);
+            connectToRoom(id, token);
         };
 
         init();
@@ -644,12 +657,20 @@ export default function MenuPage() {
                 {isSearchModalOpen && <UserSearchModal 
                     existingFriends={friends.map(f => f.username)}
                     onClose={() => setIsSearchModalOpen(false)} 
-                    onSendRequest={(username) => {
-                        if (sessionSocketRef.current?.readyState === WebSocket.OPEN) {
-                            sessionSocketRef.current.send(JSON.stringify({ 
-                                action: "send_request", 
-                                payload: { player_id: username } 
-                            }));
+                    onSendRequest={async (targetUsername) => {
+                        const backendHttpUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
+                        const myUsername = sessionStorage.getItem('username');
+                        if (!myUsername) return;
+                        try {
+                            await fetch(`${backendHttpUrl}/usuarios/amigos?user1=${myUsername}&user2=${targetUsername}`, {
+                                method: 'POST'
+                            });
+                            setFriends(prev => {
+                                if (prev.find(f => f.username === targetUsername)) return prev;
+                                return [...prev, { username: targetUsername, status: 'offline' }];
+                            });
+                        } catch (e) {
+                            console.error('Error al añadir amigo:', e);
                         }
                     }}
                     onRemoveFriend={async (username) => {
