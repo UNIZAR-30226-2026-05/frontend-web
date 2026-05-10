@@ -83,8 +83,6 @@ export default function MenuPage() {
                     players_connected?: number | unknown[];
                     numJugadores?: number;
                     error?: string;
-                    players?: unknown[];
-                    jugadores?: unknown[];
                 };
 
                 if (message.error) {
@@ -95,8 +93,8 @@ export default function MenuPage() {
 
                 if (message.type === 'lobby_update') {
                     const playersList = (Array.isArray(message.players_connected) ? message.players_connected : null) || 
-                                       message.players || 
-                                       message.jugadores;
+                                       (message as any).players || 
+                                       (message as any).jugadores;
 
                     if (Array.isArray(playersList)) {
                         const usernames = extractUsernames(playersList);
@@ -110,8 +108,8 @@ export default function MenuPage() {
 
                 if (message.type === 'game_start') {
                     const playersList = (Array.isArray(message.players_connected) ? message.players_connected : null) || 
-                                       message.players || 
-                                       message.jugadores;
+                                       (message as any).players || 
+                                       (message as any).jugadores;
 
                     if (Array.isArray(playersList)) {
                         const usernames = extractUsernames(playersList);
@@ -149,7 +147,7 @@ export default function MenuPage() {
             ws.removeEventListener('close', onClose);
             ws.removeEventListener('error', onError);
         };
-    }, [updateJugadoresEnLobby, extractUsernames]);
+    }, [updateJugadoresEnLobby]);
 
     const connectToRoom = useCallback((roomId: number, token: string | null) => {
         // Solo evitar reconexión si ya hay socket abierto A LA MISMA SALA
@@ -238,7 +236,7 @@ export default function MenuPage() {
                     });
                     if (resFriends.ok) {
                         const data = await resFriends.json();
-                        const friendsList = (data as { nombre: string }[]).map((u) => u.nombre);
+                        const friendsList = data.map((u: any) => u.nombre);
                         setFriends(friendsList.map((f: string) => ({ username: f, status: 'offline' })));
                     }
                 } catch (e) {
@@ -419,9 +417,64 @@ export default function MenuPage() {
                                 </div>
                             </div>
                         ))}
-                        </div>
-                </div>
 
+                        {friendRequests.length > 0 && (
+                            <div className="mt-4">
+                                <h3
+                                    className="text-[2rem] leading-snug mb-4 text-white font-bold whitespace-nowrap"
+                                    style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                >
+                                    Solicitudes de amistad
+                                </h3>
+                                <div className="flex flex-col gap-6">
+                                    {friendRequests.map((req) => (
+                                        <div key={req} className="flex flex-col gap-3 w-fit">
+                                            <p
+                                                className="text-[#a8a8a8] text-[1.3rem] font-bold mb-1"
+                                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                            >
+                                                {req} quiere ser tu amigo
+                                            </p>
+                                            <div className="w-full h-[2px] bg-white mb-2 shadow-[0_2px_0_#000]"></div>
+                                            <div className="flex items-center gap-4">
+                                                <PixelButton
+                                                    variant="green"
+                                                    className="!px-4 !py-2 !text-[1rem]"
+                                                    onClick={() => {
+                                                        sessionSocketRef.current?.send(JSON.stringify({
+                                                            action: 'accept_request',
+                                                            payload: { player_id: req }
+                                                        }));
+                                                        setFriendRequests(prev => prev.filter(u => u !== req));
+                                                        setFriends(prev => {
+                                                            if (prev.find(f => f.username === req)) return prev;
+                                                            return [...prev, { username: req, status: 'offline' }];
+                                                        });
+                                                    }}
+                                                >
+                                                    Aceptar
+                                                </PixelButton>
+                                                <PixelButton
+                                                    variant="purple"
+                                                    className="!px-4 !py-2 !text-[1rem]"
+                                                    onClick={() => {
+                                                        sessionSocketRef.current?.send(JSON.stringify({
+                                                            action: 'reject_request',
+                                                            payload: { player_id: req }
+                                                        }));
+                                                        setFriendRequests(prev => prev.filter(u => u !== req));
+                                                    }}
+                                                >
+                                                    Rechazar
+                                                </PixelButton>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
                 {/* Botón de Ajustes (abajo a la izquierda) */}
                 <div className="mt-auto p-4 mb-2">
                     <button
@@ -531,74 +584,15 @@ export default function MenuPage() {
                 <div className="flex justify-end mb-8">
                     <PixelButton
                         variant="purple"
-                            className="!px-6 !py-4 !text-[1.2rem]"
-                            onClick={() => setIsSearchModalOpen(true)}
-                        >
+                        className="!px-6 !py-4 !text-[1.2rem]"
+                        onClick={() => setIsSearchModalOpen(true)}
+                    >
                         <span className="mr-2">🔍</span> Buscar Jugadores
                     </PixelButton>
                 </div>
-
-                {friendRequests.length > 0 && (
-                    <div className="flex flex-col w-full max-w-[22rem] ml-auto mt-2 mb-4">
-                        <div className="flex flex-col items-center mb-2">
-                            <h2
-                                className="text-[1.8rem] tracking-[0.1em] pb-2 text-white font-bold whitespace-nowrap"
-                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
-                            >
-                                Solicitudes
-                            </h2>
-                            <div className="w-[85%] mx-auto h-[2px] bg-[#dcbaff] shadow-[0_2px_0px_rgba(0,0,0,1)]"></div>
-                        </div>
-
-                        <div className="flex flex-col gap-5 px-2 mt-2 overflow-y-auto max-h-[14rem] scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent pr-2">
-                            {friendRequests.map((req) => (
-                                <div key={req} className="flex flex-col gap-2 w-full">
-                                    <span
-                                        className="text-[#a8a8a8] text-[1.2rem] font-bold text-center"
-                                        style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
-                                    >
-                                        {req} quiere ser tu amigo
-                                    </span>
-                                    <div className="flex items-center justify-center gap-3">
-                                        <PixelButton
-                                            variant="green"
-                                            className="!px-3 !py-1 !text-[1rem] flex-1"
-                                            onClick={() => {
-                                                sessionSocketRef.current?.send(JSON.stringify({
-                                                    action: 'accept_request',
-                                                    payload: { player_id: req }
-                                                }));
-                                                setFriendRequests(prev => prev.filter(u => u !== req));
-                                                setFriends(prev => {
-                                                    if (prev.find(f => f.username === req)) return prev;
-                                                    return [...prev, { username: req, status: 'offline' }];
-                                                });
-                                            }}
-                                        >
-                                            Aceptar
-                                        </PixelButton>
-                                        <PixelButton
-                                            variant="purple"
-                                            className="!px-3 !py-1 !text-[1rem] flex-1"
-                                            onClick={() => {
-                                                sessionSocketRef.current?.send(JSON.stringify({
-                                                    action: 'reject_request',
-                                                    payload: { player_id: req }
-                                                }));
-                                                setFriendRequests(prev => prev.filter(u => u !== req));
-                                            }}
-                                        >
-                                            Rechazar
-                                        </PixelButton>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
             
                 {/* Lista de amigos */}
-                <div className="flex flex-col gap-6 w-full max-w-[22rem] ml-auto mt-2 flex-1 overflow-hidden">
+                <div className="flex flex-col gap-6 w-full max-w-[22rem] ml-auto mt-6 flex-1 overflow-hidden">
                     <div className="flex flex-col items-center mb-2">
                         <h2
                             className="text-[2.2rem] tracking-[0.1em] pb-2 text-white font-bold"
