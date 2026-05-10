@@ -83,6 +83,8 @@ export default function MenuPage() {
                     players_connected?: number | unknown[];
                     numJugadores?: number;
                     error?: string;
+                    players?: unknown[];
+                    jugadores?: unknown[];
                 };
 
                 if (message.error) {
@@ -93,8 +95,8 @@ export default function MenuPage() {
 
                 if (message.type === 'lobby_update') {
                     const playersList = (Array.isArray(message.players_connected) ? message.players_connected : null) || 
-                                       (message as any).players || 
-                                       (message as any).jugadores;
+                                       message.players || 
+                                       message.jugadores;
 
                     if (Array.isArray(playersList)) {
                         const usernames = extractUsernames(playersList);
@@ -108,8 +110,8 @@ export default function MenuPage() {
 
                 if (message.type === 'game_start') {
                     const playersList = (Array.isArray(message.players_connected) ? message.players_connected : null) || 
-                                       (message as any).players || 
-                                       (message as any).jugadores;
+                                       message.players || 
+                                       message.jugadores;
 
                     if (Array.isArray(playersList)) {
                         const usernames = extractUsernames(playersList);
@@ -147,7 +149,7 @@ export default function MenuPage() {
             ws.removeEventListener('close', onClose);
             ws.removeEventListener('error', onError);
         };
-    }, [updateJugadoresEnLobby]);
+    }, [updateJugadoresEnLobby, extractUsernames]);
 
     const connectToRoom = useCallback((roomId: number, token: string | null) => {
         // Solo evitar reconexión si ya hay socket abierto A LA MISMA SALA
@@ -239,7 +241,7 @@ export default function MenuPage() {
                     });
                     if (resFriends.ok) {
                         const data = await resFriends.json();
-                        const friendsList = data.map((u: any) => u.nombre);
+                        const friendsList = (data as { nombre: string }[]).map((u) => u.nombre);
                         setFriends(friendsList.map((f: string) => ({ username: f, status: 'offline' })));
                     }
                 } catch (e) {
