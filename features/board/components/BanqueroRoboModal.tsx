@@ -7,6 +7,7 @@ import PixelButton from '@/components/UI/PixelButton';
 interface TargetPlayer {
     username: string;
     character: string; // "banquero", "videojugador", "escapista", "vidente"
+    balance: number;
 }
 
 interface BanqueroRoboModalProps {
@@ -27,7 +28,7 @@ export default function BanqueroRoboModal({ targetPlayers, onSelect }: BanqueroR
     };
 
     return (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-300">
             <div className="relative w-full max-w-4xl bg-[var(--color-sp-bg-dark)] border-4 border-white flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)]">
                 
                 {/* Cabecera */}
@@ -45,6 +46,8 @@ export default function BanqueroRoboModal({ targetPlayers, onSelect }: BanqueroR
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                         {targetPlayers.map((player, index) => {
                             const isEscapista = player.character.toLowerCase() === 'escapista';
+                            const maxRobo = isEscapista ? 1 : 2;
+                            const efectiveRobo = Math.min(maxRobo, player.balance);
                             
                             return (
                                 <div 
@@ -63,18 +66,23 @@ export default function BanqueroRoboModal({ targetPlayers, onSelect }: BanqueroR
                                     </div>
 
                                     {/* Nombre */}
-                                    <h3 className="text-white font-pixel text-lg mb-6 truncate w-full text-center">
+                                    <h3 className="text-white font-pixel text-lg mb-2 truncate w-full text-center">
                                         {player.username}
                                     </h3>
+
+                                    {/* Balance */}
+                                    <p className="text-amber-400 font-pixel text-sm mb-6 text-center">
+                                        🪙 {player.balance} monedas
+                                    </p>
 
                                     {/* Botón de Acción */}
                                     <div className="w-full mt-auto">
                                         <PixelButton
-                                            variant={isEscapista ? "purple" : "green"}
-                                            onClick={() => onSelect(player.username)}
-                                            className="w-full text-[10px] md:text-xs py-2 h-auto"
+                                            variant={efectiveRobo === 0 ? "purple" : isEscapista ? "purple" : "green"}
+                                            onClick={() => efectiveRobo > 0 && onSelect(player.username)}
+                                            className={`w-full text-[10px] md:text-xs py-2 h-auto${efectiveRobo === 0 ? ' opacity-50 cursor-not-allowed' : ''}`}
                                         >
-                                            {isEscapista ? "ROBAR 1¢" : "ROBAR 2¢"}
+                                            {efectiveRobo === 0 ? "SIN MONEDAS" : `ROBAR ${efectiveRobo}¢`}
                                         </PixelButton>
                                     </div>
 

@@ -161,6 +161,7 @@ function BanqueroRoboController() {
     .map(p => ({
       username: p.username,
       character: p.character ?? 'banquero', // fallback
+      balance: state.players[p.username]?.balance ?? 0,
     }));
 
   return (
