@@ -447,17 +447,17 @@ export default function MenuPage() {
                                     </p>
                                     <PixelButton
                                         variant="green"
-                                        className="!px-4 !py-2 !text-[1rem]"
+                                        className="!px-4 !py-2 !text-[1.2rem]"
                                         onClick={() => setJoinCode(inv.code.toString())}
                                     >
-                                        Unirse
+                                        ✓
                                     </PixelButton>
                                     <PixelButton
                                         variant="red"
-                                        className="!px-4 !py-2 !text-[1rem]"
+                                        className="!px-4 !py-2 !text-[1.2rem]"
                                         onClick={() => setInvitations(prev => prev.filter(i => i.inviter !== inv.inviter))}
                                     >
-                                        Rechazar
+                                        ✗
                                     </PixelButton>
                                 </div>
                             </div>
@@ -488,7 +488,7 @@ export default function MenuPage() {
                         <div className="w-full max-w-[28rem] flex flex-col items-center gap-4 mt-2 mb-4">
                             <PixelButton
                                 variant="purple"
-                                className="w-full !py-5 !text-[1.8rem] !tracking-wider"
+                                className="w-full !py-7 !text-[2.2rem] !tracking-wider"
                                 onClick={handleCrearPartida}
                             >
                                 {isCreatingGame ? 'Creando...' : 'Crear partida'}
@@ -579,7 +579,7 @@ export default function MenuPage() {
             </div>
 
             {/* Columna Derecha: Amigos y Reglas */}
-            <div className="flex flex-col justify-start h-full z-10 relative pt-10">
+            <div className="flex flex-col justify-start h-full z-10 relative pt-10 overflow-hidden">
 
                 {/* Botón Buscar Jugadores */}
                 <div className="flex justify-end mb-8">
@@ -593,7 +593,7 @@ export default function MenuPage() {
                 </div>
             
                 {/* Lista de amigos */}
-                <div className="flex flex-col gap-6 w-full max-w-[22rem] ml-auto mt-6 flex-1 overflow-hidden">
+                <div className="flex flex-col gap-6 w-full max-w-[22rem] ml-auto mt-6 flex-1 overflow-hidden min-h-0 pb-[16rem]">
                     <div className="flex flex-col items-center mb-2">
                         <h2
                             className="text-[2.2rem] tracking-[0.1em] pb-2 text-white font-bold"
