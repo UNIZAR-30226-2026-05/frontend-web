@@ -365,10 +365,11 @@ export default function MenuPage() {
         }
     };
 
-    const getFriendStatus = (friendUsername: string) => {
+    const getFriendStatus = (friendUsername: string, friendOnlineStatus: string) => {
         if (jugadoresEnLobby.includes(friendUsername)) return 'contigo';
         if (invitedFriends.includes(friendUsername)) return 'invitado';
-        return 'invitar';
+        if (friendOnlineStatus === 'online') return 'invitar';
+        return 'offline';
     };
 
 
@@ -399,16 +400,24 @@ export default function MenuPage() {
                     </div>
                 </div>
 
-                {/* Partidas de amigos (Invitaciones) */}
+                {/* Invitaciones */}
                 <div className="flex-1 flex flex-col p-6 pl-4 relative mt-20 overflow-hidden">
                     <h2
                         className="text-[3.5rem] leading-snug mb-10 text-white font-bold whitespace-nowrap"
                         style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
                     >
-                        Partidas<br />de amigos
+                        Invitaciones
                     </h2>
 
                     <div className="flex flex-col gap-6 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent">
+                        {invitations.length === 0 && (
+                            <p
+                                className="text-[#a8a8a8] text-[1.2rem] font-bold"
+                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                            >
+                                No tienes invitaciones pendientes
+                            </p>
+                        )}
                         {invitations.map((inv) => (
                             <div key={inv.inviter} className="flex flex-col gap-3 w-fit">
                                 <p
@@ -432,65 +441,16 @@ export default function MenuPage() {
                                     >
                                         Unirse
                                     </PixelButton>
+                                    <PixelButton
+                                        variant="red"
+                                        className="!px-4 !py-2 !text-[1rem]"
+                                        onClick={() => setInvitations(prev => prev.filter(i => i.inviter !== inv.inviter))}
+                                    >
+                                        Rechazar
+                                    </PixelButton>
                                 </div>
                             </div>
                         ))}
-
-                        {friendRequests.length > 0 && (
-                            <div className="mt-4">
-                                <h3
-                                    className="text-[2rem] leading-snug mb-4 text-white font-bold whitespace-nowrap"
-                                    style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
-                                >
-                                    Solicitudes de amistad
-                                </h3>
-                                <div className="flex flex-col gap-6">
-                                    {friendRequests.map((req) => (
-                                        <div key={req} className="flex flex-col gap-3 w-fit">
-                                            <p
-                                                className="text-[#a8a8a8] text-[1.3rem] font-bold mb-1"
-                                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
-                                            >
-                                                {req} quiere ser tu amigo
-                                            </p>
-                                            <div className="w-full h-[2px] bg-white mb-2 shadow-[0_2px_0_#000]"></div>
-                                            <div className="flex items-center gap-4">
-                                                <PixelButton
-                                                    variant="green"
-                                                    className="!px-4 !py-2 !text-[1rem]"
-                                                    onClick={() => {
-                                                        sessionSocketRef.current?.send(JSON.stringify({
-                                                            action: 'accept_request',
-                                                            payload: { player_id: req }
-                                                        }));
-                                                        setFriendRequests(prev => prev.filter(u => u !== req));
-                                                        setFriends(prev => {
-                                                            if (prev.find(f => f.username === req)) return prev;
-                                                            return [...prev, { username: req, status: 'offline' }];
-                                                        });
-                                                    }}
-                                                >
-                                                    Aceptar
-                                                </PixelButton>
-                                                <PixelButton
-                                                    variant="purple"
-                                                    className="!px-4 !py-2 !text-[1rem]"
-                                                    onClick={() => {
-                                                        sessionSocketRef.current?.send(JSON.stringify({
-                                                            action: 'reject_request',
-                                                            payload: { player_id: req }
-                                                        }));
-                                                        setFriendRequests(prev => prev.filter(u => u !== req));
-                                                    }}
-                                                >
-                                                    Rechazar
-                                                </PixelButton>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
                 {/* Botón de Ajustes (abajo a la izquierda) */}
@@ -621,9 +581,64 @@ export default function MenuPage() {
                         <div className="w-[85%] mx-auto h-[2px] bg-[#dcbaff] shadow-[0_2px_0px_rgba(0,0,0,1)]"></div>
                     </div>
 
+                    {/* Solicitudes de amistad pendientes */}
+                    {friendRequests.length > 0 && (
+                        <div className="flex flex-col gap-3 px-2">
+                            <p
+                                className="text-[1.1rem] text-[#dcbaff] font-bold uppercase tracking-widest"
+                                style={{ textShadow: "1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000" }}
+                            >
+                                Solicitudes
+                            </p>
+                            {friendRequests.map((req) => (
+                                <div key={req} className="flex justify-between items-center w-full gap-3 flex-nowrap">
+                                    <span
+                                        className="text-[1.4rem] text-white font-bold whitespace-nowrap"
+                                        style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                    >
+                                        {req}
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <PixelButton
+                                            variant="green"
+                                            className="!px-3 !py-1 !text-[0.9rem]"
+                                            onClick={() => {
+                                                sessionSocketRef.current?.send(JSON.stringify({
+                                                    action: 'accept_request',
+                                                    payload: { player_id: req }
+                                                }));
+                                                setFriendRequests(prev => prev.filter(u => u !== req));
+                                                setFriends(prev => {
+                                                    if (prev.find(f => f.username === req)) return prev;
+                                                    return [...prev, { username: req, status: 'offline' }];
+                                                });
+                                            }}
+                                        >
+                                            ✓
+                                        </PixelButton>
+                                        <PixelButton
+                                            variant="red"
+                                            className="!px-3 !py-1 !text-[0.9rem]"
+                                            onClick={() => {
+                                                sessionSocketRef.current?.send(JSON.stringify({
+                                                    action: 'reject_request',
+                                                    payload: { player_id: req }
+                                                }));
+                                                setFriendRequests(prev => prev.filter(u => u !== req));
+                                            }}
+                                        >
+                                            ✗
+                                        </PixelButton>
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="w-[85%] mx-auto h-[2px] bg-[#dcbaff] shadow-[0_2px_0px_rgba(0,0,0,1)] mb-2"></div>
+                        </div>
+                    )}
+
                     <div className="flex flex-col gap-[1.8rem] px-2 mt-2 overflow-y-auto scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent pr-2">
                         {friends.map((friend) => {
-                            const status = getFriendStatus(friend.username);
+                            const status = getFriendStatus(friend.username, friend.status);
                             return (
                                 <div key={friend.username} className="flex justify-between items-center w-full gap-4 flex-nowrap">
                                     <span
@@ -634,10 +649,10 @@ export default function MenuPage() {
                                     </span>
                                     <PixelButton
                                         variant={status === 'contigo' ? "green" : "purple"}
-                                        className={`!px-3 !py-2 !text-[1.1rem] min-w-[8rem] whitespace-nowrap ${status !== 'invitar' ? 'opacity-80' : ''}`}
+                                        className={`!px-3 !py-2 !text-[1.1rem] min-w-[8rem] whitespace-nowrap ${status === 'offline' || status === 'invitado' ? 'opacity-60' : ''}`}
                                         onClick={() => status === 'invitar' && handleInvite(friend.username)}
                                     >
-                                        {status === 'contigo' ? 'Contigo' : status === 'invitado' ? 'Invitado' : 'Invitar'}
+                                        {status === 'contigo' ? 'Contigo' : status === 'invitado' ? 'Invitado' : status === 'offline' ? 'Offline' : 'Invitar'}
                                     </PixelButton>
                                 </div>
                             );
@@ -657,20 +672,12 @@ export default function MenuPage() {
                 {isSearchModalOpen && <UserSearchModal 
                     existingFriends={friends.map(f => f.username)}
                     onClose={() => setIsSearchModalOpen(false)} 
-                    onSendRequest={async (targetUsername) => {
-                        const backendHttpUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
-                        const myUsername = sessionStorage.getItem('username');
-                        if (!myUsername) return;
-                        try {
-                            await fetch(`${backendHttpUrl}/usuarios/amigos?user1=${myUsername}&user2=${targetUsername}`, {
-                                method: 'POST'
-                            });
-                            setFriends(prev => {
-                                if (prev.find(f => f.username === targetUsername)) return prev;
-                                return [...prev, { username: targetUsername, status: 'offline' }];
-                            });
-                        } catch (e) {
-                            console.error('Error al añadir amigo:', e);
+                    onSendRequest={(targetUsername) => {
+                        if (sessionSocketRef.current?.readyState === WebSocket.OPEN) {
+                            sessionSocketRef.current.send(JSON.stringify({
+                                action: 'send_request',
+                                payload: { player_id: targetUsername }
+                            }));
                         }
                     }}
                     onRemoveFriend={async (username) => {
