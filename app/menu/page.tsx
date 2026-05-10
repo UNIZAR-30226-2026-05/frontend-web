@@ -403,8 +403,9 @@ export default function MenuPage() {
 
     return (
         <div
-            className="text-white min-h-screen grid grid-cols-3 gap-8 p-8 font-pixel font-normal text-2xl tracking-wide relative overflow-hidden"
+            className="text-white min-h-screen grid gap-8 p-8 font-pixel font-normal text-2xl tracking-wide relative overflow-hidden"
             style={{
+                gridTemplateColumns: '1fr 1.5fr 1fr',
                 backgroundImage: "url('/lobby.png')",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
