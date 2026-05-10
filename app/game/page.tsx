@@ -430,6 +430,32 @@ function BarreraController() {
   );
 }
 
+/** Banner de notificación de compra de objeto */
+function PurchaseNotificationBanner() {
+  const { state } = useGameContext();
+  const notif = state.purchaseNotification;
+  if (!notif) return null;
+
+  const isLocalUser = notif.user === state.myUsername;
+  const subject = isLocalUser ? 'HAS' : `${notif.user.toUpperCase()} HA`;
+  const extraLabel =
+    notif.objeto === 'Avanzar Casillas' && notif.avanceExtra != null && notif.avanceExtra > 0
+      ? ` X${notif.avanceExtra}`
+      : '';
+
+  return (
+    <div className="fixed top-0 left-0 right-0 z-[600] flex justify-center pointer-events-none">
+      <div className="mt-2 px-6 py-3 bg-black/85 border border-white/20 rounded-md shadow-xl">
+        <p className="font-pixel text-white text-sm tracking-widest uppercase whitespace-nowrap">
+          {subject}{' '}
+          <span className="text-white">COMPRADO </span>
+          <span className="text-yellow-400">{notif.objeto.toUpperCase()}{extraLabel}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /** Muestra la pantalla final del juego */
 function GameOverController() {
   const { state, playerOrder } = useGameContext();
@@ -613,6 +639,9 @@ export default function GamePage() {
 
       {/* Pantalla Final de Partida */}
       <GameOverController />
+
+      {/* Banner de compra de objeto */}
+      <PurchaseNotificationBanner />
 
     </main>
     </GameProvider>

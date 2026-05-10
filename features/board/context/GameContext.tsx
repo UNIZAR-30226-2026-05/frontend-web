@@ -188,6 +188,10 @@ interface GameState {
   gameWinner: string | null;
   bufferedRuletaMove: { user: string; newPos: number } | null;
   bufferedRuletaBalances: Record<string, number> | null;
+  /** Notificación de compra de objeto para mostrar como banner */
+  purchaseNotification: { user: string; objeto: string; avanceExtra?: number } | null;
+  /** Total de "Avanzar Casillas" comprados en la partida (para el sufijo X3 del banner) */
+  avanceExtraTotal: number;
 }
 
 // -------------------------------------------------------------------
@@ -253,7 +257,9 @@ export type Action =
   | { type: 'ROUND_ENDED' }
   | { type: 'GAME_OVER'; winner: string }
   | { type: 'UPGRADE_DICE'; user: string }
-  | { type: 'FLUSH_RULETA_BUFFER' };
+  | { type: 'FLUSH_RULETA_BUFFER' }
+  | { type: 'OBJETO_COMPRADO'; user: string; objeto: string; avanceExtra?: number }
+  | { type: 'CLEAR_PURCHASE_NOTIFICATION' };
 
 
 // -------------------------------------------------------------------
@@ -859,6 +865,22 @@ function gameReducer(state: GameState, action: Action): GameState {
       return nextState;
     }
 
+    case 'OBJETO_COMPRADO': {
+      const newTotal = action.objeto === 'Avanzar Casillas' ? state.avanceExtraTotal + 1 : state.avanceExtraTotal;
+      return {
+        ...state,
+        avanceExtraTotal: newTotal,
+        purchaseNotification: {
+          user: action.user,
+          objeto: action.objeto,
+          avanceExtra: action.objeto === 'Avanzar Casillas' ? newTotal : undefined,
+        },
+      };
+    }
+
+    case 'CLEAR_PURCHASE_NOTIFICATION':
+      return { ...state, purchaseNotification: null };
+
     default:
       return state;
   }
@@ -920,6 +942,8 @@ const initialState: GameState = {
   turnoDeUser: null,
   isGameOver: false,
   gameWinner: null,
+  purchaseNotification: null,
+  avanceExtraTotal: 0,
 };
 
 // -------------------------------------------------------------------
@@ -987,6 +1011,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const playersRef = useRef<GameState['players']>({});
   const dobleNadaResultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingObjetoRuletaRef = useRef<GameState['pendingObjetoRuleta']>(null);
+  const turnoDeUserRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1035,6 +1060,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     pendingObjetoRuletaRef.current = state.pendingObjetoRuleta;
   }, [state.pendingObjetoRuleta]);
+
+  useEffect(() => {
+    turnoDeUserRef.current = state.turnoDeUser;
+  }, [state.turnoDeUser]);
 
   const sendMovePlayer = useCallback(() => {
     const ws = getGameSocket();
@@ -1477,6 +1506,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
           case 'dados_mejorados': {
             dispatch({ type: 'UPGRADE_DICE', user: data.user as string });
+            break;
+          }
+
+          case 'objeto_comprado': {
+            dispatch({
+              type: 'OBJETO_COMPRADO',
+              user: turnoDeUserRef.current ?? '',
+              objeto: data.objeto as string,
+            });
+            setTimeout(() => dispatch({ type: 'CLEAR_PURCHASE_NOTIFICATION' }), 4000);
             break;
           }
         }
