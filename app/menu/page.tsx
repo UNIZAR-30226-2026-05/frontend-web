@@ -8,7 +8,7 @@ import ChangePasswordForm from '@/components/Forms/ChangePasswordForm';
 import UserSearchModal from '@/components/Modals/UserSearchModal';
 
 import { CrearPartidaService, UnirsePartidaService } from '@/lib/backend';
-import { replaceGameSocket, setLobbyPlayers } from '@/lib/gameSocket';
+import { replaceGameSocket, setLobbyPlayers, closeGameSocket } from '@/lib/gameSocket';
 
 export default function MenuPage() {
     const router = useRouter();
@@ -220,6 +220,9 @@ export default function MenuPage() {
     useEffect(() => {
         if (hasInitialized.current) return;
         hasInitialized.current = true;
+
+        // Cerrar el WebSocket de partida si venimos de una partida anterior
+        closeGameSocket();
 
         const init = async () => {
             const currentUsername = window.sessionStorage.getItem('username');
