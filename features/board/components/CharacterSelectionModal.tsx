@@ -120,7 +120,7 @@ export default function CharacterSelectionModal({ unavailableRoles, onSelect }: 
             ? '✓ Todos los jugadores han elegido personaje'
             : isMyTurn
               ? 'Es tu turno de elegir'
-              : `Esperando a ${currentChooser ?? '...'}  (${unavailableRoles.length}/${lobbyPlayers.length} elegidos)`
+              : `Turno de: ${currentChooser ?? '...'}`
           }
         </div>
 
@@ -137,12 +137,12 @@ export default function CharacterSelectionModal({ unavailableRoles, onSelect }: 
                 <div
                   key={char.id}
                   className={`
-                    group relative flex flex-col items-center bg-[var(--color-sp-bg-medium)] border-4 border-white p-6 transition-all duration-200
+                    group relative flex flex-col items-center bg-[var(--color-sp-bg-medium)] border-4 p-6 transition-all duration-200
                     ${isUnavailable
-                      ? 'opacity-50 grayscale'
+                      ? 'border-white opacity-50'
                       : isSelectable
-                        ? `hover:bg-[var(--color-sp-bg-light)] hover:scale-105 active:scale-95 ${rotateClass} cursor-pointer`
-                        : 'opacity-60 cursor-not-allowed'
+                        ? `border-white hover:bg-[var(--color-sp-bg-light)] hover:scale-105 active:scale-95 ${rotateClass} cursor-pointer`
+                        : 'border-white opacity-60 cursor-not-allowed'
                     }
                   `}
                 >
@@ -169,7 +169,7 @@ export default function CharacterSelectionModal({ unavailableRoles, onSelect }: 
                   {/* Botón / Estado */}
                   <div className="w-full mt-auto">
                     {isUnavailable ? (
-                      <div className="w-full py-3 bg-red-900/50 border-2 border-red-500 text-red-500 font-pixel text-[10px] text-center uppercase tracking-widest">
+                      <div className="w-full py-3 bg-red-900/60 border-2 border-red-600 text-red-500 font-pixel text-[10px] text-center uppercase tracking-widest font-bold">
                         Ocupado
                       </div>
                     ) : isSelectable ? (
@@ -182,7 +182,7 @@ export default function CharacterSelectionModal({ unavailableRoles, onSelect }: 
                       </PixelButton>
                     ) : (
                       <div className="w-full py-3 bg-gray-900/50 border-2 border-gray-600 text-gray-500 font-pixel text-[10px] text-center uppercase tracking-widest">
-                        No es tu turno
+                        ESPERA...
                       </div>
                     )}
                   </div>

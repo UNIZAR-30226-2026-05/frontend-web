@@ -482,7 +482,6 @@ export default function GamePage() {
   const [unavailableRoles, setUnavailableRoles] = useState<string[]>([]);
 
   const [isShopOpen, setIsShopOpen] = useState(false);
-  const [showCharacterSelect, setShowCharacterSelect] = useState(true);
 
   // Debug State for Minigames - DESACTIVADO POR DEFECTO PARA VER EL BOARD
   const [activeMinigame, setActiveMinigame] = useState<OrderMinigameType | null>(null);
@@ -492,13 +491,16 @@ export default function GamePage() {
     // Guardamos referencia al socket ANTES de cualquier re-render
     const ws = getGameSocket();
     console.log('Socket state al elegir:', ws?.readyState);
-    setShowCharacterSelect(false);
+    // El modal se queda abierto hasta que TODOS elijan
   };
 
   const handleMinigameAction = (result: object) => {
     console.log("Minigame Action:", activeMinigame, result);
     // Ya no salimos automáticamente después del timeout
   };
+
+  // Determinar si todos los jugadores han elegido personaje
+  const allCharactersChosen = unavailableRoles.length >= lobbyPlayers.length && lobbyPlayers.length > 0;
 
   useEffect(() => {
     const ws = getGameSocket();
@@ -552,8 +554,8 @@ export default function GamePage() {
     <GameProvider>
       <main className="relative min-h-screen w-full overflow-hidden bg-[url('/tablero_def.png')] bg-contain bg-no-repeat bg-center">
       
-      {/* Modal de Selección de Personaje (Mandatorio) */}
-      {showCharacterSelect && (
+      {/* Modal de Selección de Personaje (Mandatorio, permanece hasta que todos elijan) */}
+      {!allCharactersChosen && (
         <CharacterSelectionModal 
           unavailableRoles={unavailableRoles} 
           onSelect={handleCharacterSelect} 
