@@ -32,10 +32,10 @@ export default function PixelButton({
   `.replace(/\s+/g, ' ').trim();
 
     // Pure 4-way stroke as requested
-    const crispTextOutline = "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000";
+    const glowTextShadow = "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)";
 
     const combinedStyle = {
-        textShadow: crispTextOutline,
+        textShadow: glowTextShadow,
         ...style
     };
 

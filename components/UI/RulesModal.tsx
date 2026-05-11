@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import PixelButton from './PixelButton';
 
 interface RulesModalProps {
     onClose: () => void;
@@ -8,93 +9,77 @@ interface RulesModalProps {
 
 const RULES = [
     {
-        title: "Objetivo",
+        title: "OBJETIVO",
         text: "Sé el jugador con más monedas al final de la partida.",
     },
     {
-        title: "Turno",
+        title: "TURNO",
         text: "En tu turno tira los dados para avanzar casillas. La posición en el orden de turno se decide con el minijuego de reflejos.",
     },
     {
-        title: "Casillas",
+        title: "CASILLAS",
         text: "Cada casilla tiene un efecto: pueden darte o quitarte monedas, mover tu posición, bloquearte un turno o activar un minijuego.",
     },
     {
-        title: "Tienda",
+        title: "TIENDA",
         text: "Antes de tirar puedes comprar objetos con tus monedas. Los objetos se usan al instante.",
     },
     {
-        title: "Objetos",
-        items: [
-            { emoji: "👞", name: "Avanzar Casillas (1¢)", desc: "Avanza una casilla extra. Solo antes de tirar." },
-            { emoji: "🎲", name: "Mejorar Dados (3¢)", desc: "Mejora tu segundo dado un nivel para la tirada." },
-            { emoji: "🚧", name: "Barrera (10¢)", desc: "Penaliza un turno al jugador elegido." },
-            { emoji: "🔒", name: "Salvavidas bloqueo (10¢)", desc: "Anula el efecto de una casilla de bloqueo." },
-        ],
+        title: "OBJETOS",
+        text: "• Avanzar Casillas (1¢) - Avanza una casilla extra. Solo antes de tirar.\n• Mejorar Dados (3¢) - Mejora tu segundo dado un nivel para la tirada.\n• Barrera (10¢) - Penaliza un turno al Jugador elegido.\n• Salvavidas movimiento (5¢) - Anula el efecto de una casilla de movimiento.\n• Salvavidas bloqueo (10¢) - Anula el efecto de una casilla de bloqueo.",
     },
     {
-        title: "Dados",
+        title: "DADOS",
         text: "El jugador con mejor resultado en el minijuego obtiene el dado de oro (el mejor). Hay dados de oro, plata, bronce y normal.",
     },
 ];
 
 export default function RulesModal({ onClose }: RulesModalProps) {
+    const textShadow = "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)";
+
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
             onClick={onClose}
         >
-            {/* Contenedor del Modal — stopPropagation para que clicar dentro no cierre */}
             <div
-                className="relative w-full max-w-2xl max-h-[90vh] bg-[var(--color-sp-bg-dark)] border-4 border-white flex flex-col shadow-[0_0_20px_rgba(0,0,0,0.5)]"
+                className="relative w-full max-w-[34rem] max-h-[95vh] bg-[#241738] border-2 border-white/20 p-8 flex flex-col items-center shadow-[0_0_40px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-200 overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Cabecera */}
-                <div className="p-4 border-b-4 border-white flex justify-between items-center bg-[var(--color-sp-bg-medium)]">
-                    <h2 className="text-2xl font-pixel text-white tracking-widest uppercase">
-                        Reglas del juego
-                    </h2>
-                    <button
-                        onClick={onClose}
-                        className="text-white hover:text-red-400 transition-colors text-3xl font-bold p-2 leading-none"
-                        aria-label="Cerrar"
-                    >
-                        X
-                    </button>
+                {/* Título */}
+                <h1 
+                    className="text-[2.8rem] font-pixel text-white font-bold tracking-widest mb-6 uppercase shrink-0"
+                    style={{ textShadow }}
+                >
+                    NORMAS
+                </h1>
+
+                {/* Contenedor de Reglas con Scroll */}
+                <div className="bg-[#1a0f2b] p-6 rounded-md w-full flex flex-col gap-6 mb-8 border border-white/5 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+                    {RULES.map((rule) => (
+                        <div key={rule.title} className="flex flex-col gap-2">
+                            <h3 className="text-white font-pixel text-[1.4rem] tracking-wider font-bold">
+                                {rule.title}
+                            </h3>
+                            <p className="text-gray-300 font-pixel text-[1.1rem] leading-snug tracking-tight whitespace-pre-line">
+                                {rule.text}
+                            </p>
+                        </div>
+                    ))}
                 </div>
 
-                {/* Contenido con scroll */}
-                <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent">
-                    <div className="flex flex-col gap-6">
-                        {RULES.map((rule) => (
-                            <div key={rule.title} className="flex flex-col gap-2">
-                                <h3 className="text-white font-pixel text-lg tracking-wider uppercase border-b-2 border-white/30 pb-1">
-                                    {rule.title}
-                                </h3>
-                                {rule.text && (
-                                    <p className="text-white/80 font-pixel text-sm leading-relaxed">
-                                        {rule.text}
-                                    </p>
-                                )}
-                                {rule.items && (
-                                    <ul className="flex flex-col gap-2 mt-1">
-                                        {rule.items.map((item) => (
-                                            <li key={item.name} className="flex items-start gap-3">
-                                                <span className="text-2xl shrink-0">{item.emoji}</span>
-                                                <span className="font-pixel text-sm text-white/80 leading-relaxed">
-                                                    <span className="text-white">{item.name}</span>
-                                                    {" — "}
-                                                    {item.desc}
-                                                </span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                        ))}
-                    </div>
+                {/* Botón Cerrar */}
+                <div className="flex justify-center w-full">
+                    <PixelButton
+                        variant="purple"
+                        className="!px-12 !py-4 !text-[1.5rem]"
+                        onClick={onClose}
+                    >
+                        CERRAR
+                    </PixelButton>
                 </div>
             </div>
         </div>
     );
 }
+

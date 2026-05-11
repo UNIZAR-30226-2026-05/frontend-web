@@ -26,9 +26,9 @@ export default function MenuPage() {
     const [invitedFriends, setInvitedFriends] = useState<string[]>([]);
     const [isCreatingGame, setIsCreatingGame] = useState(false);
 
-    const [invitations, setInvitations] = useState<{inviter: string, code: number}[]>([]);
+    const [invitations, setInvitations] = useState<{ inviter: string, code: number }[]>([]);
     const [friendRequests, setFriendRequests] = useState<string[]>([]);
-    const [friends, setFriends] = useState<{username: string, status: string}[]>([]);
+    const [friends, setFriends] = useState<{ username: string, status: string }[]>([]);
 
     const usernameRef = useRef<string | null>(null);
     const socketRef = useRef<WebSocket | null>(null);
@@ -95,9 +95,9 @@ export default function MenuPage() {
                 }
 
                 if (message.type === 'lobby_update') {
-                    const playersList = (Array.isArray(message.players_connected) ? message.players_connected : null) || 
-                                       message.players || 
-                                       message.jugadores;
+                    const playersList = (Array.isArray(message.players_connected) ? message.players_connected : null) ||
+                        message.players ||
+                        message.jugadores;
 
                     if (Array.isArray(playersList)) {
                         const usernames = extractUsernames(playersList);
@@ -110,9 +110,9 @@ export default function MenuPage() {
                 }
 
                 if (message.type === 'game_start') {
-                    const playersList = (Array.isArray(message.players_connected) ? message.players_connected : null) || 
-                                       message.players || 
-                                       message.jugadores;
+                    const playersList = (Array.isArray(message.players_connected) ? message.players_connected : null) ||
+                        message.players ||
+                        message.jugadores;
 
                     if (Array.isArray(playersList)) {
                         const usernames = extractUsernames(playersList);
@@ -186,18 +186,25 @@ export default function MenuPage() {
         detachSocketListenersRef.current = bindSocketListeners(socketRef.current, roomId);
     }, [bindSocketListeners]);
 
-    const handleJoinPartida = async () => {
+    const handleLogout = () => {
+        sessionStorage.clear();
+        closeGameSocket();
+        router.push('/login');
+    };
+
+    const handleJoinPartida = async (codeOverride?: string) => {
         setJoinError(null);
         setJoinSuccess(null);
 
-        const parsedCode = Number(joinCode.trim());
+        const codeToUse = codeOverride !== undefined ? codeOverride : joinCode;
+        const parsedCode = Number(codeToUse.toString().trim());
         if (!Number.isInteger(parsedCode) || parsedCode <= 0) {
-            setJoinError('Introduce un codigo de partida valido');
+            setJoinError('Introduce un código de partida válido');
             return;
         }
 
         if (!authToken) {
-            setJoinError('Sesion no valida. Vuelve a iniciar sesion.');
+            setJoinError('Sesión no válida. Vuelve a iniciar sesión.');
             return;
         }
 
@@ -206,9 +213,9 @@ export default function MenuPage() {
             const joinedRoomId = await UnirsePartidaService(parsedCode, authToken);
             console.log('Unido con éxito a ID:', joinedRoomId);
             SetIdPartida(joinedRoomId);
-            
+
             // Limpiamos errores antes de conectar el socket
-            setJoinError(null); 
+            setJoinError(null);
             connectToRoom(joinedRoomId, authToken);
             setJoinSuccess(`Te has unido a la partida ${joinedRoomId}`);
         } catch (error) {
@@ -264,16 +271,16 @@ export default function MenuPage() {
                 const normalizedHost = backendUrl.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '');
                 const encodedToken = encodeURIComponent(token);
                 const sessionUrl = `${wsProtocol}://${normalizedHost}/ws/usuario/${currentUsername}?token=${encodedToken}`;
-                
+
                 const sessionWs = new WebSocket(sessionUrl);
                 sessionSocketRef.current = sessionWs;
-                
+
                 sessionWs.onopen = () => {
                     console.log('WebSocket de sesión conectado');
                     sessionWs.send(JSON.stringify({ action: 'get_online_friends' }));
                     sessionWs.send(JSON.stringify({ action: 'get_pending_request' }));
                 };
-                
+
                 sessionWs.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
@@ -328,7 +335,7 @@ export default function MenuPage() {
                         console.error('Error parseando mensaje de sesión', e);
                     }
                 };
-                
+
                 sessionWs.onclose = () => {
                     console.log('WebSocket de sesión desconectado');
                 };
@@ -366,9 +373,9 @@ export default function MenuPage() {
 
     const handleInvite = (friendUsername: string) => {
         if (sessionSocketRef.current?.readyState === WebSocket.OPEN) {
-            sessionSocketRef.current.send(JSON.stringify({ 
-                action: 'invite_friend', 
-                payload: { friend_id: friendUsername, game_id: idPartida } 
+            sessionSocketRef.current.send(JSON.stringify({
+                action: 'invite_friend',
+                payload: { friend_id: friendUsername, game_id: idPartida }
             }));
             if (!invitedFriends.includes(friendUsername)) {
                 setInvitedFriends((prev) => [...prev, friendUsername]);
@@ -432,7 +439,7 @@ export default function MenuPage() {
                 {/* Invitaciones */}
                 <div className="flex-1 flex flex-col p-6 pl-4 relative mt-20 overflow-hidden">
                     <h2
-                        className="text-[3.5rem] leading-snug mb-10 text-white font-bold whitespace-nowrap"
+                        className="text-[2.8rem] leading-snug mb-6 text-white font-bold whitespace-nowrap text-left"
                         style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                     >
                         Invitaciones
@@ -447,25 +454,25 @@ export default function MenuPage() {
                             </p>
                         )}
                         {invitations.map((inv) => (
-                            <div key={inv.inviter} className="flex flex-col gap-3 w-fit">
-                                <p
-                                    className="text-[#a8a8a8] text-[1.3rem] font-bold mb-1"
-                                    style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
-                                >
-                                    {inv.inviter} te ha invitado!
-                                </p>
-                                <div className="w-full h-[2px] bg-white mb-2 shadow-[0_2px_0_#000]"></div>
-                                <div className="flex items-center gap-4">
-                                    <p
+                            <div key={inv.inviter} className="flex items-center justify-between w-full gap-4">
+                                <div className="flex flex-col">
+                                    <span
                                         className="text-white text-[1.5rem] font-bold leading-tight"
                                         style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                                     >
+                                        {inv.inviter}
+                                    </span>
+                                    <span
+                                        className="text-[#a8a8a8] text-[1.1rem] font-bold"
+                                    >
                                         Código: {inv.code}
-                                    </p>
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-3">
                                     <PixelButton
                                         variant="green"
                                         className="!px-4 !py-2 !text-[1.2rem]"
-                                        onClick={() => setJoinCode(inv.code.toString())}
+                                        onClick={() => handleJoinPartida(inv.code.toString())}
                                     >
                                         ✓
                                     </PixelButton>
@@ -481,15 +488,40 @@ export default function MenuPage() {
                         ))}
                     </div>
                 </div>
-                {/* Botón de Ajustes (abajo a la izquierda) */}
-                <div className="mt-auto p-4 mb-2">
+                <div className="mt-auto p-6 flex gap-4">
+                    {/* Botón Ajustes */}
                     <button
                         onClick={() => setIsPasswordModalOpen((prev) => !prev)}
-                        className="bg-[#3d2b5d] border-2 border-white p-2 hover:bg-[#4d3b6d] transition-all transform hover:scale-110 shadow-[2px_2px_0_#000] active:translate-y-0.5 active:shadow-none"
+                        className="w-16 h-16 flex items-center justify-center rounded-2xl bg-[#1e0a3c] border-2 border-white/40 hover:bg-[#2e1a4c] transition-all transform hover:scale-105 active:scale-95 group"
                         title={isPasswordModalOpen ? "Volver al Menú" : "Ajustes"}
-                        aria-label="Ajustes de usuario"
                     >
-                        <span className="text-xl block">⚙️</span>
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            className="w-8 h-8 text-white transition-transform group-hover:rotate-45"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
+
+                    {/* Botón Salir (Logout) */}
+                    <button
+                        onClick={handleLogout}
+                        className="w-16 h-16 flex items-center justify-center rounded-2xl bg-[#1e0a3c] border-2 border-white/40 hover:bg-[#2e1a4c] transition-all transform hover:scale-105 active:scale-95 group"
+                        title="Cerrar sesión"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            className="w-8 h-8 text-white translate-x-0.5 transition-transform group-hover:translate-x-1"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -502,53 +534,79 @@ export default function MenuPage() {
                 ) : (
                     <>
                         {/* Botón Crear Partida / Lobby info */}
-                        <div className="w-full max-w-[28rem] flex flex-col items-center gap-4 mt-2 mb-4">
+                        <div className="w-full max-w-[28rem] flex flex-col items-center gap-[3rem] mt-2 mb-4">
                             <PixelButton
                                 variant="purple"
-                                className="w-full !py-7 !text-[2.2rem] !tracking-wider"
-                                onClick={handleCrearPartida}
+                                className={`w-full !py-16 !text-[2.2rem] !tracking-wider mt-[-12rem] ${idPartida > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={idPartida > 0 ? undefined : handleCrearPartida}
+                                disabled={idPartida > 0 || isCreatingGame}
                             >
                                 {isCreatingGame ? 'Creando...' : 'Crear partida'}
                             </PixelButton>
 
-                            {idPartida > 0 && (
-                                <>
-                                    <div className="flex justify-between items-center w-full px-2">
-                                        <div className="flex flex-col">
+                            <div className="w-full relative flex flex-col items-center px-2 min-h-[5rem] left-[-3rem]">
+                                <div className="flex flex-col items-center justify-center">
+                                    {idPartida > 0 && (
+                                        <>
                                             <span
                                                 className="text-[1.3rem] leading-snug text-white font-bold"
-                                                style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
+                                                style={{ textShadow: "none" }}
                                             >
                                                 Código de partida:
                                             </span>
                                             <span
-                                                className="text-[2rem] text-white mt-1 inline-block font-bold"
+                                                className="text-[3.5rem] text-white mt-1 inline-block font-bold"
                                                 style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                                             >
                                                 {idPartida}
                                             </span>
-                                        </div>
-                                        <div className="flex justify-end">
-                                            <PixelButton variant="green" className="!px-6 !py-3 !text-[1.3rem] !tracking-wider">
-                                                {username}
-                                            </PixelButton>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between w-full gap-5">
-                                        <PixelButton variant={jugadoresEnLobby[0] ? 'green' : 'purple'} className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[0] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[0] ?? 'Vacío'}</PixelButton>
-                                        <PixelButton variant={jugadoresEnLobby[1] ? 'green' : 'purple'} className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[1] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[1] ?? 'Vacío'}</PixelButton>
-                                        <PixelButton variant={jugadoresEnLobby[2] ? 'green' : 'purple'} className={`flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider${!jugadoresEnLobby[2] ? ' opacity-70' : ''}`}>{jugadoresEnLobby[2] ?? 'Vacío'}</PixelButton>
-                                    </div>
-
+                                        </>
+                                    )}
+                                </div>
+                                <div className="absolute right-[-4rem] top-0 flex items-center gap-4">
+                                    {idPartida === 0 && (
+                                        <p className="text-[#a8a8a8] text-[1.2rem] font-bold text-center leading-tight whitespace-nowrap mr-2">
+                                            Crea una partida<br />para obtener un código
+                                        </p>
+                                    )}
                                     <PixelButton
-                                        variant="red"
-                                        className="w-full !py-3 !text-[1.2rem]"
-                                        onClick={handleSalirSala}
+                                        variant="green"
+                                        className="!px-6 !py-3 !text-[1.3rem] !tracking-wider"
                                     >
-                                        Salir de la sala
+                                        {username}
                                     </PixelButton>
-                                </>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between w-full gap-5">
+                                <PixelButton
+                                    variant={jugadoresEnLobby[0] ? 'green' : 'purple'}
+                                    className="flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider"
+                                >
+                                    {jugadoresEnLobby[0] ?? 'Vacío'}
+                                </PixelButton>
+                                <PixelButton
+                                    variant={jugadoresEnLobby[1] ? 'green' : 'purple'}
+                                    className="flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider"
+                                >
+                                    {jugadoresEnLobby[1] ?? 'Vacío'}
+                                </PixelButton>
+                                <PixelButton
+                                    variant={jugadoresEnLobby[2] ? 'green' : 'purple'}
+                                    className="flex-1 !px-2 !py-4 !text-[1.2rem] !tracking-wider"
+                                >
+                                    {jugadoresEnLobby[2] ?? 'Vacío'}
+                                </PixelButton>
+                            </div>
+
+                            {idPartida > 0 && (
+                                <PixelButton
+                                    variant="red"
+                                    className="w-fit !py-3 !px-6 !text-[1.2rem]"
+                                    onClick={handleSalirSala}
+                                >
+                                    Abandonar
+                                </PixelButton>
                             )}
                         </div>
 
@@ -570,33 +628,28 @@ export default function MenuPage() {
                                             setJoinError(null);
                                         }
                                     }}
-                                    placeholder="123456"
-                                    className="w-full text-center text-[2.5rem] font-bold font-pixel tracking-widest text-white py-4 outline-none transition-colors"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleJoinPartida();
+                                        }
+                                    }}
+                                    className="w-full text-left px-8 text-[2.5rem] font-bold font-pixel tracking-widest text-white py-4 outline-none transition-colors"
                                     style={{
                                         backgroundImage: "url('/rellenable.png')",
                                         backgroundSize: '100% 100%',
                                         backgroundRepeat: 'no-repeat',
                                         boxShadow: "inset 0 0 5px rgba(150, 100, 255, 0.5)",
-                                        textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)"
+                                        textShadow: "none"
                                     }}
                                 />
                             </div>
-                            <PixelButton
-                                variant="green"
-                                className="w-full max-w-[20rem] py-4 text-[1.5rem]"
-                                onClick={handleJoinPartida}
-                            >
-                                Unirse
-                            </PixelButton>
                             {joinError && (
                                 <p className="text-[#ffb3b3] text-[1rem] text-center font-bold">{joinError}</p>
                             )}
                             {joinSuccess && (
                                 <p className="text-[#b9ffb3] text-[1rem] text-center font-bold">{joinSuccess}</p>
                             )}
-                            {playersConnected !== null && (
-                                <p className="text-white text-[1rem] text-center font-bold">Jugadores conectados: {playersConnected}</p>
-                            )}
+
                         </div>
                     </>
                 )}
@@ -610,23 +663,22 @@ export default function MenuPage() {
                 <div className="flex justify-end mb-8">
                     <PixelButton
                         variant="purple"
-                        className="!px-6 !py-4 !text-[1.2rem]"
+                        className="!px-10 !py-4 !text-[1.2rem]"
                         onClick={() => setIsSearchModalOpen(true)}
                     >
-                        <span className="mr-2">🔍</span> Buscar Jugadores
+                        Buscar Jugadores
                     </PixelButton>
                 </div>
-            
+
                 {/* Lista de amigos */}
                 <div className="flex flex-col gap-6 w-full max-w-[22rem] ml-auto mt-6 flex-1 overflow-hidden min-h-0 pb-[16rem]">
-                    <div className="flex flex-col items-center mb-2">
+                    <div className="flex flex-col items-start mb-2">
                         <h2
-                            className="text-[2.2rem] tracking-[0.1em] pb-2 text-white font-bold"
+                            className="text-[2.8rem] tracking-[0.1em] pb-2 text-white font-bold text-left"
                             style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                         >
                             Amigos
                         </h2>
-                        <div className="w-[85%] mx-auto h-[2px] bg-[#dcbaff] shadow-[0_2px_0px_rgba(0,0,0,1)]"></div>
                     </div>
 
                     {/* Solicitudes de amistad pendientes */}
@@ -697,8 +749,17 @@ export default function MenuPage() {
                                     </span>
                                     <PixelButton
                                         variant={status === 'contigo' ? "green" : "purple"}
-                                        className={`!px-3 !py-2 !text-[1.1rem] min-w-[8rem] whitespace-nowrap ${status === 'offline' || status === 'invitado' ? 'opacity-60' : ''}`}
-                                        onClick={() => status === 'invitar' && handleInvite(friend.username)}
+                                        className={`!px-6 !py-3 !text-[1rem] min-w-[10rem] whitespace-nowrap ${
+                                            (status === 'offline' || status === 'invitado' || (status === 'invitar' && idPartida === 0)) 
+                                            ? 'opacity-60 grayscale-[0.4] cursor-not-allowed' 
+                                            : ''
+                                        }`}
+                                        onClick={() => {
+                                            if (status === 'invitar' && idPartida > 0) {
+                                                handleInvite(friend.username);
+                                            }
+                                        }}
+                                        disabled={status === 'offline' || status === 'invitado' || (status === 'invitar' && idPartida === 0)}
                                     >
                                         {status === 'contigo' ? 'Contigo' : status === 'invitado' ? 'Invitado' : status === 'offline' ? 'Offline' : 'Invitar'}
                                     </PixelButton>
@@ -717,9 +778,9 @@ export default function MenuPage() {
                 />
 
                 {isRulesOpen && <RulesModal onClose={() => setIsRulesOpen(false)} />}
-                {isSearchModalOpen && <UserSearchModal 
+                {isSearchModalOpen && <UserSearchModal
                     existingFriends={friends.map(f => f.username)}
-                    onClose={() => setIsSearchModalOpen(false)} 
+                    onClose={() => setIsSearchModalOpen(false)}
                     onSendRequest={(targetUsername) => {
                         if (sessionSocketRef.current?.readyState === WebSocket.OPEN) {
                             sessionSocketRef.current.send(JSON.stringify({
@@ -747,6 +808,14 @@ export default function MenuPage() {
 
             </div>
 
+            {!isPasswordModalOpen && !isRulesOpen && (
+                <p
+                    className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white text-[1.4rem] font-bold text-center w-full max-w-[26rem] z-50 pointer-events-none"
+                    style={{ textShadow: 'none' }}
+                >
+                    Crea una partida e invita a<br />tus amigos o únete a una<br />partida
+                </p>
+            )}
         </div>
     );
 }
