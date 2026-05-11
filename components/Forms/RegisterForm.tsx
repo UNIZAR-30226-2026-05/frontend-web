@@ -32,7 +32,7 @@ export default function RegisterForm() {
 
     //console.log('formState:', formState); // Para verificar el estado del form en cada renderizado
 
-    const textShadow = "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000";
+    const textShadow = "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)";
 
     return (
         <div className="flex flex-col items-center gap-6 font-pixel text-white">
@@ -47,7 +47,7 @@ export default function RegisterForm() {
                 <div className="flex flex-col items-center gap-6 w-full max-w-sm">
                     <div className="flex flex-col gap-2 w-full text-center">
                         <label htmlFor="username" style={{ textShadow }} className="text-lg">Nombre de usuario</label>
-                        <PixelInput placeholder='Username'
+                        <PixelInput
                                     id='username'
                                     name='username'
                                     className="w-full text-center" 
@@ -61,7 +61,7 @@ export default function RegisterForm() {
                         <PixelInput type="password" 
                                     id='password'
                                     name='password'
-                                    placeholder='Contraseña'
+
                                     className="w-full text-center" 
                                     defaultValue={formState.data?.password ?? ''}/>
                         <FormError error={formState.zodErrors?.password || []} /> {/* mostramos los errores de validación debajo del input */}
@@ -72,7 +72,7 @@ export default function RegisterForm() {
                         <PixelInput type="password" 
                                     id='confirmPassword'
                                     name='confirmPassword'
-                                    placeholder='Repite la contraseña'
+
                                     className="w-full text-center" 
                                     defaultValue={formState.data?.confirmPassword ?? ''}/>
                         <FormError error={formState.zodErrors?.confirmPassword || []} /> {/* mostramos los errores de validación debajo del input */}
@@ -94,7 +94,7 @@ export default function RegisterForm() {
                         className="text-sm text-center transition-colors hover:text-gray-300 leading-loose" 
                         style={{ textShadow }}
                     >
-                        Si ya tienes cuenta,<br />INICIA SESIÓN
+                        Si ya tienes cuenta,<br /><span className="underline">INICIA SESIÓN</span>
                     </Link>
                 </div>
             </form>

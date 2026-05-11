@@ -26,7 +26,7 @@ const INITIAL_STATE: FormState = {
 
 
 export default function LoginForm() {
-    const textShadow = "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000";
+    const textShadow = "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)";
 
     const [formState, formAction] = useActionState(actions.auth.loginUserAction, INITIAL_STATE);
 
@@ -54,8 +54,7 @@ export default function LoginForm() {
                 <div className="flex flex-col items-center gap-6 w-full max-w-sm mx-auto">
                     <div className="flex flex-col gap-2 w-full text-center">
                         <label style={{ textShadow }} className="text-lg">Nombre de usuario</label>
-                        <PixelInput className="w-full text-center" 
-                                    placeholder='username'
+                        <PixelInput className="w-full text-center"
                                     name='username'
                                     id='username'
                                     defaultValue={formState.data?.username ?? ''}/> {/* valores por defecto para que cuando el usuario envie el 
@@ -66,7 +65,6 @@ export default function LoginForm() {
                     <div className="flex flex-col gap-2 w-full text-center">
                         <label style={{ textShadow }} className="text-lg">Contraseña</label>
                         <PixelInput type="password" className="w-full text-center" 
-                                    placeholder='Contraseña' 
                                     id='password'
                                     name='password'
                                     defaultValue={formState.data?.password ?? ''}/>
@@ -89,7 +87,7 @@ export default function LoginForm() {
                         className="text-sm text-center transition-colors hover:text-gray-300 leading-loose" 
                         style={{ textShadow }}
                     >
-                        Si no tienes cuenta,<br />regístrate AQUÍ
+                        Si no tienes cuenta,<br />regístrate <span className="underline">AQUÍ</span>
                     </Link>
                 </div>
             </form>

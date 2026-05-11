@@ -422,7 +422,7 @@ export default function MenuPage() {
                     <div className="flex items-center gap-6 ml-[14rem]">
                         <span
                             className="text-[3rem] tracking-widest font-bold text-white whitespace-nowrap"
-                            style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                            style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                         >
                             {username}
                         </span>
@@ -433,7 +433,7 @@ export default function MenuPage() {
                 <div className="flex-1 flex flex-col p-6 pl-4 relative mt-20 overflow-hidden">
                     <h2
                         className="text-[3.5rem] leading-snug mb-10 text-white font-bold whitespace-nowrap"
-                        style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                        style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                     >
                         Invitaciones
                     </h2>
@@ -442,7 +442,6 @@ export default function MenuPage() {
                         {invitations.length === 0 && (
                             <p
                                 className="text-[#a8a8a8] text-[1.2rem] font-bold"
-                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
                             >
                                 No tienes invitaciones pendientes
                             </p>
@@ -451,7 +450,7 @@ export default function MenuPage() {
                             <div key={inv.inviter} className="flex flex-col gap-3 w-fit">
                                 <p
                                     className="text-[#a8a8a8] text-[1.3rem] font-bold mb-1"
-                                    style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                    style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                                 >
                                     {inv.inviter} te ha invitado!
                                 </p>
@@ -459,7 +458,7 @@ export default function MenuPage() {
                                 <div className="flex items-center gap-4">
                                     <p
                                         className="text-white text-[1.5rem] font-bold leading-tight"
-                                        style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                        style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                                     >
                                         Código: {inv.code}
                                     </p>
@@ -518,13 +517,13 @@ export default function MenuPage() {
                                         <div className="flex flex-col">
                                             <span
                                                 className="text-[1.3rem] leading-snug text-white font-bold"
-                                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                                style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                                             >
                                                 Código de partida:
                                             </span>
                                             <span
                                                 className="text-[2rem] text-white mt-1 inline-block font-bold"
-                                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                                style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                                             >
                                                 {idPartida}
                                             </span>
@@ -557,7 +556,7 @@ export default function MenuPage() {
                         <div className="w-full flex flex-col items-center mt-2 gap-4">
                             <h2
                                 className="text-[2.2rem] text-white font-bold text-center leading-snug mb-2"
-                                style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                             >
                                 Unirse a una<br />partida con código
                             </h2>
@@ -578,7 +577,7 @@ export default function MenuPage() {
                                         backgroundSize: '100% 100%',
                                         backgroundRepeat: 'no-repeat',
                                         boxShadow: "inset 0 0 5px rgba(150, 100, 255, 0.5)",
-                                        textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000"
+                                        textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)"
                                     }}
                                 />
                             </div>
@@ -623,7 +622,7 @@ export default function MenuPage() {
                     <div className="flex flex-col items-center mb-2">
                         <h2
                             className="text-[2.2rem] tracking-[0.1em] pb-2 text-white font-bold"
-                            style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                            style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                         >
                             Amigos
                         </h2>
@@ -643,7 +642,7 @@ export default function MenuPage() {
                                 <div key={req} className="flex justify-between items-center w-full gap-3 flex-nowrap">
                                     <span
                                         className="text-[1.4rem] text-white font-bold whitespace-nowrap"
-                                        style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                        style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                                     >
                                         {req}
                                     </span>
@@ -692,7 +691,7 @@ export default function MenuPage() {
                                 <div key={friend.username} className="flex justify-between items-center w-full gap-4 flex-nowrap">
                                     <span
                                         className="text-[1.6rem] text-white font-bold whitespace-nowrap mt-1"
-                                        style={{ textShadow: "2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000" }}
+                                        style={{ textShadow: "0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.6), 0 0 12px rgba(220,200,255,0.3)" }}
                                     >
                                         {friend.username}
                                     </span>
