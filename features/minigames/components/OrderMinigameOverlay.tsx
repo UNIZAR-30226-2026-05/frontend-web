@@ -170,7 +170,7 @@ export default function OrderMinigameOverlay({
 
       {/* ── Fase 2: Minijuego ── */}
       {phase === "playing" && (
-        <div className="w-full h-full flex items-center justify-center" style={{ zoom: 0.8 }}>
+        <div className="absolute inset-0 w-full h-full">
           {renderMinigame()}
         </div>
       )}
