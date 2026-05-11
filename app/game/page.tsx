@@ -69,6 +69,7 @@ function OrderMinigameController() {
       backendCardIndexes={state.currentOrderMinijuegoDetails?.cartas}
       assignedCardSlot={myPlayer ? myPlayer.turnOrder - 1 : undefined}
       objetivo={state.currentOrderMinijuegoDetails?.objetivo}
+      character={myPlayer?.character as "banquero" | "escapista" | "vidente" | "videojugador" | undefined}
       onAction={(result) => sendScoreOrden(result.score as number, result.objetivo)}
       onResultsClosed={() => dispatch({ type: 'MINIJUEGO_RESULTADOS' })}
       waitingForResults={state.waitingForMinigameResults}
