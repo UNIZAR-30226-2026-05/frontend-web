@@ -534,20 +534,20 @@ export default function MenuPage() {
                 ) : (
                     <>
                         {/* Botón Crear Partida / Lobby info */}
-                        <div className="w-full max-w-[28rem] flex flex-col items-center gap-[3rem] mt-2 mb-4">
+                        <div className="w-full max-w-[28rem] flex flex-col items-center gap-4 mt-2 mb-4">
                             <PixelButton
                                 variant="purple"
-                                className={`w-full !py-16 !text-[2.2rem] !tracking-wider mt-[-12rem] ${idPartida > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full !py-16 !text-[2.2rem] !tracking-wider mt-[-12rem] mb-[2rem] ${idPartida > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 onClick={idPartida > 0 ? undefined : handleCrearPartida}
                                 disabled={idPartida > 0 || isCreatingGame}
                             >
                                 {isCreatingGame ? 'Creando...' : 'Crear partida'}
                             </PixelButton>
 
-                            <div className="w-full relative flex flex-col items-center px-2 min-h-[5rem] left-[-3rem]">
-                                <div className="flex flex-col items-center justify-center">
-                                    {idPartida > 0 && (
-                                        <>
+                            <div className="w-full flex flex-col items-center px-2 min-h-[5rem] relative">
+                                {idPartida > 0 ? (
+                                    <div className="flex items-center justify-center gap-12 w-full mt-2">
+                                        <div className="flex flex-col items-center">
                                             <span
                                                 className="text-[1.3rem] leading-snug text-white font-bold"
                                                 style={{ textShadow: "none" }}
@@ -560,22 +560,27 @@ export default function MenuPage() {
                                             >
                                                 {idPartida}
                                             </span>
-                                        </>
-                                    )}
-                                </div>
-                                <div className="absolute right-[-4rem] top-0 flex items-center gap-4">
-                                    {idPartida === 0 && (
-                                        <p className="text-[#a8a8a8] text-[1.2rem] font-bold text-center leading-tight whitespace-nowrap mr-2">
+                                        </div>
+                                        <PixelButton 
+                                            variant="green" 
+                                            className="!px-6 !py-3 !text-[1.3rem] !tracking-wider"
+                                        >
+                                            {username}
+                                        </PixelButton>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-center gap-8 w-full mt-4">
+                                        <p className="text-[#a8a8a8] text-[1.2rem] font-bold text-center leading-tight whitespace-nowrap">
                                             Crea una partida<br />para obtener un código
                                         </p>
-                                    )}
-                                    <PixelButton
-                                        variant="green"
-                                        className="!px-6 !py-3 !text-[1.3rem] !tracking-wider"
-                                    >
-                                        {username}
-                                    </PixelButton>
-                                </div>
+                                        <PixelButton 
+                                            variant="green" 
+                                            className="!px-6 !py-3 !text-[1.3rem] !tracking-wider"
+                                        >
+                                            {username}
+                                        </PixelButton>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex justify-between w-full gap-5">
