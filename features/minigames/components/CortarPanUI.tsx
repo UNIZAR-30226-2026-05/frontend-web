@@ -13,6 +13,7 @@ export default function CortarPanUI({ onAction }: CortarPanUIProps) {
   const pathname = usePathname();
   const isDebugRoute = pathname.includes("debug");
   const [isFinished, setIsFinished] = useState(false);
+  const [cutPosition, setCutPosition] = useState<number | null>(null);
   const [knifePosition, setKnifePosition] = useState(0); // 0 to 100
   
   const [debugTraversalDuration, setDebugTraversalDuration] = useState(400);
@@ -52,11 +53,13 @@ export default function CortarPanUI({ onAction }: CortarPanUIProps) {
     if (isFinished) return;
     
     setIsFinished(true);
+    setCutPosition(knifePosition);
     cancelAnimationFrame(animationRef.current);
     
-    // Score: posición del cuchillo (0-100).
-    // Objetivo: 50 (el centro exacto).
-    onAction({ score: Math.round(knifePosition), objetivo: 50 });
+    // Esperar 1.5s para que el jugador vea dónde cortó
+    setTimeout(() => {
+      onAction({ score: Math.round(knifePosition), objetivo: 50 });
+    }, 1500);
   };
 
   return (
@@ -119,6 +122,15 @@ export default function CortarPanUI({ onAction }: CortarPanUIProps) {
       </div>
 
       {/* Área del Pan y Cuchillo */}
+      {(() => {
+        // Boundaries del pan: centrado al 50% con ancho debugPanScale%
+        const panLeft = 50 - debugPanScale / 2;
+        const panRight = 50 + debugPanScale / 2;
+        // Mapear knifePosition (0-100) al rango horizontal del pan
+        const mappedKnife = panLeft + (knifePosition / 100) * (panRight - panLeft);
+        const mappedCut = cutPosition !== null ? panLeft + (cutPosition / 100) * (panRight - panLeft) : null;
+
+        return (
       <div className="relative w-full max-w-5xl aspect-video z-10 flex items-center justify-center">
         {/* Pan de Hogaza */}
         <div 
@@ -140,18 +152,48 @@ export default function CortarPanUI({ onAction }: CortarPanUIProps) {
             />
         </div>
 
-        {/* Línea del Cuchillo - Efecto Laser */}
+        {/* Línea del Cuchillo (en movimiento: sólida blanca con glow) */}
+        {!isFinished && (
+          <div 
+            className="absolute w-1 bg-white z-20"
+            style={{ 
+              top: '25%',
+              bottom: '0%',
+              left: `${mappedKnife}%`,
+              transform: 'translateX(-50%)',
+              boxShadow: '0 0 10px #fff, 0 0 20px #fff, 0 0 40px rgba(255,255,255,0.5)'
+            }}
+          />
+        )}
+
+        {/* Línea de corte fija (después de cortar) */}
+        {cutPosition !== null && (
+          <div 
+            className="absolute w-1 bg-white z-20 animate-pulse"
+            style={{ 
+              top: '25%',
+              bottom: '0%',
+              left: `${mappedCut}%`,
+              transform: 'translateX(-50%)',
+              boxShadow: '0 0 10px #fff, 0 0 20px #fff, 0 0 40px rgba(255,255,255,0.5)'
+            }}
+          />
+        )}
+
+        {/* Marcador del Centro (guía: puntos blancos, solo zona del pan) */}
         <div 
-          className="absolute top-0 bottom-0 w-1.5 bg-white shadow-[0_0_20px_#fff,0_0_40px_#fff,0_0_60px_#ef4444] z-20"
-          style={{ 
-            left: `${knifePosition}%`,
-            transform: 'translateX(-50%)'
+          className="absolute left-1/2 z-10"
+          style={{
+            top: '35%',
+            bottom: '5%',
+            transform: 'translateX(-50%)',
+            width: '6px',
+            borderLeft: '6px dotted rgba(255,255,255,0.8)'
           }}
         />
-
-        {/* Marcador del Centro (Guía sutil) */}
-        <div className="absolute top-0 bottom-0 left-1/2 w-0.5 border-x border-amber-500/30 -translate-x-1/2 z-10" />
       </div>
+        );
+      })()}
 
       {/* Botón de Corte */}
       <div className="absolute bottom-20 z-20 flex flex-col items-center gap-6">

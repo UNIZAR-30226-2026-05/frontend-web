@@ -31,6 +31,8 @@ interface OrderMinigameOverlayProps {
   assignedCardSlot?: number;
   /** Tiempo objetivo en segundos para el Cronómetro Ciego */
   objetivo?: number;
+  /** Personaje del jugador local */
+  character?: "banquero" | "escapista" | "vidente" | "videojugador";
   /** true mientras el jugador espera los resultados del resto */
   waitingForResults?: boolean;
   /** Resultados clasificados para mostrar el podio inline */
@@ -57,6 +59,7 @@ export default function OrderMinigameOverlay({
   backendCardIndexes,
   assignedCardSlot,
   objetivo,
+  character,
   waitingForResults,
   results,
 }: OrderMinigameOverlayProps) {
@@ -123,6 +126,7 @@ export default function OrderMinigameOverlay({
         return (
           <MayorMenorUI
             onAction={handleAction}
+            character={character}
             backendCardIndexes={backendCardIndexes}
             assignedCardSlot={assignedCardSlot}
           />
