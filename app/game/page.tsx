@@ -19,6 +19,7 @@ import RuletaUI from "@/features/board/components/RuletaUI";
 import PokerUI from "@/features/minigames/components/PokerUI";
 import BarreraModal from "@/features/board/components/BarreraModal";
 import GameOverOverlay from "@/features/board/components/GameOverOverlay";
+import DilemaPrisioneroUI from "@/features/minigames/components/DilemaPrisioneroUI";
 import TurnTimer from "@/features/board/components/TurnTimer";
 
 // Mapeo nombre WS → id local (fuera del componente para evitar recreación en cada render)
@@ -278,20 +279,18 @@ function RuletaController() {
 
 /** Muestra el Dilema del Prisionero cuando dos jugadores coinciden. */
 function DilemaController() {
-  const { state, sendScoreDilema, dispatch } = useGameContext();
+  const { state, sendScoreDilema } = useGameContext();
 
   if (!state.showDilema) return null;
 
   return (
-    <OrderMinigameOverlay
-      minigameType="dilema"
-      minigameName="Dilema del Prisionero"
-      onAction={(result) => {
-        sendScoreDilema(result.score as "cooperar" | "traicionar");
-        dispatch({ type: 'HIDE_DILEMA' });
-      }}
-      onResultsClosed={() => {/* resultados gestionados por DilemaSpectatorController */}}
-    />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 animate-in fade-in duration-300">
+      <DilemaPrisioneroUI
+        onAction={(result) => {
+          sendScoreDilema(result.score as "cooperar" | "traicionar");
+        }}
+      />
+    </div>
   );
 }
 
