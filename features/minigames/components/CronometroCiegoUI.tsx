@@ -25,9 +25,9 @@ export default function CronometroCiegoUI({ onAction, objetivo = 10 }: Cronometr
   const [isBlinded, setIsBlinded] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
 
-  // El blind range se deriva del objetivo: la puerta cae entre el 30 % y el 50 % del tiempo objetivo.
-  const defaultMinBlind = objetivo * 0.3;
-  const defaultMaxBlind = objetivo * 0.5;
+  // La puerta se cierra entre el segundo 2.5 y 3 (se resta la transición para que esté cerrada a tiempo)
+  const defaultMinBlind = 2.0;
+  const defaultMaxBlind = 2.5;
 
   const [debugMinBlindTime, setDebugMinBlindTime] = useState(defaultMinBlind);
   const [debugMaxBlindTime, setDebugMaxBlindTime] = useState(defaultMaxBlind);
@@ -95,13 +95,19 @@ export default function CronometroCiegoUI({ onAction, objetivo = 10 }: Cronometr
       cancelAnimationFrame(timerRef.current);
     }
 
+    // Levantar la persiana para mostrar el tiempo
+    setIsBlinded(false);
+
     // Enviamos la diferencia absoluta en ms entre el objetivo y el tiempo conseguido.
     // Así el backend solo tiene que ordenar de menor a mayor (menor diferencia = mejor).
     const scoreMs = Math.round(time * 1000);
     const objetivoMs = Math.round(objetivo * 1000);
     const diffMs = Math.abs(scoreMs - objetivoMs);
 
-    onAction({ score: diffMs, objetivo: objetivoMs });
+    // Esperar 2s para que el jugador vea dónde paró
+    setTimeout(() => {
+      onAction({ score: diffMs, objetivo: objetivoMs });
+    }, 2000);
   };
 
   const formatTime = (t: number) => {
