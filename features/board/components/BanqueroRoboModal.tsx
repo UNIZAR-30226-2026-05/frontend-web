@@ -70,11 +70,6 @@ export default function BanqueroRoboModal({ targetPlayers, onSelect }: BanqueroR
                                         {player.username}
                                     </h3>
 
-                                    {/* Balance */}
-                                    <p className="text-amber-400 font-pixel text-sm mb-6 text-center">
-                                        🪙 {player.balance} monedas
-                                    </p>
-
                                     {/* Botón de Acción */}
                                     <div className="w-full mt-auto">
                                         <PixelButton
