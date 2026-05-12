@@ -302,7 +302,7 @@ export default function PokerUI({ onClose }: PokerUIProps) {
                 {myCards.length > 0 ? (
                   <span className="text-red-300 text-sm font-pixel tracking-widest">TE HAS RETIRADO</span>
                 ) : (
-                  <span className="text-red-300 text-sm font-pixel tracking-widest">MÁS SUERTE LA PRÓXIMA VEZ</span>
+                  <span className="text-red-300 text-sm font-pixel tracking-widest">NO TIENES SUFICIENTE SALDO PARA JUGAR LA MANO</span>
                 )}
               </div>
             )}
