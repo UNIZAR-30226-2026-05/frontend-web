@@ -125,6 +125,8 @@ export default function DebugMinigamesPage() {
       currentOrderMinijuegoDescripcion: null,
       purchaseNotification: null,
       avanceExtraTotal: 0,
+      finalPositions: null,
+      theftNotification: null,
     },
     isMyTurn: true,
     myPlayer: mockPlayer,
