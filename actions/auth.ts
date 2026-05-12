@@ -13,7 +13,7 @@ import { cookies } from 'next/headers';
 
 import {RegisterFormSchema, type FormState } from '@/components/Validaciones'; // importamos el tipo FormState para tipar el estado del form
 import { LogInFormSchema } from '@/components/Validaciones';    
-import { registerUserService, loginUserService } from '@/lib/backend';
+import { registerUserService, loginUserService, changePasswordService } from '@/lib/backend';
 
 
 
@@ -160,4 +160,31 @@ export async function loginUserAction(prevState: FormState, formData: FormData):
     //    data: fields
     //};
 
+}
+
+
+export async function changePasswordAction(
+    contrasena_actual: string,
+    contrasena_nueva: string
+): Promise<{ success: boolean; message: string }> {
+    const cookiesStore = await cookies();
+    const token = cookiesStore.get('jwt')?.value;
+
+    if (!token) {
+        return { success: false, message: 'No estás autenticado' };
+    }
+
+    if (contrasena_nueva.length < 8) {
+        return { success: false, message: 'La nueva contraseña debe tener al menos 8 caracteres' };
+    }
+
+    const response = await changePasswordService(contrasena_actual, contrasena_nueva, token);
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        const detail = data?.detail ?? 'Error al cambiar la contraseña';
+        return { success: false, message: detail };
+    }
+
+    return { success: true, message: '¡Contraseña actualizada con éxito!' };
 }

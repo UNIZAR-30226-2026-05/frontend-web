@@ -57,6 +57,26 @@ export async function loginUserService(userData: UserData) {
     }
 
 }
+export async function changePasswordService(
+    contrasena_actual: string,
+    contrasena_nueva: string,
+    token: string
+) {
+    const apiHost = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    const url = `${apiHost}/usuarios/cambio_contrasena/`;
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ contrasena_actual, contrasena_nueva }),
+    });
+
+    return response;
+}
+
 // como getItem devuelve string | null, el token puede ser null, por eso el tipo de token es string | null
 export async function CrearPartidaService(token: string | null): Promise<number> {
 
