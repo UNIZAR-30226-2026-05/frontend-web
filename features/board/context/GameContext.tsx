@@ -1149,6 +1149,49 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const lobbyPlayers = JSON.parse(lobbyRaw) as unknown;
       if (Array.isArray(lobbyPlayers) && lobbyPlayers.length > 0) {
         dispatch({ type: 'INIT', myUsername, lobbyPlayers: lobbyPlayers as string[] });
+
+        // Recuperar estado de reconexión guardado por el menú
+        const recData = sessionStorage.getItem('reconnectData');
+        if (recData) {
+          try {
+            const msg = JSON.parse(recData);
+            dispatch({ type: 'RECONNECT_SUCCESS', boardState: msg.current_board });
+
+            if (msg.minijuego_actual && msg.participa_en_minijuego) {
+              if (msg.minijuego_tipo === 'orden') {
+                dispatch({ type: 'SET_CURRENT_ORDER_MINIJUEGO', minijuego: msg.minijuego_actual, details: msg.minijuego_detalles });
+                dispatch({ type: 'SHOW_ORDER_MINIGAME' });
+              } else if (msg.minijuego_tipo === 'casilla') {
+                if (msg.minijuego_actual === 'Doble o Nada') {
+                  dispatch({ type: 'SHOW_DOBLE_NADA', user: myUsername! });
+                } else if (msg.minijuego_actual === 'Dilema del Prisionero') {
+                  dispatch({ type: 'SHOW_DILEMA_PENDING', user: myUsername! });
+                  dispatch({ type: 'OPEN_DILEMA' });
+                } else if (msg.minijuego_actual === 'Mano de Poker') {
+                  dispatch({ type: 'SHOW_POKER_PENDING' });
+                  dispatch({ type: 'OPEN_POKER' });
+                }
+              }
+            } else if (!msg.minijuego_actual && msg.opciones_videojugador) {
+              dispatch({ type: 'SHOW_VIDEOJUGADOR_ELECCION', opciones: msg.opciones_videojugador });
+            }
+          } catch {
+            console.error('GameProvider: error al parsear reconnectData');
+          }
+        }
+
+        // Recuperar turno pendiente guardado por el menú
+        const turnRaw = sessionStorage.getItem('reconnectTurn');
+        if (turnRaw) {
+          try {
+            const turnData = JSON.parse(turnRaw);
+            const turnoUser = (turnData.user ?? turnData.nombre_jugador) as string;
+            dispatch({ type: 'TURNO_DE', user: turnoUser, ronda: turnData.ronda as number });
+          } catch {
+            console.error('GameProvider: error al parsear reconnectTurn');
+          }
+
+        }
       }
     } catch {
       console.error('GameProvider: error al parsear lobbyPlayers');
