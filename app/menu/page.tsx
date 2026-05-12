@@ -128,7 +128,11 @@ export default function MenuPage() {
                     const usernames = Object.keys(boardState?.order || {});
                     setLobbyPlayers(usernames);
                     updateJugadoresEnLobby(usernames);
+<<<<<<< HEAD
                     sessionStorage.setItem('reconnectData', JSON.stringify(message));
+=======
+                    sessionStorage.setItem('reconnectData', JSON.stringify(boardState));
+>>>>>>> c5cea39d57aebe3b83eb22f02d8f860dcd4c42b7
                     routerRef.current.push('/game');
                 }
 
@@ -284,7 +288,11 @@ export default function MenuPage() {
                     });
                     if (resActive.ok) {
                         const activeData = await resActive.json();
+<<<<<<< HEAD
                         if (activeData.game_id) {
+=======
+                        if (activeData.game_id && activeData.estado !== 'WAITING') {
+>>>>>>> c5cea39d57aebe3b83eb22f02d8f860dcd4c42b7
                             console.log('Partida activa detectada vía HTTP:', activeData.game_id);
                             connectToRoom(activeData.game_id, token);
                         }

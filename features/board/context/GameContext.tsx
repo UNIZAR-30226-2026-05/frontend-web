@@ -1154,6 +1154,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const recData = sessionStorage.getItem('reconnectData');
         if (recData) {
           try {
+<<<<<<< HEAD
             const msg = JSON.parse(recData);
             dispatch({ type: 'RECONNECT_SUCCESS', boardState: msg.current_board });
 
@@ -1178,6 +1179,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           } catch {
             console.error('GameProvider: error al parsear reconnectData');
           }
+=======
+            const boardState = JSON.parse(recData);
+            dispatch({ type: 'RECONNECT_SUCCESS', boardState });
+          } catch {
+            console.error('GameProvider: error al parsear reconnectData');
+          }
+          sessionStorage.removeItem('reconnectData');
+>>>>>>> c5cea39d57aebe3b83eb22f02d8f860dcd4c42b7
         }
 
         // Recuperar turno pendiente guardado por el menú
@@ -1190,7 +1199,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           } catch {
             console.error('GameProvider: error al parsear reconnectTurn');
           }
+<<<<<<< HEAD
 
+=======
+          sessionStorage.removeItem('reconnectTurn');
+>>>>>>> c5cea39d57aebe3b83eb22f02d8f860dcd4c42b7
         }
       }
     } catch {

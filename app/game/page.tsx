@@ -626,8 +626,11 @@ export default function GamePage() {
       <button
         onClick={() => {
           sessionStorage.setItem('leftGameVoluntarily', 'true');
+<<<<<<< HEAD
           sessionStorage.removeItem('reconnectData');
           sessionStorage.removeItem('reconnectTurn');
+=======
+>>>>>>> c5cea39d57aebe3b83eb22f02d8f860dcd4c42b7
           closeGameSocket();
           router.push('/menu');
         }}
