@@ -103,7 +103,9 @@ export default function PokerUI({ onClose }: PokerUIProps) {
 
   // Auto-dismiss after 5 s when results arrive, without requiring a button click
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
   useEffect(() => {
     if (resultados === null) return;
     const timer = setTimeout(() => onCloseRef.current(), 5000);
