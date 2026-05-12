@@ -472,7 +472,10 @@ export default function MenuPage() {
                                     <PixelButton
                                         variant="green"
                                         className="!px-4 !py-2 !text-[1.2rem]"
-                                        onClick={() => handleJoinPartida(inv.code.toString())}
+                                        onClick={() => {
+                                            handleJoinPartida(inv.code.toString());
+                                            setInvitations(prev => prev.filter(i => i.inviter !== inv.inviter));
+                                        }}
                                     >
                                         ✓
                                     </PixelButton>
