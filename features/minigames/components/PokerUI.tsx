@@ -389,10 +389,23 @@ export default function PokerUI({ onClose }: PokerUIProps) {
       {/* --- WAITING MESSAGE (no cards yet) --- */}
       {pokerState.fase === '' && (
         <div className="absolute inset-0 z-50 bg-black/70 flex items-center justify-center">
-          <div className="bg-black/90 border-2 border-purple-500/50 px-12 py-8 rounded-xl flex flex-col items-center gap-4">
-            <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
-            <span className="text-white font-pixel text-lg tracking-widest">ESPERANDO CARTAS...</span>
-          </div>
+          {(myPlayer?.balance ?? 0) < 5 ? (
+            <div className="bg-black/90 border-2 border-red-500/50 px-12 py-8 rounded-xl flex flex-col items-center gap-4 max-w-sm text-center">
+              <span className="text-4xl">💸</span>
+              <span className="text-red-400 font-pixel text-base tracking-widest uppercase leading-relaxed">
+                NO TIENES SALDO SUFICIENTE
+              </span>
+              <span className="text-white/60 font-pixel text-xs tracking-widest uppercase">
+                PARA PARTICIPAR EN ESTA MANO DE POKER
+              </span>
+              <span className="text-white/40 font-pixel text-[10px] tracking-widest">(MÍNIMO 5 MONEDAS)</span>
+            </div>
+          ) : (
+            <div className="bg-black/90 border-2 border-purple-500/50 px-12 py-8 rounded-xl flex flex-col items-center gap-4">
+              <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-white font-pixel text-lg tracking-widest">ESPERANDO CARTAS...</span>
+            </div>
+          )}
         </div>
       )}
 
