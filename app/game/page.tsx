@@ -447,7 +447,7 @@ function PurchaseNotificationBanner() {
       : '';
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[600] flex justify-center pointer-events-none">
+    <div className="fixed top-[20%] left-0 right-0 z-[600] flex justify-center pointer-events-none">
       <div className="mt-2 px-6 py-3 bg-black/85 border border-white/20 rounded-md shadow-xl">
         <p className="font-pixel text-white text-sm tracking-widest uppercase whitespace-nowrap">
           {subject}{' '}
@@ -645,8 +645,8 @@ export default function GamePage() {
       {/* Pantalla Final de Partida */}
       <GameOverController />
 
-      {/* Banner de compra de objeto (solo cuando la tienda está cerrada) */}
-      {!isShopOpen && <PurchaseNotificationBanner />}
+      {/* Banner de compra de objeto */}
+      <PurchaseNotificationBanner />
 
     </main>
     </GameProvider>
