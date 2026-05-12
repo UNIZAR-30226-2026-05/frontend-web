@@ -433,6 +433,7 @@ function gameReducer(state: GameState, action: Action): GameState {
         awaitingEndRound: isForMe ? false : state.awaitingEndRound,
         purchasedItems: isForMe ? {} : state.purchasedItems,
         showBanqueroModal: false,
+        avanceExtraTotal: 0,
       };
     }
 

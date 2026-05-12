@@ -148,10 +148,13 @@ function BanqueroRoboController() {
   useEffect(() => {
     if (state.showPoker) return;
     if (state.showRuleta) return;
+    if (state.showOrderMinigame) return;
+    if (state.waitingForMinigameResults) return;
+    if (state.pendingMinigameResults !== null) return;
     if (isMyTurn && myPlayer?.character === 'banquero' && !state.hasUsedAbility && !state.hasMoved && !state.showBanqueroModal) {
       dispatch({ type: 'SET_SHOW_BANQUERO_MODAL', value: true });
     }
-  }, [isMyTurn, myPlayer?.character, state.hasUsedAbility, state.hasMoved, state.showBanqueroModal, state.showPoker, state.showRuleta, dispatch]);
+  }, [isMyTurn, myPlayer?.character, state.hasUsedAbility, state.hasMoved, state.showBanqueroModal, state.showPoker, state.showRuleta, state.showOrderMinigame, state.waitingForMinigameResults, state.pendingMinigameResults, dispatch]);
 
   if (state.showPoker) return null;
   if (state.showRuleta) return null;
