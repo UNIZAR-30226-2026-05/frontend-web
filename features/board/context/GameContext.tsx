@@ -1156,7 +1156,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
 
-
   // Listener de mensajes WebSocket
   useEffect(() => {
     const ws = getGameSocket();
