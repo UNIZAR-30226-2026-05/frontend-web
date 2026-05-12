@@ -129,7 +129,8 @@ export default function Dice({ onOpenShop }: DiceProps) {
     : (isMyTurn && myPlayer !== null && myPlayer.diceType !== 'normal');
 
   const isBlocked = penaltyTurns > 0;
-  const canRoll = isMyTurn && !hasMoved && !waitingForResponse && !awaitingEndRound && !isBlocked && !isAnyoneAnimating;
+  const isBoardMinigameActive = state.showPoker || state.showDobleNada || state.showDilema || state.pendingBoardMinigame !== null;
+  const canRoll = isMyTurn && !hasMoved && !waitingForResponse && !awaitingEndRound && !isBlocked && !isAnyoneAnimating && !isBoardMinigameActive;
   const isRolling = isRollingVisual || waitingForResponse;
 
   // Ocultar mientras cualquier ficha se mueve para no tapar la acción, 
