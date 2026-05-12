@@ -29,6 +29,15 @@ export default function ShopModal({ onClose }: ShopModalProps) {
   const { myPlayer, state, markItemPurchased, dispatch, sendResetAfk } = useGameContext();
   const [pendingDiceUpgrades, setPendingDiceUpgrades] = React.useState(0);
 
+  // Cierre automático cuando el turno pasa a otro jugador
+  const onCloseRef = React.useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
+  useEffect(() => {
+    if (state.turnoDeUser !== null && state.turnoDeUser !== state.myUsername) {
+      onCloseRef.current();
+    }
+  }, [state.turnoDeUser, state.myUsername]);
+
   const getDiceLevel = (type: string | undefined) => {
     if (type === 'oro') return 3;
     if (type === 'plata') return 2;
@@ -46,10 +55,6 @@ export default function ShopModal({ onClose }: ShopModalProps) {
     }
     lastLevelRef.current = currentDiceLevel;
   }, [currentDiceLevel]);
-
-  useEffect(() => {
-    sendResetAfk();
-  }, [sendResetAfk]);
 
   const penaltyTurns = state.penaltyTurns;
   const isBlocked = penaltyTurns > 0;

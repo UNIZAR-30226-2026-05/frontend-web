@@ -1377,6 +1377,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             break;
           }
 
+          case 'timeout_skip': {
+            // El backend ha saltado el turno de un jugador AFK automáticamente
+            dispatch({ type: 'REMOTE_SKIPPED', user: data.user as string });
+            break;
+          }
+
           case 'penalizacion_eliminada': {
             const myUsername = sessionStorage.getItem('username');
             if ((data.user as string) === myUsername) {
