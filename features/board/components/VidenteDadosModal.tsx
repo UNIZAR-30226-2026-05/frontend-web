@@ -13,6 +13,7 @@ export interface TiradaVidente {
 
 interface VidenteDadosModalProps {
     tiradas: TiradaVidente[];
+    onDismiss?: () => void;
 }
 
 const typeStyles: Record<DiceType, string> = {
@@ -30,7 +31,8 @@ const filterStyles: Record<DiceType, string> = {
 };
 
 export default function VidenteDadosModal({ 
-    tiradas, 
+    tiradas,
+    onDismiss,
 }: VidenteDadosModalProps) {
     return (
         <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-500">
@@ -111,6 +113,14 @@ export default function VidenteDadosModal({
                         })}
                     </div>
 
+                    {onDismiss && (
+                        <button
+                            onClick={onDismiss}
+                            className="mt-2 w-full bg-[#9d4edd] hover:bg-[#7b2fd4] active:scale-95 transition-all text-white font-pixel text-sm uppercase tracking-widest py-3 rounded-xl border-2 border-[#c77dff]/40 shadow-lg"
+                        >
+                            Aceptar
+                        </button>
+                    )}
 
                 </div>
             </div>
