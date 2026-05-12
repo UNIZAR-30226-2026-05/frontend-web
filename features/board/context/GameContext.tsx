@@ -250,7 +250,8 @@ export type Action =
   | { type: 'POKER_APUESTA_ACTUALIZADA'; user: string; apuestaObjetivo: number }
   | { type: 'POKER_RESULTADOS'; resultados: PokerResultado }
   | { type: 'POKER_MARK_ACTED' }
-  | { type: 'POKER_TURNO_DE'; user: string }
+  | { type: 'POKER_UNMARK_ACTED' }
+  | { type: 'POKER_TURNO_DE'; user: string; jugadoresActivos?: string[] }
   | { type: 'SET_SHOW_BARRERA_MODAL', value: boolean }
   | { type: 'DILEMA_RESULTADOS'; resultados: Record<string, 'cooperar' | 'traicionar'>; recompensas: Record<string, number> }
   | { type: 'SET_DILEMA_PARTICIPANTES'; users: string[] }
@@ -807,12 +808,22 @@ function gameReducer(state: GameState, action: Action): GameState {
         },
       };
 
+    case 'POKER_UNMARK_ACTED':
+      return {
+        ...state,
+        pokerState: {
+          ...state.pokerState,
+          hasActedThisPhase: false,
+        },
+      };
+
     case 'POKER_TURNO_DE':
       return {
         ...state,
         pokerState: {
           ...state.pokerState,
           turnoDe: action.user,
+          jugadoresActivos: action.jugadoresActivos ?? state.pokerState.jugadoresActivos,
         },
       };
 
@@ -1175,10 +1186,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           if (pendingBoardMinigameRef.current?.type === 'Doble o Nada' && isSubmittingDobleNadaRef.current) {
             dispatch({ type: 'DOBLE_NADA_SUBMISSION_FAILED' });
           }
+          if (pendingBoardMinigameRef.current?.type === 'Mano de Poker') {
+            dispatch({ type: 'POKER_UNMARK_ACTED' });
+          }
           return;
         }
 
         switch (data.type as string) {
+          case 'error': {
+            // Backend rechazó una acción (p.ej. apuesta inválida en poker)
+            setErrorToast((data.message as string) || 'Error del servidor');
+            if (pendingBoardMinigameRef.current?.type === 'Mano de Poker') {
+              dispatch({ type: 'POKER_UNMARK_ACTED' });
+            }
+            break;
+          }
+
           case 'force_disconnect': {
             alert((data.message as string) || "Has iniciado sesión en otro lugar.");
             window.location.href = '/';
@@ -1501,6 +1524,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             dispatch({
               type: 'POKER_TURNO_DE',
               user: data.nombre_jugador as string,
+              jugadoresActivos: Array.isArray(data.jugadores_activos)
+                ? (data.jugadores_activos as string[])
+                : undefined,
             });
             break;
           }
