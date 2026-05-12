@@ -645,8 +645,8 @@ export default function GamePage() {
       {/* Pantalla Final de Partida */}
       <GameOverController />
 
-      {/* Banner de compra de objeto */}
-      <PurchaseNotificationBanner />
+      {/* Banner de compra de objeto (solo cuando la tienda está cerrada) */}
+      {!isShopOpen && <PurchaseNotificationBanner />}
 
     </main>
     </GameProvider>

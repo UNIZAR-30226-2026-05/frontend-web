@@ -114,6 +114,26 @@ export default function ShopModal({ onClose }: ShopModalProps) {
           </div>
         </div>
 
+        {/* Banner de compra de objeto */}
+        {state.purchaseNotification && (() => {
+          const notif = state.purchaseNotification!;
+          const isLocalUser = notif.user === state.myUsername;
+          const subject = isLocalUser ? 'HAS' : `${notif.user.toUpperCase()} HA`;
+          const extraLabel =
+            notif.objeto === 'Avanzar Casillas' && notif.avanceExtra != null && notif.avanceExtra > 0
+              ? ` X${notif.avanceExtra}`
+              : '';
+          return (
+            <div className="px-6 py-3 bg-black/85 border-b-4 border-white/20 text-center animate-in slide-in-from-top duration-300">
+              <p className="font-pixel text-white text-sm tracking-widest uppercase whitespace-nowrap">
+                {subject}{' '}
+                <span className="text-white">COMPRADO </span>
+                <span className="text-yellow-400">{notif.objeto.toUpperCase()}{extraLabel}</span>
+              </p>
+            </div>
+          );
+        })()}
+
         {/* Banner de bloqueo por penalización */}
         {isBlocked && (
           <div className="px-6 py-4 bg-red-950/80 border-b-4 border-red-500 text-center animate-in slide-in-from-top duration-300">
