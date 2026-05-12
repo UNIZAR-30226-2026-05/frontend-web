@@ -1,5 +1,6 @@
 "use client";
 
+import PixelButton from "@/components/UI/PixelButton";
 import Image from "next/image";
 import React from 'react';
 
@@ -114,12 +115,13 @@ export default function VidenteDadosModal({
                     </div>
 
                     {onDismiss && (
-                        <button
+                        <PixelButton
+                            variant="purple"
                             onClick={onDismiss}
-                            className="mt-2 w-full bg-[#9d4edd] hover:bg-[#7b2fd4] active:scale-95 transition-all text-white font-pixel text-sm uppercase tracking-widest py-3 rounded-xl border-2 border-[#c77dff]/40 shadow-lg"
+                            className="mt-2 w-full py-3 text-sm"
                         >
                             Aceptar
-                        </button>
+                        </PixelButton>
                     )}
 
                 </div>
