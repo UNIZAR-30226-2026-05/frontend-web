@@ -186,6 +186,8 @@ interface GameState {
   showBarreraModal: boolean;
   isGameOver: boolean;
   gameWinner: string | null;
+  /** Posiciones finales de cada jugador en el momento de fin_partida (para el ranking) */
+  finalPositions: Record<string, number> | null;
   bufferedRuletaMove: { user: string; newPos: number } | null;
   bufferedRuletaBalances: Record<string, number> | null;
   /** Notificación de compra de objeto para mostrar como banner */
@@ -255,7 +257,7 @@ export type Action =
   | { type: 'TURNO_DE'; user: string; ronda: number }
   /** El backend confirma el fin de ronda (antes de lanzar el minijuego de orden) */
   | { type: 'ROUND_ENDED' }
-  | { type: 'GAME_OVER'; winner: string }
+  | { type: 'GAME_OVER'; winner: string; positions: Record<string, number> }
   | { type: 'UPGRADE_DICE'; user: string }
   | { type: 'FLUSH_RULETA_BUFFER' }
   | { type: 'OBJETO_COMPRADO'; user: string; objeto: string; avanceExtra?: number }
@@ -821,7 +823,7 @@ function gameReducer(state: GameState, action: Action): GameState {
       return { ...state, dilemaParticipantes: action.users };
 
     case 'GAME_OVER':
-      return { ...state, isGameOver: true, gameWinner: action.winner };
+      return { ...state, isGameOver: true, gameWinner: action.winner, finalPositions: action.positions };
 
     case 'UPGRADE_DICE': {
       const targetUser = action.user;
@@ -943,6 +945,7 @@ const initialState: GameState = {
   turnoDeUser: null,
   isGameOver: false,
   gameWinner: null,
+  finalPositions: null,
   purchaseNotification: null,
   avanceExtraTotal: 0,
 };
@@ -1507,7 +1510,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           }
 
           case 'fin_partida': {
-            dispatch({ type: 'GAME_OVER', winner: data.winner as string });
+            // Capturamos las posiciones actuales antes de que el estado cambie
+            const finalPos: Record<string, number> = {};
+            for (const [username, player] of Object.entries(playersRef.current)) {
+              finalPos[username] = player.position;
+            }
+            dispatch({ type: 'GAME_OVER', winner: data.winner as string, positions: finalPos });
             break;
           }
 

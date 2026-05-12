@@ -466,13 +466,19 @@ function GameOverController() {
   // No mostrar la pantalla final hasta que todas las animaciones hayan terminado
   if (!state.isGameOver || state.isAnyoneAnimating) return null;
 
+  // Ordenar por posición final en el tablero (desc); si no hay snapshot usamos balance
+  const rankedPlayers = [...playerOrder]
+    .map(p => ({
+      username: p.username,
+      character: p.character || 'banquero',
+      balance: p.balance,
+      finalPosition: state.finalPositions?.[p.username] ?? p.position,
+    }))
+    .sort((a, b) => b.finalPosition - a.finalPosition);
+
   return (
     <GameOverOverlay 
-      players={playerOrder.map(p => ({ 
-        username: p.username, 
-        character: p.character || 'banquero', 
-        balance: p.balance 
-      }))}
+      players={rankedPlayers}
       winnerUsername={state.gameWinner ?? undefined}
       onReturnToMenu={() => {
         window.location.href = '/menu';
