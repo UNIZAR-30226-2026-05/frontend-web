@@ -468,16 +468,21 @@ function TheftNotificationBanner() {
   const isBanquero = notif.banquero === state.myUsername;
   const isVictim = notif.victim === state.myUsername;
 
-  const banqueroLabel = isBanquero ? 'HAS ROBADO' : `${notif.banquero.toUpperCase()} HA ROBADO`;
-  const victimLabel = isVictim ? 'A TI' : `A ${notif.victim.toUpperCase()}`;
+  // Construir el mensaje según la perspectiva del jugador local
+  let message: React.ReactNode;
+  if (isBanquero) {
+    message = <>HAS ROBADO <span className="text-red-400">{notif.monedas} MONEDA{notif.monedas !== 1 ? 'S' : ''}</span> A {notif.victim.toUpperCase()}</>;
+  } else if (isVictim) {
+    message = <>{notif.banquero.toUpperCase()} TE HA ROBADO <span className="text-red-400">{notif.monedas} MONEDA{notif.monedas !== 1 ? 'S' : ''}</span></>;
+  } else {
+    message = <>{notif.banquero.toUpperCase()} HA ROBADO <span className="text-red-400">{notif.monedas} MONEDA{notif.monedas !== 1 ? 'S' : ''}</span> A {notif.victim.toUpperCase()}</>;
+  }
 
   return (
     <div className="fixed top-[27%] left-0 right-0 z-[600] flex justify-center pointer-events-none">
       <div className="mt-2 px-6 py-3 bg-black/85 border border-white/20 rounded-md shadow-xl">
         <p className="font-pixel text-white text-sm tracking-widest uppercase whitespace-nowrap">
-          {banqueroLabel}{' '}
-          <span className="text-red-400">{notif.monedas} MONEDA{notif.monedas !== 1 ? 'S' : ''} </span>
-          {victimLabel}
+          {message}
         </p>
       </div>
     </div>
