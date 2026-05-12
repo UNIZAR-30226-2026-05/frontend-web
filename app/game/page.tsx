@@ -459,6 +459,31 @@ function PurchaseNotificationBanner() {
   );
 }
 
+/** Muestra un banner cuando el banquero roba a otro jugador. */
+function TheftNotificationBanner() {
+  const { state } = useGameContext();
+  const notif = state.theftNotification;
+  if (!notif) return null;
+
+  const isBanquero = notif.banquero === state.myUsername;
+  const isVictim = notif.victim === state.myUsername;
+
+  const banqueroLabel = isBanquero ? 'HAS ROBADO' : `${notif.banquero.toUpperCase()} HA ROBADO`;
+  const victimLabel = isVictim ? 'A TI' : `A ${notif.victim.toUpperCase()}`;
+
+  return (
+    <div className="fixed top-[27%] left-0 right-0 z-[600] flex justify-center pointer-events-none">
+      <div className="mt-2 px-6 py-3 bg-black/85 border border-white/20 rounded-md shadow-xl">
+        <p className="font-pixel text-white text-sm tracking-widest uppercase whitespace-nowrap">
+          {banqueroLabel}{' '}
+          <span className="text-red-400">{notif.monedas} MONEDA{notif.monedas !== 1 ? 'S' : ''} </span>
+          {victimLabel}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /** Muestra la pantalla final del juego */
 function GameOverController() {
   const { state, playerOrder } = useGameContext();
@@ -653,6 +678,9 @@ export default function GamePage() {
 
       {/* Banner de compra de objeto */}
       <PurchaseNotificationBanner />
+
+      {/* Banner de robo del banquero */}
+      <TheftNotificationBanner />
 
     </main>
     </GameProvider>

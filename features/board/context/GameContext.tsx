@@ -194,6 +194,8 @@ interface GameState {
   purchaseNotification: { user: string; objeto: string; avanceExtra?: number } | null;
   /** Total de "Avanzar Casillas" comprados en la partida (para el sufijo X3 del banner) */
   avanceExtraTotal: number;
+  /** Notificación de robo del banquero para mostrar como banner */
+  theftNotification: { banquero: string; victim: string; monedas: number } | null;
 }
 
 // -------------------------------------------------------------------
@@ -261,7 +263,9 @@ export type Action =
   | { type: 'UPGRADE_DICE'; user: string }
   | { type: 'FLUSH_RULETA_BUFFER' }
   | { type: 'OBJETO_COMPRADO'; user: string; objeto: string; avanceExtra?: number }
-  | { type: 'CLEAR_PURCHASE_NOTIFICATION' };
+  | { type: 'CLEAR_PURCHASE_NOTIFICATION' }
+  | { type: 'THEFT_NOTIFICATION'; banquero: string; victim: string; monedas: number }
+  | { type: 'CLEAR_THEFT_NOTIFICATION' };
 
 
 // -------------------------------------------------------------------
@@ -884,6 +888,12 @@ function gameReducer(state: GameState, action: Action): GameState {
     case 'CLEAR_PURCHASE_NOTIFICATION':
       return { ...state, purchaseNotification: null };
 
+    case 'THEFT_NOTIFICATION':
+      return { ...state, theftNotification: { banquero: action.banquero, victim: action.victim, monedas: action.monedas } };
+
+    case 'CLEAR_THEFT_NOTIFICATION':
+      return { ...state, theftNotification: null };
+
     default:
       return state;
   }
@@ -948,6 +958,7 @@ const initialState: GameState = {
   finalPositions: null,
   purchaseNotification: null,
   avanceExtraTotal: 0,
+  theftNotification: null,
 };
 
 // -------------------------------------------------------------------
@@ -1531,6 +1542,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
               objeto: data.objeto as string,
             });
             setTimeout(() => dispatch({ type: 'CLEAR_PURCHASE_NOTIFICATION' }), 4000);
+            break;
+          }
+
+          case 'robar_banquero': {
+            dispatch({
+              type: 'THEFT_NOTIFICATION',
+              banquero: turnoDeUserRef.current ?? '',
+              victim: data.nombre as string,
+              monedas: data.monedas as number,
+            });
+            setTimeout(() => dispatch({ type: 'CLEAR_THEFT_NOTIFICATION' }), 4000);
             break;
           }
         }
