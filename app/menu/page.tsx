@@ -321,6 +321,9 @@ export default function MenuPage() {
                                     return [...prev, data.from_user];
                                 });
                                 break;
+                            case 'reject_invite':
+                                setInvitedFriends(prev => prev.filter(f => f !== data.username));
+                                break;
                             case 'request_sended':
                                 console.log('Solicitud de amistad enviada a:', data.username);
                                 break;
@@ -482,7 +485,15 @@ export default function MenuPage() {
                                     <PixelButton
                                         variant="red"
                                         className="!px-4 !py-2 !text-[1.2rem]"
-                                        onClick={() => setInvitations(prev => prev.filter(i => i.inviter !== inv.inviter))}
+                                        onClick={() => {
+                                            setInvitations(prev => prev.filter(i => i.inviter !== inv.inviter));
+                                            if (sessionSocketRef.current?.readyState === WebSocket.OPEN) {
+                                                sessionSocketRef.current.send(JSON.stringify({
+                                                    action: 'reject_invite',
+                                                    payload: { friend_id: inv.inviter }
+                                                }));
+                                            }
+                                        }}
                                     >
                                         ✗
                                     </PixelButton>
