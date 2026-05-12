@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import PixelInput from '@/components/UI/PixelInput';
 import PixelButton from '@/components/UI/PixelButton';
+import { changePasswordAction } from '@/actions/auth';
 
 interface ChangePasswordFormProps {
     onClose: () => void;
@@ -33,22 +34,25 @@ export default function ChangePasswordForm({ onClose }: ChangePasswordFormProps)
             return;
         }
 
-        if (newPassword.length < 6) {
-            setError("La nueva contraseña debe tener al menos 6 caracteres");
+        if (newPassword.length < 8) {
+            setError("La nueva contraseña debe tener al menos 8 caracteres");
             return;
         }
 
         setLoading(true);
 
-        // Simulamos una llamada al backend (MOCK)
+        const result = await changePasswordAction(currentPassword, newPassword);
+        setLoading(false);
+
+        if (!result.success) {
+            setError(result.message);
+            return;
+        }
+
+        setSuccess(result.message);
         setTimeout(() => {
-            setLoading(false);
-            setSuccess("¡Contraseña actualizada con éxito!");
-            // Volvemos al menú después de un breve éxito
-            setTimeout(() => {
-                onClose();
-            }, 2000);
-        }, 1500);
+            onClose();
+        }, 2000);
     };
 
     return (
