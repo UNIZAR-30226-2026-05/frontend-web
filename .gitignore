@@ -39,17 +39,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-.gitignore
 
-extract_code.py
-codebase.txt
-IA.md
-extract_modified_commit.py
-modified_codebase_till_commit_*.txt
-modified_codebase.txt
-extract_modified.py 
-Reunion_3.pdf
-Grupo05_CarolShaw_Memoria_Intermedia.pdf
-Requisitos_actualizados_02_04_2026.pdf
-Reunion_4.pdf
-Documentación WebSockets.pdf
