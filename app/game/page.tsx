@@ -8,7 +8,8 @@ import CharacterSelectionModal from "@/features/board/components/CharacterSelect
 import VideojugadorEleccionModal from "@/features/board/components/VideojugadorEleccionModal";
 import { GameProvider } from "@/features/board/context/GameContext";
 import { useGameContext } from "@/features/board/context/GameContext";
-import { getGameSocket, getLobbyPlayers } from "@/lib/gameSocket";
+import { getGameSocket, getLobbyPlayers, closeGameSocket } from "@/lib/gameSocket";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import OrderMinigameOverlay, { OrderMinigameType, MinigameResultEntry } from "@/features/minigames/components/OrderMinigameOverlay";
 import DobleNadaOverlay from "@/features/board/components/DobleNadaOverlay";
@@ -519,8 +520,26 @@ function GameOverController() {
 }
 
 export default function GamePage() {
+  const router = useRouter();
   const [lobbyPlayers] = useState<unknown[]>(() => getLobbyPlayers());
-  const [unavailableRoles, setUnavailableRoles] = useState<string[]>([]);
+  const [unavailableRoles, setUnavailableRoles] = useState<string[]>(() => {
+    // On reconnection the characters are already chosen; pre-populate from saved data
+    if (typeof window !== 'undefined') {
+      const recRaw = sessionStorage.getItem('reconnectData');
+      if (recRaw) {
+        try {
+          const board = JSON.parse(recRaw);
+          if (board?.characters && typeof board.characters === 'object') {
+            const roles = Object.values(board.characters as Record<string, string>)
+              .map((wsName: string) => WS_NAME_TO_ID[wsName] ?? wsName.toLowerCase())
+              .filter(Boolean);
+            return roles;
+          }
+        } catch { /* ignore */ }
+      }
+    }
+    return [];
+  });
 
   const [isShopOpen, setIsShopOpen] = useState(false);
 
@@ -602,6 +621,21 @@ export default function GamePage() {
           onSelect={handleCharacterSelect} 
         />
       )}
+
+      {/* Botón de salir de la partida */}
+      <button
+        onClick={() => {
+          sessionStorage.setItem('leftGameVoluntarily', 'true');
+          closeGameSocket();
+          router.push('/menu');
+        }}
+        className="absolute bottom-4 left-4 z-[90] w-12 h-12 flex items-center justify-center rounded-xl bg-black/60 border-2 border-white/30 hover:bg-red-900/80 hover:border-red-400/60 transition-all transform hover:scale-110 active:scale-95 group"
+        title="Salir de la partida"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6 text-white/80 group-hover:text-red-300 transition-colors">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+      </button>
 
       {/* Capa de Fichas de Jugadores y Lógica de Tablero */}
       <BoardOverlay />

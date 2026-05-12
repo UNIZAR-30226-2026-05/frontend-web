@@ -1149,6 +1149,31 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const lobbyPlayers = JSON.parse(lobbyRaw) as unknown;
       if (Array.isArray(lobbyPlayers) && lobbyPlayers.length > 0) {
         dispatch({ type: 'INIT', myUsername, lobbyPlayers: lobbyPlayers as string[] });
+
+        // Recuperar estado de reconexión guardado por el menú
+        const recData = sessionStorage.getItem('reconnectData');
+        if (recData) {
+          try {
+            const boardState = JSON.parse(recData);
+            dispatch({ type: 'RECONNECT_SUCCESS', boardState });
+          } catch {
+            console.error('GameProvider: error al parsear reconnectData');
+          }
+          sessionStorage.removeItem('reconnectData');
+        }
+
+        // Recuperar turno pendiente guardado por el menú
+        const turnRaw = sessionStorage.getItem('reconnectTurn');
+        if (turnRaw) {
+          try {
+            const turnData = JSON.parse(turnRaw);
+            const turnoUser = (turnData.user ?? turnData.nombre_jugador) as string;
+            dispatch({ type: 'TURNO_DE', user: turnoUser, ronda: turnData.ronda as number });
+          } catch {
+            console.error('GameProvider: error al parsear reconnectTurn');
+          }
+          sessionStorage.removeItem('reconnectTurn');
+        }
       }
     } catch {
       console.error('GameProvider: error al parsear lobbyPlayers');

@@ -122,6 +122,19 @@ export default function MenuPage() {
                     console.log('La partida ha comenzado, redirigiendo a /game');
                     routerRef.current.push('/game');
                 }
+
+                if ((message as any).type === 'reconnect_success') {
+                    const boardState = (message as any).current_board;
+                    const usernames = Object.keys(boardState?.order || {});
+                    setLobbyPlayers(usernames);
+                    updateJugadoresEnLobby(usernames);
+                    sessionStorage.setItem('reconnectData', JSON.stringify(boardState));
+                    routerRef.current.push('/game');
+                }
+
+                if ((message as any).type === 'turno_de') {
+                    sessionStorage.setItem('reconnectTurn', JSON.stringify(message));
+                }
             } catch (error) {
                 console.warn('No se pudo parsear el mensaje de WebSocket:', error);
             }
@@ -210,6 +223,8 @@ export default function MenuPage() {
 
         try {
             console.log('Intentando unir a partida:', parsedCode);
+            // Si el usuario se une manualmente, eliminar la flag de salida voluntaria
+            sessionStorage.removeItem('leftGameVoluntarily');
             const joinedRoomId = await UnirsePartidaService(parsedCode, authToken);
             console.log('Unido con éxito a ID:', joinedRoomId);
             SetIdPartida(joinedRoomId);
@@ -257,6 +272,25 @@ export default function MenuPage() {
                 }
             }
 
+            // Comprobar si el usuario ya está en una partida activa (reconexión proactiva por HTTP)
+            // Saltar si el usuario abandonó voluntariamente la partida
+            if (token && !sessionStorage.getItem('leftGameVoluntarily')) {
+                const backendHttpUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
+                try {
+                    const resActive = await fetch(`${backendHttpUrl}/partidas/mi_partida`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (resActive.ok) {
+                        const activeData = await resActive.json();
+                        if (activeData.game_id && activeData.estado !== 'WAITING') {
+                            console.log('Partida activa detectada vía HTTP:', activeData.game_id);
+                            connectToRoom(activeData.game_id, token);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error checking active game:', e);
+                }
+            }
             // Connect to Session WebSocket first (independent of game creation)
             if (currentUsername && token) {
                 const backendUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
@@ -332,6 +366,14 @@ export default function MenuPage() {
                                 break;
                             case 'user_not_exists':
                                 console.warn('Usuario no encontrado:', data.username);
+                                break;
+                            case 'reconnect_game':
+                                if (sessionStorage.getItem('leftGameVoluntarily')) {
+                                    console.log('Reconexión ignorada: el usuario abandonó voluntariamente');
+                                } else {
+                                    console.log('Reconexión automática detectada:', data.game_id);
+                                    connectToRoom(data.game_id, token);
+                                }
                                 break;
                         }
                     } catch (e) {
